@@ -3,7 +3,7 @@ import tomllib
 
 import pytest
 
-from laderr_lib.laderr import Laderr
+from laderr_engine.laderr import Laderr
 
 
 def generate_test_cases_from_folder(folder_path: str):

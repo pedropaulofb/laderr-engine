@@ -1,6 +1,6 @@
 from icecream import ic
 
-from laderr_lib.laderr import Laderr
+from laderr_engine.laderr import Laderr
 
 if __name__ == "__main__":
     # Load spec_metadata_dict and data from the specification

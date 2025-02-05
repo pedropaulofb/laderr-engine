@@ -1,0 +1,18 @@
+baseUri = "https://example123.com/laderr#"
+createdBy = [ "Alice", "Bob",]
+createdOn = 2025-01-17T12:00:00Z
+description = "This is an example specification for LaDeRR."
+modifiedOn = 2025-01-18T12:00:00Z
+title = "Example LaDeRR Specification"
+version = "1.0"
+
+[RiskEvent.a]
+label = "Test Risk Event"
+description = "A risk event example."
+
+[Object.b1]
+label = "Test Object"
+description = "An object involved in the risk."
+
+[Disposition.c]
+description = "A disposition example."
