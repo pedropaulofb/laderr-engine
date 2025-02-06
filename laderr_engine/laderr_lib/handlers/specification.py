@@ -22,7 +22,7 @@ class SpecificationHandler:
     """
 
     @classmethod
-    def convert_spec_data_to_graph(cls, spec_metadata: dict[str, object], spec_data: dict[str, object]) -> Graph:
+    def convert_specification_data_to_graph(cls, spec_metadata: dict[str, object], spec_data: dict[str, object]) -> Graph:
         """
         Converts the 'data' section of a LaDeRR specification into an RDF graph.
 
@@ -93,7 +93,7 @@ class SpecificationHandler:
         return graph
 
     @classmethod
-    def convert_spec_metadata_to_graph(cls, metadata: dict[str, object]) -> Graph:
+    def convert_specification_metadata_to_graph(cls, metadata: dict[str, object]) -> Graph:
         """
         Converts LaDeRR specification metadata into an RDF graph.
 

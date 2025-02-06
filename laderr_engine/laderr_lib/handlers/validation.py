@@ -1,3 +1,10 @@
+"""
+Module for validating LaDeRR specifications and RDF graphs using SHACL constraints.
+
+This module provides functions to perform syntactic and semantic validation of LaDeRR specification files,
+as well as SHACL validation of RDF graphs.
+"""
+
 import os
 from urllib.parse import urlparse
 
@@ -11,9 +18,36 @@ from laderr_engine.laderr_lib.utils.constants import SHACL_FILES_PATH
 
 
 class ValidationHandler:
+    """
+    Handles the validation of LaDeRR specifications and RDF graphs.
+
+    This class provides methods for validating RDF data against SHACL constraints, ensuring that LaDeRR
+    specifications conform to syntactic and semantic requirements.
+
+    :cvar LADER_NS: Namespace for LaDeRR ontology.
+    :vartype LADER_NS: Namespace
+    """
 
     @classmethod
     def validate_specification(cls, laderr_file_path: str):
+        """
+        Validates a LaDeRR specification file, performing both syntactic and semantic validation.
+
+        This method:
+        - Reads the TOML specification file.
+        - Parses it into structured metadata and data dictionaries.
+        - Converts the parsed data into RDF graphs.
+        - Combines metadata and data graphs into a unified RDF model.
+        - Loads SHACL schemas and performs validation against the specification.
+        - Reports the validation results and saves the processed RDF graph.
+
+        :param laderr_file_path: Path to the LaDeRR specification file to be validated.
+        :type laderr_file_path: str
+        :return: Boolean indicating whether the specification file is valid.
+        :rtype: bool
+        :raises FileNotFoundError: If the specified file does not exist.
+        :raises tomllib.TOMLDecodeError: If the TOML file contains invalid syntax.
+        """
         # Syntactical validation
         spec_metadata_dict, spec_data_dict = Laderr._read_specification(laderr_file_path)
 
@@ -47,18 +81,16 @@ class ValidationHandler:
         Laderr._save_graph(unified_graph, "./result.ttl")
         return conforms
 
-    def validate_graph(self):
-        pass
-
     @classmethod
     def _validate_base_uri(cls, spec_metadata_dict: dict[str, object]) -> str:
         """
-        Validates the base URI provided in the metadata dictionary. If the base URI is invalid or missing,
-        a default value of "https://laderr.laderr#" is returned.
+        (Internal) Ensures that the base URI provided in the specification metadata is valid.
 
-        :param spec_metadata_dict: Metadata dictionary.
-        :type spec_metadata_dict: Dict[str, object]
-        :return: A valid base URI.
+        If the base URI is missing or invalid, a default URI (`https://laderr.laderr#`) is assigned.
+
+        :param spec_metadata_dict: Metadata dictionary containing the base URI field.
+        :type spec_metadata_dict: dict[str, object]
+        :return: A validated base URI.
         :rtype: str
         """
         base_uri = spec_metadata_dict.get("baseUri", "https://laderr.laderr#")
@@ -71,37 +103,43 @@ class ValidationHandler:
         return base_uri
 
     @classmethod
-    def _validate_with_shacl(cls, data_graph: Graph) -> tuple[bool, str, Graph]:
+    def validate_graph(cls, graph: Graph) -> tuple[bool, str, Graph]:
         """
-        Validates an RDF graph against a SHACL shapes file.
+        Validates an RDF graph using SHACL constraints.
 
-        :param data_graph: RDF graph to validate.
-        :type data_graph: Graph
+        This method checks whether the provided RDF graph conforms to the SHACL schema rules
+        defined for LaDeRR specifications.
+
+        :param graph: RDF graph to validate.
+        :type graph: Graph
         :return: A tuple containing:
-            - A boolean indicating if the graph is valid.
-            - A string with validation results.
-            - A graph with validation report.
-        :rtype: Tuple[bool, str, Graph]
+            - A boolean indicating whether the graph conforms to SHACL constraints.
+            - A string containing detailed validation results.
+            - A graph representing the SHACL validation report.
+        :rtype: tuple[bool, str, Graph]
         """
         shacl_graph = Laderr._merge_shacl_files(SHACL_FILES_PATH)
         ic(len(shacl_graph))
 
-        conforms, report_graph, report_text = validate(data_graph=data_graph, shacl_graph=shacl_graph, inference="both",
+        conforms, report_graph, report_text = validate(data_graph=graph, shacl_graph=shacl_graph, inference="both",
                                                        allow_infos=True, allow_warnings=True)
 
         return conforms, report_graph, report_text
 
     @classmethod
-    def _merge_shacl_files(cls, shacl_files_path: str) -> Graph:
+    def load_shacl_schemas(cls, shacl_files_path: str) -> Graph:
         """
-        Merges all SHACL files in the given path into a single RDFLib graph.
+        Loads SHACL schema files from a directory and merges them into a single RDFLib graph.
 
-        :param shacl_files_path: The directory path containing SHACL files.
+        This method iterates over all SHACL files in the specified directory and attempts to parse them.
+        If any SHACL file is invalid, a warning is logged.
+
+        :param shacl_files_path: Directory path containing SHACL schema files.
         :type shacl_files_path: str
-        :return: A single RDFLib graph containing all merged SHACL shapes.
+        :return: A single RDFLib graph containing all loaded SHACL shapes.
         :rtype: Graph
-        :raises FileNotFoundError: If the directory or files are not found.
-        :raises ValueError: If the directory does not contain valid SHACL files.
+        :raises FileNotFoundError: If the specified directory does not exist.
+        :raises ValueError: If no valid SHACL files are found in the directory.
         """
         # Initialize an empty RDFLib graph
         merged_graph = Graph()
@@ -133,14 +171,15 @@ class ValidationHandler:
     @classmethod
     def _report_validation_result(cls, conforms: bool, report_text: str) -> None:
         """
-        Reports the results of SHACL validation to the user.
+        (Internal) Reports the results of SHACL validation to the user.
 
-        :param conforms: Boolean indicating if the RDF graph conforms to the SHACL shapes.
+        This method logs whether the RDF graph conforms to SHACL constraints and provides a detailed validation report.
+
+        :param conforms: Boolean indicating whether the RDF graph conforms to the SHACL schema.
         :type conforms: bool
-        :param report_text: String with the validation results in text format.
+        :param report_text: Text representation of the SHACL validation report.
         :type report_text: str
         """
-
         if conforms:
             logger.success("The LaDeRR specification is correct.")
         else:

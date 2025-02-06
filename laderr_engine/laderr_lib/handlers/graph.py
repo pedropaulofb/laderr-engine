@@ -1,3 +1,10 @@
+"""
+Module for handling RDF graph operations in the LaDeRR framework.
+
+This module provides functionalities for loading RDF schemas and saving RDF graphs in various formats.
+"""
+import os
+
 from rdflib import Graph
 from rdflib.exceptions import ParserError
 
@@ -5,17 +12,27 @@ from laderr_engine.test_files import RDF_FILE_PATH
 
 
 class GraphHandler:
+    """
+    Handles operations related to RDF graph loading and saving.
+
+    This class provides methods to:
+    - Load RDF schemas from a file into an RDFLib graph.
+    - Serialize and save RDF graphs to a file in a specified format.
+    """
+
     @classmethod
-    def _load_schema(cls) -> Graph:
+    def load_schema(cls) -> Graph:
         """
-        Safely reads an RDF file into an RDFLib graph.
+        Loads an RDF schema file into an RDFLib graph.
 
-        :return: An RDFLib graph containing the data from the file.
+        This method reads an RDF file and parses its contents into an RDFLib graph, allowing further processing and
+        validation of RDF data structures.
+
+        :return: An RDFLib graph containing the parsed RDF data.
         :rtype: Graph
-        :raises FileNotFoundError: If the specified file does not exist.
-        :raises ValueError: If the file is not a valid RDF file or cannot be parsed.
+        :raises FileNotFoundError: If the specified RDF file does not exist.
+        :raises ValueError: If the RDF file is malformed or cannot be parsed.
         """
-
         # Initialize the graph
         graph = Graph()
 
@@ -28,19 +45,21 @@ class GraphHandler:
         return graph
 
     @staticmethod
-    def _save_graph(graph: Graph, file_path: str, format: str = "turtle") -> None:
+    def save_graph(graph: Graph, file_path: str, format: str = "turtle") -> None:
         """
-        Saves an RDF graph to a file in the specified format.
+        Serializes and saves an RDF graph to a file.
 
-        :param graph: The RDF graph to save.
+        This method takes an RDF graph and serializes it into a specified format before writing it to a file.
+        The function ensures that the target directory exists before attempting to write the file.
+
+        :param graph: The RDF graph to be serialized and saved.
         :type graph: Graph
-        :param file_path: The path where the graph will be saved.
+        :param file_path: Path where the serialized RDF graph will be stored.
         :type file_path: str
-        :param format: The serialization format (e.g., "turtle", "xml", "nt", "json-ld").
-                       Default is "turtle".
+        :param format: The serialization format (e.g., "turtle", "xml", "nt", "json-ld"). Default is "turtle".
         :type format: str
-        :raises ValueError: If the format is not supported.
-        :raises OSError: If the file cannot be written.
+        :raises ValueError: If the specified serialization format is not supported.
+        :raises OSError: If the file cannot be written due to permission issues or invalid path.
         """
         try:
             # Ensure the output directory exists
