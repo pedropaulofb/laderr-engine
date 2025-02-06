@@ -10,9 +10,9 @@ from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace
 from rdflib.exceptions import ParserError
 
+from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
 from laderr_engine.laderr_lib.handlers.specification import SpecificationHandler
 from laderr_engine.laderr_lib.handlers.validation import ValidationHandler
-from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
 
 
 class GraphHandler:
@@ -154,7 +154,7 @@ class GraphHandler:
         return graph
 
     @staticmethod
-    def convert_metadata_to_graph(metadata: dict[str, object]) -> Graph:
+    def convert_metadata_to_graph(metadata: dict[str, object]) -> tuple[Graph,Namespace]:
         """
         Converts LaDeRR specification metadata into an RDF graph.
 
@@ -199,10 +199,10 @@ class GraphHandler:
                 # Add single value with specified datatype
                 graph.add((specification, property_uri, Literal(value, datatype=datatype)))
 
-        return graph
+        return graph, data_ns
 
     @staticmethod
-    def _create_combined_graph(metadata_graph: Graph, data_graph: Graph) -> Graph:
+    def _create_combined_graph(base_uri:Namespace, metadata_graph: Graph, data_graph: Graph) -> Graph:
         """
         Creates a combined RDF graph by merging metadata and data graphs.
 
@@ -226,6 +226,7 @@ class GraphHandler:
         combined_graph += data_graph
 
         # Validate base URI and bind namespaces
+        combined_graph.bind("", base_uri)  # Bind the `laderr:` namespace
         combined_graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
 
         return combined_graph
@@ -243,6 +244,6 @@ class GraphHandler:
         :rtype: Graph
         """
         spec_metadata, spec_data = SpecificationHandler.read_specification(laderr_file_path)
-        laderr_metadata_graph = GraphHandler.convert_metadata_to_graph(spec_metadata)
+        laderr_metadata_graph, base_uri = GraphHandler.convert_metadata_to_graph(spec_metadata)
         laderr_data_graph = GraphHandler.convert_data_to_graph(spec_metadata, spec_data)
-        return GraphHandler._create_combined_graph(laderr_metadata_graph, laderr_data_graph)
+        return GraphHandler._create_combined_graph(base_uri, laderr_metadata_graph, laderr_data_graph)
