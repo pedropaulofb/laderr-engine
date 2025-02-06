@@ -1,5 +1,5 @@
 baseUri = "https://example123.com/laderr#"
-createdBy = [ "Alice", "Bob",]
+createdBy = ["Alice", "Bob", ]
 createdOn = 2025-01-17T12:00:00Z
 description = "This is an example specification for LaDeRR."
 modifiedOn = 2025-01-18T12:00:00Z

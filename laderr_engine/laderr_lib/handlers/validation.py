@@ -1,3 +1,4 @@
+import os
 from urllib.parse import urlparse
 
 from icecream import ic
@@ -6,10 +7,10 @@ from pyshacl import validate
 from rdflib import Namespace, Graph
 
 from laderr_engine.laderr_lib import Laderr
-from laderr_engine.test_files import SHACL_FILES_PATH
+from laderr_engine.laderr_lib.utils.constants import SHACL_FILES_PATH
 
 
-class HandlerValidator:
+class ValidationHandler:
 
     @classmethod
     def validate_specification(cls, laderr_file_path: str):
@@ -128,3 +129,22 @@ class HandlerValidator:
             raise ValueError(f"No valid SHACL files found in the directory '{shacl_files_path}'.")
 
         return merged_graph
+
+    @classmethod
+    def _report_validation_result(cls, conforms: bool, report_text: str) -> None:
+        """
+        Reports the results of SHACL validation to the user.
+
+        :param conforms: Boolean indicating if the RDF graph conforms to the SHACL shapes.
+        :type conforms: bool
+        :param report_text: String with the validation results in text format.
+        :type report_text: str
+        """
+
+        if conforms:
+            logger.success("The LaDeRR specification is correct.")
+        else:
+            logger.error("The LaDeRR specification is not correct.")
+
+        # Print the full textual validation report
+        logger.info(f"\nFull Validation Report: {report_text}")
