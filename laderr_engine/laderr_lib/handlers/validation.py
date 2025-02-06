@@ -24,8 +24,8 @@ class ValidationHandler:
     This class provides methods for validating RDF data against SHACL constraints, ensuring that LaDeRR
     specifications conform to syntactic and semantic requirements.
 
-    :cvar LADER_NS: Namespace for LaDeRR ontology.
-    :vartype LADER_NS: Namespace
+    :cvar LADERR_NS: Namespace for LaDeRR ontology.
+    :vartype LADERR_NS: Namespace
     """
 
     @classmethod
@@ -118,7 +118,7 @@ class ValidationHandler:
             - A graph representing the SHACL validation report.
         :rtype: tuple[bool, str, Graph]
         """
-        shacl_graph = Laderr._merge_shacl_files(SHACL_FILES_PATH)
+        shacl_graph = Laderr.load_shacl_schemas(SHACL_FILES_PATH)
         ic(len(shacl_graph))
 
         conforms, report_graph, report_text = validate(data_graph=graph, shacl_graph=shacl_graph, inference="both",

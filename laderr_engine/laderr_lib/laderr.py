@@ -1,3 +1,6 @@
+from rdflib import Graph
+
+from laderr_engine.laderr_lib.handlers.graph import GraphHandler
 from laderr_engine.laderr_lib.handlers.specification import SpecificationHandler
 from laderr_engine.laderr_lib.handlers.validation import ValidationHandler
 
@@ -13,7 +16,7 @@ class Laderr:
 
     @classmethod
     def load_specification_to_graph(cls, laderr_file_path: str):
-        return SpecificationHandler.read_specification(laderr_file_path)
+
 
     @classmethod
     def validate_specification(cls, laderr_file_path: str):
@@ -22,3 +25,7 @@ class Laderr:
     @classmethod
     def validate_graph(cls, laderr_file_path: str):
         return ValidationHandler.validate_graph(laderr_file_path)
+
+    @classmethod
+    def save_graph_to_specification(cls, graph: Graph, output_path: str):
+        return GraphHandler.save_graph(graph, output_path)
