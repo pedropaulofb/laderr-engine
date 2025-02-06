@@ -1,3 +1,8 @@
+"""
+Module for handling LaDeRR specification operations, including reading, writing, and conversion between RDF graphs and
+TOML-based specifications.
+"""
+
 import tomllib
 
 from loguru import logger
@@ -5,22 +10,35 @@ from rdflib import Graph, Namespace, RDF, RDFS, Literal, XSD
 
 
 class SpecificationHandler:
+    """
+    Handles reading, writing, and converting LaDeRR specifications between TOML format and RDF graphs.
+
+    This class provides utility methods for processing specification metadata and data, ensuring correct transformation
+    into RDF triples while maintaining relationships and properties. The methods support serialization, validation, and
+    data extraction.
+
+    :cvar LADER_NS: Namespace for LaDeRR ontology.
+    :vartype LADER_NS: Namespace
+    """
+
     @classmethod
-    def _load_spec_data(cls, spec_metadata: dict[str, object], spec_data: dict[str, object]) -> Graph:
+    def convert_spec_data_to_graph(cls, spec_metadata: dict[str, object], spec_data: dict[str, object]) -> Graph:
         """
-        Loads the data section from the specification into an RDFLib graph and adds the `composedOf` relationship.
+        Converts the 'data' section of a LaDeRR specification into an RDF graph.
 
-        If the `id` property is not explicitly defined within a section, the id is automatically set to the section's
-        key name (e.g., "X" from [RiskEvent.X]).
+        The function iterates over the specification's data structure, assigning unique URIs to instances while mapping
+        their properties to RDF triples. Additionally, it maintains the `composedOf` relationship between the
+        `LaderrSpecification` entity and its instances.
 
-        The base URI from `spec_metadata` is used as the namespace for the data.
+        If an instance lacks an explicit `id` property, it is automatically assigned the section's key name.
 
-        :param spec_metadata: Metadata dictionary containing the base URI.
+        :param spec_metadata: Dictionary containing metadata information, including base URI.
         :type spec_metadata: dict[str, object]
-        :param spec_data: Dictionary representing the `data` section of the specification.
+        :param spec_data: Dictionary representing the data structure of the specification.
         :type spec_data: dict[str, object]
-        :return: RDFLib graph containing the data and `composedOf` relationship.
+        :return: An RDFLib graph containing all data instances and their relationships.
         :rtype: Graph
+        :raises ValueError: If the data structure does not conform to the expected dictionary format.
         """
         # Initialize an empty graph
         graph = Graph()
@@ -75,14 +93,19 @@ class SpecificationHandler:
         return graph
 
     @classmethod
-    def _load_spec_metadata(cls, metadata: dict[str, object]) -> Graph:
+    def convert_spec_metadata_to_graph(cls, metadata: dict[str, object]) -> Graph:
         """
-        Creates an RDF graph containing only the provided spec_metadata_dict.
+        Converts LaDeRR specification metadata into an RDF graph.
 
-        :param metadata: Metadata dictionary to add to the graph.
+        This method extracts metadata attributes and represents them as RDF triples, ensuring proper data types
+        (e.g., `xsd:string`, `xsd:dateTime`). The `baseUri` is used to establish the namespace, and all metadata
+        properties are assigned to the `LaderrSpecification` instance.
+
+        :param metadata: Dictionary containing metadata attributes such as title, version, and authorship.
         :type metadata: dict[str, object]
-        :return: A new RDFLib graph containing only the spec_metadata_dict.
+        :return: An RDFLib graph representing the specification metadata.
         :rtype: Graph
+        :raises ValueError: If the provided metadata contains invalid formats or unsupported data types.
         """
         # Define expected datatypes for spec_metadata_dict keys
         expected_datatypes = {"title": XSD.string, "description": XSD.string, "version": XSD.string,
@@ -119,22 +142,24 @@ class SpecificationHandler:
         return graph
 
     @classmethod
-    def _read_specification(cls, laderr_file_path: str) -> tuple[dict[str, object], dict[str, object]]:
+    def read_specification(cls, laderr_file_path: str) -> tuple[dict[str, object], dict[str, object]]:
         """
-        Reads a TOML file, parses its content into a Python dictionary, and extracts preamble keys into a `spec_metadata_dict` dict.
+        Reads a LaDeRR specification from a TOML file and extracts structured metadata and data sections.
 
-        This function uses Python's built-in `tomllib` library to parse TOML files. The file must be passed as a binary
-        stream, as required by `tomllib`. It processes the top-level keys that are not part of any section (preamble) and
-        stores them in a separate `spec_metadata_dict` dictionary. Handles cases where `createdBy` is a string or a list of strings.
+        This function parses the TOML file, separating top-level metadata from structured data sections.
+        Metadata attributes that appear at the root level are stored in a dedicated metadata dictionary,
+        while the remaining data is organized into nested dictionaries.
 
-        :param laderr_file_path: The path to the TOML file to be read.
+        If the `createdBy` field is a single string, it is automatically converted into a list for consistency.
+
+        :param laderr_file_path: Path to the TOML file containing the LaDeRR specification.
         :type laderr_file_path: str
         :return: A tuple containing:
-            - `spec_metadata_dict`: A dictionary with preamble keys and their values.
-            - `data`: A dictionary with the remaining TOML data (sections and their contents).
+            - `spec_metadata`: Dictionary with metadata attributes.
+            - `spec_data`: Dictionary representing structured data instances.
         :rtype: tuple[dict[str, object], dict[str, object]]
-        :raises FileNotFoundError: If the specified file does not exist or cannot be found.
-        :raises tomllib.TOMLDecodeError: If the TOML file contains invalid syntax or cannot be parsed.
+        :raises FileNotFoundError: If the specified TOML file does not exist.
+        :raises tomllib.TOMLDecodeError: If the TOML file is malformed or contains syntactical errors.
         """
         try:
             with open(laderr_file_path, "rb") as file:
@@ -168,14 +193,21 @@ class SpecificationHandler:
     @classmethod
     def write_specification(cls, metadata_graph: Graph, data_graph: Graph, output_file: str) -> None:
         """
-        Serializes the metadata and data graphs into TOML format and writes to a specified file.
+        Serializes a LaDeRR specification into TOML format and writes it to a file.
 
-        :param metadata_graph: RDF graph containing metadata.
+        This function extracts metadata and data instances from the provided RDF graphs, converting them into a
+        structured dictionary format suitable for TOML serialization. Metadata fields are sorted for consistency.
+
+        Data instances are categorized by type and structured in a hierarchical format that preserves relationships.
+
+        :param metadata_graph: RDF graph containing metadata properties of the LaDeRR specification.
         :type metadata_graph: Graph
-        :param data_graph: RDF graph containing data instances.
+        :param data_graph: RDF graph containing data instances and their relationships.
         :type data_graph: Graph
-        :param output_file: Path to the output TOML file.
+        :param output_file: Destination file path for the serialized TOML specification.
         :type output_file: str
+        :raises OSError: If the output file cannot be written to the specified location.
+        :raises Exception: If an unexpected serialization error occurs.
         """
         import toml
         from collections import defaultdict

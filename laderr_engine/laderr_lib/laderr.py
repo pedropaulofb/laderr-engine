@@ -13,3 +13,7 @@ class Laderr:
     @classmethod
     def validate_specification(cls, laderr_file_path: str):
         return ValidationHandler.validate_specification(laderr_file_path)
+
+
+    # @classmethod
+    # def load_specification(self):
