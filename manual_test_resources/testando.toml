@@ -13,8 +13,8 @@ description = "A risk event example."
 [Object.b1]
 label = "Test Object"
 description = "An object involved in the risk."
-capabilities = ["c1", "c2"]  # List of capability IDs
-dispositions = ["d1", "d2"]  # List of disposition IDs
+capabilities = ["c1", "c2", "d1"]  # List of capability IDs
+vulnerabilities = ["v1", "v2", "d1"]  # List of disposition IDs
 
 [Capability.c1]
 label = "Capability 1"
@@ -24,12 +24,17 @@ description = "A capability of the object."
 label = "Capability 2"
 description = "Another capability of the object."
 
-[Disposition.d1]
-label = "Disposition 1"
+[Vulnerability.v1]
+label = "Vulnerability 1"
 state = "enabled"
-description = "A disposition associated with the object."
+description = "A vulnerability associated with the object."
 
-[Disposition.d2]
-label = "Disposition 2"
+[Vulnerability.v2]
+label = "Vulnerability 2"
 state = "disabled"
-description = "Another disposition associated with the object."
+description = "Another vulnerability associated with the object."
+
+[Capability.d1]
+[Vulnerability.d1]
+label = "Shared Capability and Vulnerability"
+description = "This object serves as both a capability and a vulnerability."

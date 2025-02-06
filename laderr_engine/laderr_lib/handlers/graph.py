@@ -95,7 +95,6 @@ class GraphHandler:
         :type spec_data: dict[str, object]
         :return: An RDFLib graph containing all data instances and their relationships.
         :rtype: Graph
-        :raises ValueError: If the data structure does not conform to the expected dictionary format.
         """
         # Initialize an empty graph
         graph = Graph()
@@ -105,8 +104,6 @@ class GraphHandler:
         data_ns = Namespace(base_uri)
         graph.bind("", data_ns)  # Bind the `:` namespace
         graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
-
-        ic(LADERR_NS, type(LADERR_NS))
 
         # Create or identify the single RiskSpecification instance
         specification_uri = data_ns.LaderrSpecification
@@ -127,10 +124,9 @@ class GraphHandler:
 
                 # Create the RDF node for the instance
                 instance_uri = data_ns[instance_id]
-                if class_type in LADERR_NS:
-                    graph.add((instance_uri, RDF.type, LADERR_NS[class_type]))
-                else:
-                    logger.warning(f"Unknown class type '{class_type}' found in data. Skipping.")
+
+                # Add the RDF type based on the section name
+                graph.add((instance_uri, RDF.type, LADERR_NS[class_type]))
 
                 # Add properties to the instance
                 for prop, value in properties.items():

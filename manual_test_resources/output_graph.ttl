@@ -1,25 +1,55 @@
+@prefix :       <https://example123.com/laderr#> .
 @prefix laderr: <https://w3id.org/pedropaulofb/laderr#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
 
-<https://example123.com/laderr#LaderrSpecification> a laderr:LaderrSpecification ;
-    laderr:baseUri "https://example123.com/laderr#"^^xsd:anyURI ;
-    laderr:composedOf <https://example123.com/laderr#a>,
-        <https://example123.com/laderr#b1>,
-        <https://example123.com/laderr#c> ;
-    laderr:createdBy "Alice"^^xsd:string,
-        "Bob"^^xsd:string ;
-    laderr:createdOn "2025-01-17T12:00:00+00:00"^^xsd:dateTime ;
+:LaderrSpecification
+    a                  laderr:LaderrSpecification ;
+    laderr:baseUri     "https://example123.com/laderr#"^^xsd:anyURI ;
+    laderr:composedOf  :a, :b1, :c1, :c2, :d1, :v1, :v2 ;
+    laderr:createdBy   "Alice"^^xsd:string, "Bob"^^xsd:string ;
+    laderr:createdOn   "2025-01-17T12:00:00+00:00"^^xsd:dateTime ;
     laderr:description "This is an example specification for LaDeRR."^^xsd:string ;
-    laderr:modifiedOn "2025-01-18T12:00:00+00:00"^^xsd:dateTime ;
-    laderr:title "Example LaDeRR Specification"^^xsd:string ;
-    laderr:version "1.0"^^xsd:string .
+    laderr:modifiedOn  "2025-01-18T12:00:00+00:00"^^xsd:dateTime ;
+    laderr:title       "Example LaDeRR Specification"^^xsd:string ;
+    laderr:version     "1.0"^^xsd:string .
 
-<https://example123.com/laderr#a> rdfs:label "Test Risk Event" ;
+:a
+    a                  laderr:RiskEvent ;
+    rdfs:label         "Test Risk Event" ;
     laderr:description "A risk event example." .
 
-<https://example123.com/laderr#b1> rdfs:label "Test Object" ;
-    laderr:description "An object involved in the risk." .
+:b1
+    a                      laderr:Object ;
+    rdfs:label             "Test Object" ;
+    laderr:capabilities    "c1", "c2", "d1" ;
+    laderr:description     "An object involved in the risk." ;
+    laderr:vulnerabilities "d1", "v1", "v2" .
 
-<https://example123.com/laderr#c> laderr:description "A disposition example." .
+:c1
+    a                  laderr:Capability ;
+    rdfs:label         "Capability 1" ;
+    laderr:description "A capability of the object." .
+
+:c2
+    a                  laderr:Capability ;
+    rdfs:label         "Capability 2" ;
+    laderr:description "Another capability of the object." .
+
+:d1
+    a                  laderr:Capability, laderr:Vulnerability ;
+    rdfs:label         "Shared Capability and Vulnerability" ;
+    laderr:description "This object serves as both a capability and a vulnerability." .
+
+:v1
+    a                  laderr:Vulnerability ;
+    rdfs:label         "Vulnerability 1" ;
+    laderr:description "A vulnerability associated with the object." ;
+    laderr:state       "enabled" .
+
+:v2
+    a                  laderr:Vulnerability ;
+    rdfs:label         "Vulnerability 2" ;
+    laderr:description "Another vulnerability associated with the object." ;
+    laderr:state       "disabled" .
 
