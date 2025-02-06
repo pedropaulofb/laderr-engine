@@ -5,8 +5,6 @@ This module provides functionalities for loading RDF schemas and saving RDF grap
 """
 import os
 
-from icecream import ic
-from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace
 from rdflib.exceptions import ParserError
 
@@ -91,10 +89,12 @@ class GraphHandler:
 
         :param spec_metadata: Dictionary containing metadata information, including base URI.
         :type spec_metadata: dict[str, object]
-        :param spec_data: Dictionary representing the data structure of the specification.
-        :type spec_data: dict[str, object]
+        :param spec_data: Nested dictionary representing the data structure of the specification.
+                          It maps class types to instances, each containing their properties.
+        :type spec_data: dict[str, dict[str, dict[str, object]]]
         :return: An RDFLib graph containing all data instances and their relationships.
         :rtype: Graph
+        :raises ValueError: If the structure of spec_data does not conform to expected nested dictionaries.
         """
         # Initialize an empty graph
         graph = Graph()
@@ -150,7 +150,7 @@ class GraphHandler:
         return graph
 
     @staticmethod
-    def convert_metadata_to_graph(metadata: dict[str, object]) -> tuple[Graph,Namespace]:
+    def convert_metadata_to_graph(metadata: dict[str, object]) -> tuple[Graph, Namespace]:
         """
         Converts LaDeRR specification metadata into an RDF graph.
 
@@ -160,8 +160,8 @@ class GraphHandler:
 
         :param metadata: Dictionary containing metadata attributes such as title, version, and authorship.
         :type metadata: dict[str, object]
-        :return: An RDFLib graph representing the specification metadata.
-        :rtype: Graph
+        :return: A tuple containing the RDFLib graph representing the specification metadata and the namespace.
+        :rtype: tuple[Graph, Namespace]
         :raises ValueError: If the provided metadata contains invalid formats or unsupported data types.
         """
         # Define expected datatypes for spec_metadata_dict keys
@@ -198,13 +198,15 @@ class GraphHandler:
         return graph, data_ns
 
     @staticmethod
-    def _create_combined_graph(base_uri:Namespace, metadata_graph: Graph, data_graph: Graph) -> Graph:
+    def _create_combined_graph(base_uri: Namespace, metadata_graph: Graph, data_graph: Graph) -> Graph:
         """
         Creates a combined RDF graph by merging metadata and data graphs.
 
         This method takes two RDFLib graphs (one containing metadata and the other containing structured data)
         and merges them, ensuring that all triples are included in the final graph.
 
+        :param base_uri: The base namespace URI used for the LaDeRR RDF model.
+        :type base_uri: Namespace
         :param metadata_graph: RDF graph containing metadata properties of the LaDeRR specification.
         :type metadata_graph: Graph
         :param data_graph: RDF graph containing data instances and their relationships.

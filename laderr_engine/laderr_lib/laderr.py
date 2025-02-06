@@ -36,9 +36,9 @@ class Laderr:
     def validate_spec(cls, laderr_file_path: str):
         return ValidationHandler.validate_specification(laderr_file_path)
 
-    # @classmethod
-    # def validate_laderr_graph(cls, laderr_file_path: str):
-        # return ValidationHandler.validate_graph(laderr_file_path)
+    @classmethod
+    def validate_laderr_graph(cls, laderr_file_path: str):
+        return ValidationHandler.validate_graph(laderr_file_path)
 
     @classmethod
     def save_laderr_graph(cls, graph: Graph, output_path: str)->None:
