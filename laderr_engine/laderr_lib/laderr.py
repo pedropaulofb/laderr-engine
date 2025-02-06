@@ -1,14 +1,15 @@
 import os
 import tomllib
-from collections import defaultdict
 from urllib.parse import urlparse
 
-import toml
 from icecream import ic
 from loguru import logger
 from pyshacl import validate
 from rdflib import Graph, Namespace, RDF, Literal, XSD, RDFS
 from rdflib.exceptions import ParserError
+
+from laderr_engine.laderr_lib import handlers
+from laderr_engine.test_files import RDF_FILE_PATH, SHACL_FILES_PATH
 
 
 class Laderr:
@@ -123,7 +124,8 @@ class Laderr:
         """
         # Define expected datatypes for spec_metadata_dict keys
         expected_datatypes = {"title": XSD.string, "description": XSD.string, "version": XSD.string,
-            "createdBy": XSD.string, "createdOn": XSD.dateTime, "modifiedOn": XSD.dateTime, "baseUri": XSD.anyURI, }
+                              "createdBy": XSD.string, "createdOn": XSD.dateTime, "modifiedOn": XSD.dateTime,
+                              "baseUri": XSD.anyURI, }
 
         # Validate base URI and bind namespaces
         base_uri = cls._validate_base_uri(metadata)
@@ -167,8 +169,7 @@ class Laderr:
             - A graph with validation report.
         :rtype: Tuple[bool, str, Graph]
         """
-        shacl_files_path = "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr\\shapes"
-        shacl_graph = Laderr._merge_shacl_files(shacl_files_path)
+        shacl_graph = Laderr._merge_shacl_files(SHACL_FILES_PATH)
         ic(len(shacl_graph))
 
         conforms, report_graph, report_text = validate(data_graph=data_graph, shacl_graph=shacl_graph, inference="both",
@@ -216,39 +217,8 @@ class Laderr:
         return merged_graph
 
     @classmethod
-    def validate(cls, laderr_file_path: str):
-        # Syntactical validation
-        spec_metadata_dict, spec_data_dict = Laderr._read_specification(laderr_file_path)
-
-        # Semantic validation
-        spec_metadata_graph = Laderr._load_spec_metadata(spec_metadata_dict)
-        spec_data_graph = Laderr._load_spec_data(spec_metadata_dict, spec_data_dict)
-
-        # Combine graphs
-        unified_graph = Graph()
-        unified_graph += spec_metadata_graph
-        unified_graph += spec_data_graph
-
-        Laderr._write_specification(spec_metadata_graph, spec_data_graph, "./testando.toml")
-
-        # Combine instances with Schema for correct SHACL evaluation
-        laderr_schema = Laderr._load_schema()
-        validation_graph = Graph()
-        validation_graph += unified_graph
-        validation_graph += laderr_schema
-
-        # Bind namespaces in the unified graph
-        base_uri = cls._validate_base_uri(spec_metadata_dict)
-        unified_graph.bind("", Namespace(base_uri))  # Bind `:` to the base URI
-        unified_graph.bind("laderr", cls.LADER_NS)  # Bind `laderr:` to the schema namespace
-
-        ic(len(spec_metadata_graph), len(spec_data_graph), len(unified_graph), len(laderr_schema),
-           len(validation_graph))
-
-        conforms, _, report_text = Laderr._validate_with_shacl(validation_graph)
-        Laderr._report_validation_result(conforms, report_text)
-        Laderr._save_graph(unified_graph, "./result.ttl")
-        return conforms
+    def validate_specification(cls, laderr_file_path: str):
+        return handlers.HandlerValidator.validate_specification(laderr_file_path)
 
     @classmethod
     def _load_schema(cls) -> Graph:
@@ -261,16 +231,14 @@ class Laderr:
         :raises ValueError: If the file is not a valid RDF file or cannot be parsed.
         """
 
-        rdf_file_path = "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr\\laderr-schema-v0.2.0.ttl"
-
         # Initialize the graph
         graph = Graph()
 
         try:
             # Parse the file into the graph
-            graph.parse(rdf_file_path)
+            graph.parse(RDF_FILE_PATH)
         except (ParserError, ValueError) as e:
-            raise ValueError(f"Failed to parse the RDF file '{rdf_file_path}'. Ensure it is a valid RDF file.") from e
+            raise ValueError(f"Failed to parse the RDF file '{RDF_FILE_PATH}'. Ensure it is a valid RDF file.") from e
 
         return graph
 
@@ -368,7 +336,7 @@ class Laderr:
         logger.info(f"\nFull Validation Report: {report_text}")
 
     @classmethod
-    def _write_specification(cls, metadata_graph: Graph, data_graph: Graph, output_file: str) -> None:
+    def write_specification(cls, metadata_graph: Graph, data_graph: Graph, output_file: str) -> None:
         """
         Serializes the metadata and data graphs into TOML format and writes to a specified file.
 
@@ -412,8 +380,7 @@ class Laderr:
                     if predicate_name in instances[instance_type][instance_id]:
                         if not isinstance(instances[instance_type][instance_id][predicate_name], list):
                             instances[instance_type][instance_id][predicate_name] = [
-                                instances[instance_type][instance_id][predicate_name]
-                            ]
+                                instances[instance_type][instance_id][predicate_name]]
                         instances[instance_type][instance_id][predicate_name].append(value)
                     else:
                         instances[instance_type][instance_id][predicate_name] = value

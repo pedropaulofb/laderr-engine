@@ -3,7 +3,7 @@ import tomllib
 
 import pytest
 
-from laderr_engine.laderr import Laderr
+from laderr_engine.laderr_lib.laderr import Laderr
 
 
 def generate_test_cases_from_folder(folder_path: str):
@@ -89,6 +89,7 @@ def test_validate_metadata_invalid_combined(file_path: str) -> None:
     :raises AssertionError: If the validation does not raise the expected value.
     """
     assert not Laderr.validate(file_path), f"Validation incorrectly passed for file: {file_path}"
+
 
 @pytest.mark.parametrize("file_path", generate_test_cases_from_folder("test_files/valid"))
 def test_validate_metadata_valid(file_path: str) -> None:
