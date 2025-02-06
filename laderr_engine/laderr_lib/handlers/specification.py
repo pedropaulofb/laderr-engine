@@ -71,7 +71,7 @@ class SpecificationHandler:
             raise e
 
     @classmethod
-    def write_specification(cls, metadata_graph: Graph, data_graph: Graph, output_file: str) -> None:
+    def write_specification(cls, laderr_graph: Graph, output_file: str) -> None:
         """
         Serializes a LaDeRR specification into TOML format and writes it to a file.
 

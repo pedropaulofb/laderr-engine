@@ -5,11 +5,14 @@ This module provides functionalities for loading RDF schemas and saving RDF grap
 """
 import os
 
+from icecream import ic
+from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace
 from rdflib.exceptions import ParserError
 
 from laderr_engine.laderr_lib.handlers.specification import SpecificationHandler
-from laderr_engine.laderr_lib.utils.constants import LADERR_SCHEMA_PATH
+from laderr_engine.laderr_lib.handlers.validation import ValidationHandler
+from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
 
 
 class GraphHandler:
@@ -75,8 +78,8 @@ class GraphHandler:
         except OSError as e:
             raise OSError(f"Could not write to file '{file_path}': {e}") from e
 
-    @classmethod
-    def _convert_data_to_graph(cls, spec_metadata: dict[str, object], spec_data: dict[str, object]) -> Graph:
+    @staticmethod
+    def convert_data_to_graph(spec_metadata: dict[str, object], spec_data: dict[str, object]) -> Graph:
         """
         Converts the 'data' section of a LaDeRR specification into an RDF graph.
 
@@ -98,15 +101,16 @@ class GraphHandler:
         graph = Graph()
 
         # Get the base URI from spec_metadata_dict and bind namespaces
-        base_uri = cls._validate_base_uri(spec_metadata)
+        base_uri = ValidationHandler.validate_base_uri(spec_metadata)
         data_ns = Namespace(base_uri)
-        laderr_ns = cls.LADER_NS
         graph.bind("", data_ns)  # Bind the `:` namespace
-        graph.bind("laderr", laderr_ns)  # Bind the `laderr:` namespace
+        graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
+
+        ic(LADERR_NS, type(LADERR_NS))
 
         # Create or identify the single RiskSpecification instance
         specification_uri = data_ns.LaderrSpecification
-        graph.add((specification_uri, RDF.type, laderr_ns.LaderrSpecification))
+        graph.add((specification_uri, RDF.type, LADERR_NS.LaderrSpecification))
 
         # Iterate over the sections in the data
         for class_type, instances in spec_data.items():
@@ -123,7 +127,10 @@ class GraphHandler:
 
                 # Create the RDF node for the instance
                 instance_uri = data_ns[instance_id]
-                graph.add((instance_uri, RDF.type, laderr_ns[class_type]))
+                if class_type in LADERR_NS:
+                    graph.add((instance_uri, RDF.type, LADERR_NS[class_type]))
+                else:
+                    logger.warning(f"Unknown class type '{class_type}' found in data. Skipping.")
 
                 # Add properties to the instance
                 for prop, value in properties.items():
@@ -137,17 +144,17 @@ class GraphHandler:
                         # Map other properties to laderr namespace
                         if isinstance(value, list):
                             for item in value:
-                                graph.add((instance_uri, laderr_ns[prop], Literal(item)))
+                                graph.add((instance_uri, LADERR_NS[prop], Literal(item)))
                         else:
-                            graph.add((instance_uri, laderr_ns[prop], Literal(value)))
+                            graph.add((instance_uri, LADERR_NS[prop], Literal(value)))
 
                 # Add the composedOf relationship
-                graph.add((specification_uri, laderr_ns.composedOf, instance_uri))
+                graph.add((specification_uri, LADERR_NS.composedOf, instance_uri))
 
         return graph
 
-    @classmethod
-    def _convert_metadata_to_graph(cls, metadata: dict[str, object]) -> Graph:
+    @staticmethod
+    def convert_metadata_to_graph(metadata: dict[str, object]) -> Graph:
         """
         Converts LaDeRR specification metadata into an RDF graph.
 
@@ -167,22 +174,21 @@ class GraphHandler:
                               "baseUri": XSD.anyURI, }
 
         # Validate base URI and bind namespaces
-        base_uri = cls._validate_base_uri(metadata)
+        base_uri = ValidationHandler.validate_base_uri(metadata)
         data_ns = Namespace(base_uri)
-        laderr_ns = cls.LADER_NS
 
         # Create a new graph
         graph = Graph()
         graph.bind("", data_ns)  # Bind the `:` namespace
-        graph.bind("laderr", laderr_ns)  # Bind the `laderr:` namespace
+        graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
 
         # Create or identify LaderrSpecification instance
         specification = data_ns.LaderrSpecification
-        graph.add((specification, RDF.type, laderr_ns.LaderrSpecification))
+        graph.add((specification, RDF.type, LADERR_NS.LaderrSpecification))
 
         # Add spec_metadata_dict as properties of the specification
         for key, value in metadata.items():
-            property_uri = laderr_ns[key]  # Schema properties come from laderr namespace
+            property_uri = LADERR_NS[key]  # Schema properties come from laderr namespace
             datatype = expected_datatypes.get(key, XSD.anyURI)  # Default to xsd:string if not specified
 
             # Handle lists
@@ -219,10 +225,13 @@ class GraphHandler:
         # Merge data graph
         combined_graph += data_graph
 
+        # Validate base URI and bind namespaces
+        combined_graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
+
         return combined_graph
 
-    @classmethod
-    def create_laderr_graph(cls, laderr_file_path: str) -> Graph:
+    @staticmethod
+    def create_laderr_graph(laderr_file_path: str) -> Graph:
         """
         Creates a unified RDF graph for a LaDeRR specification.
 
@@ -234,6 +243,6 @@ class GraphHandler:
         :rtype: Graph
         """
         spec_metadata, spec_data = SpecificationHandler.read_specification(laderr_file_path)
-        laderr_metadata_graph = cls._convert_metadata_to_graph(spec_metadata)
-        laderr_data_graph = cls._convert_data_to_graph(spec_data)
-        return cls._create_combined_graph(laderr_metadata_graph, laderr_data_graph)
+        laderr_metadata_graph = GraphHandler.convert_metadata_to_graph(spec_metadata)
+        laderr_data_graph = GraphHandler.convert_data_to_graph(spec_metadata, spec_data)
+        return GraphHandler._create_combined_graph(laderr_metadata_graph, laderr_data_graph)
