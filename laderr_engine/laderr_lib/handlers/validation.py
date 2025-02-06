@@ -16,6 +16,8 @@ from rdflib import Namespace, Graph
 from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
 from laderr_engine.laderr_lib.handlers.specification import SpecificationHandler
 
+VERBOSE = True
+
 
 class ValidationHandler:
     """
@@ -75,9 +77,6 @@ class ValidationHandler:
         unified_graph.bind("", Namespace(base_uri))  # Bind `:` to the base URI
         unified_graph.bind("laderr", cls.LADER_NS)  # Bind `laderr:` to the schema namespace
 
-        ic(len(spec_metadata_graph), len(spec_data_graph), len(unified_graph), len(laderr_schema),
-           len(validation_graph))
-
         conforms, _, report_text = cls._validate_with_shacl(validation_graph)
         cls._report_validation_result(conforms, report_text)
         GraphHandler.save_graph(unified_graph, "./manual_test_resources/result.ttl")
@@ -122,7 +121,6 @@ class ValidationHandler:
         """
 
         shacl_graph = ValidationHandler.load_shacl_schemas(SHACL_FILES_PATH)
-        ic(len(shacl_graph))
 
         conforms, report_graph, report_text = validate(data_graph=graph, shacl_graph=shacl_graph, inference="both",
                                                        allow_infos=True, allow_warnings=True)
@@ -153,7 +151,7 @@ class ValidationHandler:
 
         # Iterate over all files in the directory
         for filename in os.listdir(shacl_files_path):
-            ic(filename)
+            VERBOSE and logger.info(f"Loaded SHACL: {filename}")
             file_path = os.path.join(shacl_files_path, filename)
 
             # Skip non-files
