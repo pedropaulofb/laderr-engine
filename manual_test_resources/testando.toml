@@ -28,13 +28,16 @@ description = "Another capability of the object."
 label = "Vulnerability 1"
 state = "enabled"
 description = "A vulnerability associated with the object."
+exposes = "c2"
 
 [Vulnerability.v2]
 label = "Vulnerability 2"
 state = "disabled"
 description = "Another vulnerability associated with the object."
+exposes = "c2"
 
 [Capability.d1]
 [Vulnerability.d1]
 label = "Shared Capability and Vulnerability"
 description = "This object serves as both a capability and a vulnerability."
+exposes = "c1"

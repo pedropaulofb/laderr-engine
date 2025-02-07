@@ -26,34 +26,40 @@
 
 :b1 a laderr:Object ;
     rdfs:label "Test Object" ;
-    laderr:capabilities "c1",
-        "c2",
-        "d1" ;
+    laderr:capabilities :c1,
+        :c2,
+        :d1 ;
     laderr:description "An object involved in the risk." ;
-    laderr:vulnerabilities "d1",
-        "v1",
-        "v2" .
-
-:c1 a laderr:Capability ;
-    rdfs:label "Capability 1" ;
-    laderr:description "A capability of the object." .
-
-:c2 a laderr:Capability ;
-    rdfs:label "Capability 2" ;
-    laderr:description "Another capability of the object." .
-
-:d1 a laderr:Capability,
-        laderr:Vulnerability ;
-    rdfs:label "Shared Capability and Vulnerability" ;
-    laderr:description "This object serves as both a capability and a vulnerability." .
+    laderr:vulnerabilities :d1,
+        :v1,
+        :v2 .
 
 :v1 a laderr:Vulnerability ;
     rdfs:label "Vulnerability 1" ;
     laderr:description "A vulnerability associated with the object." ;
-    laderr:state laderr:Enabled .
+    laderr:exposes :c2 ;
+    laderr:state laderr:enabled .
 
 :v2 a laderr:Vulnerability ;
     rdfs:label "Vulnerability 2" ;
     laderr:description "Another vulnerability associated with the object." ;
-    laderr:state laderr:Disabled .
+    laderr:exposes :c2 ;
+    laderr:state laderr:disabled .
+
+:c1 a laderr:Capability ;
+    rdfs:label "Capability 1" ;
+    laderr:description "A capability of the object." ;
+    laderr:state laderr:enabled .
+
+:d1 a laderr:Capability,
+        laderr:Vulnerability ;
+    rdfs:label "Shared Capability and Vulnerability" ;
+    laderr:description "This object serves as both a capability and a vulnerability." ;
+    laderr:exposes :c1 ;
+    laderr:state laderr:enabled .
+
+:c2 a laderr:Capability ;
+    rdfs:label "Capability 2" ;
+    laderr:description "Another capability of the object." ;
+    laderr:state laderr:enabled .
 

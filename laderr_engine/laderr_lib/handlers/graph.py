@@ -13,6 +13,8 @@ from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
 from laderr_engine.laderr_lib.handlers.specification import SpecificationHandler
 from laderr_engine.laderr_lib.handlers.validation import ValidationHandler
 
+VERBOSE = True
+
 
 class GraphHandler:
     """
@@ -106,42 +108,59 @@ class GraphHandler:
     def _process_instance(graph: Graph, data_ns: Namespace, class_type: str, instance_id: str,
                           properties: dict[str, object]) -> None:
         """
-        Processes a single instance and adds it to the RDF laderr_graph.
+        Processes a single instance and adds it to the RDF graph.
 
         This method converts an instance's properties into RDF triples, including handling labels,
-        lists, and special mappings (such as 'state' for Dispositions).
+        lists, and special mappings (such as 'state' for Dispositions, Capabilities, and Vulnerabilities).
 
-        :param graph: The RDF laderr_graph being constructed.
-        :type graph: Graph
+        If a 'Disposition', 'Capability', or 'Vulnerability' instance does not have a 'state',
+        a default state 'laderr:Enabled' is assigned **only once**.
+
+        :param graph: The RDF graph being constructed.
         :param data_ns: The namespace to use for instance URIs.
-        :type data_ns: Namespace
         :param class_type: The class type of the instance.
-        :type class_type: str
         :param instance_id: The unique identifier for the instance.
-        :type instance_id: str
         :param properties: Dictionary of properties for the instance.
-        :type properties: dict[str, object]
         :raises ValueError: If the properties structure is invalid.
         """
-        instance_uri = URIRef(f"{data_ns}{instance_id}")
+        instance_uri = URIRef(f"{data_ns}{instance_id}")  # Ensure instance is URI
         graph.add((instance_uri, RDF.type, LADERR_NS[class_type]))
+
+        has_state = False  # Track if state exists
 
         for prop, value in properties.items():
             if prop == "id":
-                continue  # Skip `id`, it's already used for the URI
+                continue  # Skip `id`, already used as URI
 
             if prop == "label":
-                graph.add((instance_uri, RDFS.label, Literal(value)))
-            elif prop == "state" and class_type in {"Vulnerability", "Capability"}:
-                # Map state to laderr:Enabled or laderr:Disabled
-                state_uri = LADERR_NS.Enabled if value.lower() == "enabled" else LADERR_NS.Disabled
+                graph.add((instance_uri, RDFS.label, Literal(value)))  # Label remains a Literal
+
+            elif prop == "state":
+                # Convert state to URI (NOT a string literal)
+                state_uri = LADERR_NS.enabled if value.lower() == "enabled" else LADERR_NS.disabled
                 graph.add((instance_uri, LADERR_NS.state, state_uri))
+                has_state = True  # Mark that a state was explicitly provided
+
+            elif prop in {"capabilities", "vulnerabilities", "resiliences", "exposes", "exploits", "disables",
+                          "composedOf"}:  # Ensure these are stored as URIs
+                if isinstance(value, list):
+                    for item in value:
+                        graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{item}")))  # Store as URIRef
+                else:
+                    graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{value}")))  # Store as URIRef
+
             else:
+                # Default case: Store values as Literals unless explicitly listed above
                 if isinstance(value, list):
                     for item in value:
                         graph.add((instance_uri, LADERR_NS[prop], Literal(item)))
                 else:
                     graph.add((instance_uri, LADERR_NS[prop], Literal(value)))
+
+        # Ensure state is always added as a URI
+        if class_type in {"Disposition", "Capability", "Vulnerability"} and not has_state:
+            graph.add((instance_uri, LADERR_NS.state, LADERR_NS.enabled))  # Store as URI
+            VERBOSE and logger.info(f"Added default state 'enabled' to: {instance_uri}")
 
     @staticmethod
     def convert_data_to_graph(spec_metadata: dict[str, object],
