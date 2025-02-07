@@ -1,11 +1,12 @@
 """
-Module for handling RDF graph operations in the LaDeRR framework.
+Module for handling RDF laderr_graph operations in the LaDeRR framework.
 
 This module provides functionalities for loading RDF schemas and saving RDF graphs in various formats.
 """
 import os
 
-from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace
+from loguru import logger
+from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef
 from rdflib.exceptions import ParserError
 
 from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
@@ -15,31 +16,31 @@ from laderr_engine.laderr_lib.handlers.validation import ValidationHandler
 
 class GraphHandler:
     """
-    Handles operations related to RDF graph loading and saving.
+    Handles operations related to RDF laderr_graph loading and saving.
 
     This class provides methods to:
-    - Load RDF schemas from a file into an RDFLib graph.
+    - Load RDF schemas from a file into an RDFLib laderr_graph.
     - Serialize and save RDF graphs to a file in a specified format.
     """
 
     @classmethod
-    def load_schema(cls) -> Graph:
+    def load_laderr_schema(cls) -> Graph:
         """
-        Loads an RDF schema file into an RDFLib graph.
+        Loads an RDF schema file into an RDFLib laderr_graph.
 
-        This method reads an RDF file and parses its contents into an RDFLib graph, allowing further processing and
+        This method reads an RDF file and parses its contents into an RDFLib laderr_graph, allowing further processing and
         validation of RDF data structures.
 
-        :return: An RDFLib graph containing the parsed RDF data.
+        :return: An RDFLib laderr_graph containing the parsed RDF data.
         :rtype: Graph
         :raises FileNotFoundError: If the specified RDF file does not exist.
         :raises ValueError: If the RDF file is malformed or cannot be parsed.
         """
-        # Initialize the graph
+        # Initialize the laderr_graph
         graph = Graph()
 
         try:
-            # Parse the file into the graph
+            # Parse the file into the laderr_graph
             graph.parse(LADERR_SCHEMA_PATH)
         except (ParserError, ValueError) as e:
             raise ValueError(
@@ -50,14 +51,14 @@ class GraphHandler:
     @staticmethod
     def save_graph(graph: Graph, file_path: str, format: str = "turtle") -> None:
         """
-        Serializes and saves an RDF graph to a file.
+        Serializes and saves an RDF laderr_graph to a file.
 
-        This method takes an RDF graph and serializes it into a specified format before writing it to a file.
+        This method takes an RDF laderr_graph and serializes it into a specified format before writing it to a file.
         The function ensures that the target directory exists before attempting to write the file.
 
-        :param graph: The RDF graph to be serialized and saved.
+        :param graph: The RDF laderr_graph to be serialized and saved.
         :type graph: Graph
-        :param file_path: Path where the serialized RDF graph will be stored.
+        :param file_path: Path where the serialized RDF laderr_graph will be stored.
         :type file_path: str
         :param format: The serialization format (e.g., "turtle", "xml", "nt", "json-ld"). Default is "turtle".
         :type format: str
@@ -68,48 +69,100 @@ class GraphHandler:
             # Ensure the output directory exists
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            # Serialize and save the graph
+            # Serialize and save the laderr_graph
             graph.serialize(destination=file_path, format=format)
-            print(f"Graph saved successfully to '{file_path}' in format '{format}'.")
+            logger.success(f"Graph saved successfully to '{file_path}' in format '{format}'.")
         except ValueError as e:
             raise ValueError(f"Serialization format '{format}' is not supported.") from e
         except OSError as e:
             raise OSError(f"Could not write to file '{file_path}': {e}") from e
 
     @staticmethod
-    def convert_data_to_graph(spec_metadata: dict[str, object], spec_data: dict[str, object]) -> Graph:
+    def _initialize_graph_with_namespaces(spec_metadata: dict[str, object]) -> tuple[Graph, Namespace, Namespace]:
         """
-        Converts the 'data' section of a LaDeRR specification into an RDF graph.
+        Initializes an RDFLib laderr_graph with the appropriate namespaces.
 
-        The function iterates over the specification's data structure, assigning unique URIs to instances while mapping
-        their properties to RDF triples. Additionally, it maintains the `composedOf` relationship between the
-        `LaderrSpecification` entity and its instances.
+        This method creates an RDF laderr_graph and binds the necessary namespaces, ensuring that
+        all RDF entities can be correctly referenced.
 
-        If an instance lacks an explicit `id` property, it is automatically assigned the section's key name.
+        :param spec_metadata: Dictionary containing metadata information, including base URI.
+        :type spec_metadata: dict[str, object]
+        :return: A tuple containing the RDF laderr_graph, data namespace, and specification URI.
+        :rtype: tuple[Graph, Namespace, Namespace]
+        """
+        base_uri = ValidationHandler.validate_base_uri(spec_metadata)
+        data_ns = Namespace(base_uri)
+        graph = Graph()
+        graph.bind("", data_ns)  # Bind default namespace
+        graph.bind("laderr", LADERR_NS)  # Bind LaDeRR namespace
+
+        # Create the central LaderrSpecification instance
+        specification_uri = data_ns.LaderrSpecification
+        graph.add((specification_uri, RDF.type, LADERR_NS.LaderrSpecification))
+
+        return graph, data_ns, specification_uri
+
+    @staticmethod
+    def _process_instance(graph: Graph, data_ns: Namespace, class_type: str, instance_id: str,
+                          properties: dict[str, object]) -> None:
+        """
+        Processes a single instance and adds it to the RDF laderr_graph.
+
+        This method converts an instance's properties into RDF triples, including handling labels,
+        lists, and special mappings (such as 'state' for Dispositions).
+
+        :param graph: The RDF laderr_graph being constructed.
+        :type graph: Graph
+        :param data_ns: The namespace to use for instance URIs.
+        :type data_ns: Namespace
+        :param class_type: The class type of the instance.
+        :type class_type: str
+        :param instance_id: The unique identifier for the instance.
+        :type instance_id: str
+        :param properties: Dictionary of properties for the instance.
+        :type properties: dict[str, object]
+        :raises ValueError: If the properties structure is invalid.
+        """
+        instance_uri = URIRef(f"{data_ns}{instance_id}")
+        graph.add((instance_uri, RDF.type, LADERR_NS[class_type]))
+
+        for prop, value in properties.items():
+            if prop == "id":
+                continue  # Skip `id`, it's already used for the URI
+
+            if prop == "label":
+                graph.add((instance_uri, RDFS.label, Literal(value)))
+            elif prop == "state" and class_type in {"Vulnerability", "Capability"}:
+                # Map state to laderr:Enabled or laderr:Disabled
+                state_uri = LADERR_NS.Enabled if value.lower() == "enabled" else LADERR_NS.Disabled
+                graph.add((instance_uri, LADERR_NS.state, state_uri))
+            else:
+                if isinstance(value, list):
+                    for item in value:
+                        graph.add((instance_uri, LADERR_NS[prop], Literal(item)))
+                else:
+                    graph.add((instance_uri, LADERR_NS[prop], Literal(value)))
+
+    @staticmethod
+    def convert_data_to_graph(spec_metadata: dict[str, object],
+                              spec_data: dict[str, dict[str, dict[str, object]]]) -> Graph:
+        """
+        Converts the 'data' section of a LaDeRR specification into an RDF laderr_graph.
+
+        This method initializes an RDF laderr_graph, iterates through the specification data,
+        and processes each class type and its instances into RDF triples.
 
         :param spec_metadata: Dictionary containing metadata information, including base URI.
         :type spec_metadata: dict[str, object]
         :param spec_data: Nested dictionary representing the data structure of the specification.
                           It maps class types to instances, each containing their properties.
         :type spec_data: dict[str, dict[str, dict[str, object]]]
-        :return: An RDFLib graph containing all data instances and their relationships.
+        :return: An RDFLib laderr_graph containing all data instances and their relationships.
         :rtype: Graph
         :raises ValueError: If the structure of spec_data does not conform to expected nested dictionaries.
         """
-        # Initialize an empty graph
-        graph = Graph()
+        graph, data_ns, specification_uri = GraphHandler._initialize_graph_with_namespaces(spec_metadata)
 
-        # Get the base URI from spec_metadata_dict and bind namespaces
-        base_uri = ValidationHandler.validate_base_uri(spec_metadata)
-        data_ns = Namespace(base_uri)
-        graph.bind("", data_ns)  # Bind the `:` namespace
-        graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
-
-        # Create or identify the single RiskSpecification instance
-        specification_uri = data_ns.LaderrSpecification
-        graph.add((specification_uri, RDF.type, LADERR_NS.LaderrSpecification))
-
-        # Iterate over the sections in the data
         for class_type, instances in spec_data.items():
             if not isinstance(instances, dict):
                 raise ValueError(f"Invalid structure for {class_type}. Expected a dictionary of instances.")
@@ -119,32 +172,13 @@ class GraphHandler:
                     raise ValueError(
                         f"Invalid structure for instance '{key}' in '{class_type}'. Expected a dictionary of properties.")
 
-                # Determine the `id` of the instance (default to section key if not explicitly set)
                 instance_id = properties.get("id", key)
 
-                # Create the RDF node for the instance
-                instance_uri = data_ns[instance_id]
+                # Process the instance
+                GraphHandler._process_instance(graph, data_ns, class_type, instance_id, properties)
 
-                # Add the RDF type based on the section name
-                graph.add((instance_uri, RDF.type, LADERR_NS[class_type]))
-
-                # Add properties to the instance
-                for prop, value in properties.items():
-                    if prop == "id":
-                        continue  # Skip `id`, it's already used for the URI
-
-                    if prop == "label":
-                        # Map 'label' to 'rdfs:label'
-                        graph.add((instance_uri, RDFS.label, Literal(value)))
-                    else:
-                        # Map other properties to laderr namespace
-                        if isinstance(value, list):
-                            for item in value:
-                                graph.add((instance_uri, LADERR_NS[prop], Literal(item)))
-                        else:
-                            graph.add((instance_uri, LADERR_NS[prop], Literal(value)))
-
-                # Add the composedOf relationship
+                # Ensure instance URI is correctly formed
+                instance_uri = URIRef(f"{data_ns}{instance_id}")
                 graph.add((specification_uri, LADERR_NS.composedOf, instance_uri))
 
         return graph
@@ -152,7 +186,7 @@ class GraphHandler:
     @staticmethod
     def convert_metadata_to_graph(metadata: dict[str, object]) -> tuple[Graph, Namespace]:
         """
-        Converts LaDeRR specification metadata into an RDF graph.
+        Converts LaDeRR specification metadata into an RDF laderr_graph.
 
         This method extracts metadata attributes and represents them as RDF triples, ensuring proper data types
         (e.g., `xsd:string`, `xsd:dateTime`). The `baseUri` is used to establish the namespace, and all metadata
@@ -160,7 +194,7 @@ class GraphHandler:
 
         :param metadata: Dictionary containing metadata attributes such as title, version, and authorship.
         :type metadata: dict[str, object]
-        :return: A tuple containing the RDFLib graph representing the specification metadata and the namespace.
+        :return: A tuple containing the RDFLib laderr_graph representing the specification metadata and the namespace.
         :rtype: tuple[Graph, Namespace]
         :raises ValueError: If the provided metadata contains invalid formats or unsupported data types.
         """
@@ -173,7 +207,7 @@ class GraphHandler:
         base_uri = ValidationHandler.validate_base_uri(metadata)
         data_ns = Namespace(base_uri)
 
-        # Create a new graph
+        # Create a new laderr_graph
         graph = Graph()
         graph.bind("", data_ns)  # Bind the `:` namespace
         graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
@@ -198,50 +232,44 @@ class GraphHandler:
         return graph, data_ns
 
     @staticmethod
-    def _create_combined_graph(base_uri: Namespace, metadata_graph: Graph, data_graph: Graph) -> Graph:
-        """
-        Creates a combined RDF graph by merging metadata and data graphs.
+    def create_combined_graph(laderr_graph: Graph) -> Graph:
 
-        This method takes two RDFLib graphs (one containing metadata and the other containing structured data)
-        and merges them, ensuring that all triples are included in the final graph.
-
-        :param base_uri: The base namespace URI used for the LaDeRR RDF model.
-        :type base_uri: Namespace
-        :param metadata_graph: RDF graph containing metadata properties of the LaDeRR specification.
-        :type metadata_graph: Graph
-        :param data_graph: RDF graph containing data instances and their relationships.
-        :type data_graph: Graph
-        :return: A single RDFLib graph containing both metadata and data.
-        :rtype: Graph
-        """
-        # Create a new graph to store the combined information
         combined_graph = Graph()
 
-        # Merge metadata graph
-        combined_graph += metadata_graph
+        schema_graph = GraphHandler.load_laderr_schema()
 
-        # Merge data graph
-        combined_graph += data_graph
-
-        # Validate base URI and bind namespaces
-        combined_graph.bind("", base_uri)  # Bind the `laderr:` namespace
-        combined_graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
+        combined_graph += schema_graph
+        combined_graph += laderr_graph
 
         return combined_graph
 
     @staticmethod
     def create_laderr_graph(laderr_file_path: str) -> Graph:
         """
-        Creates a unified RDF graph for a LaDeRR specification.
+        Creates a unified RDF laderr_graph for a LaDeRR specification.
 
         Reads a specification file, converts metadata and data into RDF graphs, and merges them.
 
         :param laderr_file_path: Path to the LaDeRR specification file.
         :type laderr_file_path: str
-        :return: A single RDFLib graph containing all metadata and data from the specification.
+        :return: A single RDFLib laderr_graph containing all metadata and data from the specification.
         :rtype: Graph
         """
         spec_metadata, spec_data = SpecificationHandler.read_specification(laderr_file_path)
         laderr_metadata_graph, base_uri = GraphHandler.convert_metadata_to_graph(spec_metadata)
         laderr_data_graph = GraphHandler.convert_data_to_graph(spec_metadata, spec_data)
-        return GraphHandler._create_combined_graph(base_uri, laderr_metadata_graph, laderr_data_graph)
+
+        # Create a new laderr_graph to store the combined information
+        laderr_graph = Graph()
+
+        # Merge metadata laderr_graph
+        laderr_graph += laderr_metadata_graph
+
+        # Merge data laderr_graph
+        laderr_graph += laderr_data_graph
+
+        # Validate base URI and bind namespaces
+        laderr_graph.bind("", base_uri)  # Bind the `laderr:` namespace
+        laderr_graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
+
+        return laderr_graph

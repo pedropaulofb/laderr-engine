@@ -50,10 +50,10 @@
 :v1 a laderr:Vulnerability ;
     rdfs:label "Vulnerability 1" ;
     laderr:description "A vulnerability associated with the object." ;
-    laderr:state "enabled" .
+    laderr:state laderr:Enabled .
 
 :v2 a laderr:Vulnerability ;
     rdfs:label "Vulnerability 2" ;
     laderr:description "Another vulnerability associated with the object." ;
-    laderr:state "disabled" .
+    laderr:state laderr:Disabled .
 

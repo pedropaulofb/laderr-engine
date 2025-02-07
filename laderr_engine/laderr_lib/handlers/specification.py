@@ -80,9 +80,9 @@ class SpecificationHandler:
 
         Data instances are categorized by type and structured in a hierarchical format that preserves relationships.
 
-        :param metadata_graph: RDF graph containing metadata properties of the LaDeRR specification.
+        :param metadata_graph: RDF laderr_graph containing metadata properties of the LaDeRR specification.
         :type metadata_graph: Graph
-        :param data_graph: RDF graph containing data instances and their relationships.
+        :param data_graph: RDF laderr_graph containing data instances and their relationships.
         :type data_graph: Graph
         :param output_file: Destination file path for the serialized TOML specification.
         :type output_file: str

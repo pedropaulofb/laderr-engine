@@ -18,18 +18,18 @@ class Laderr:
     @staticmethod
     def load_spec_to_laderr_graph(laderr_file_path: str) -> Graph:
         """
-        Loads a LaDeRR specification file and converts it into a unified RDF graph.
+        Loads a LaDeRR specification file and converts it into a unified RDF laderr_graph.
 
-        This method reads a specification file, processes metadata and data, and returns an RDFLib graph
+        This method reads a specification file, processes metadata and data, and returns an RDFLib laderr_graph
         containing all structured information.
 
         :param laderr_file_path: Path to the LaDeRR specification file.
         :type laderr_file_path: str
-        :return: A single RDF graph containing the parsed specification.
+        :return: A single RDF laderr_graph containing the parsed specification.
         :rtype: Graph
         """
         laderr_graph = GraphHandler.create_laderr_graph(laderr_file_path)
-        VERBOSE and logger.success(f"LaDeRR graph successfully created for: {laderr_file_path}")
+        VERBOSE and logger.success(f"LaDeRR laderr_graph successfully created for: {laderr_file_path}")
         return laderr_graph
 
     @classmethod
@@ -38,13 +38,13 @@ class Laderr:
 
     @classmethod
     def validate_laderr_graph(cls, laderr_graph: Graph):
-        return ValidationHandler.validate_graph(laderr_graph)
+        return ValidationHandler.validate_laderr_graph(laderr_graph)
 
     @classmethod
     def save_laderr_graph(cls, graph: Graph, output_path: str)->None:
         GraphHandler.save_graph(graph, output_path)
-        VERBOSE and logger.success(f"LaDeRR graph successfully saved in: {output_path}")
+        VERBOSE and logger.success(f"LaDeRR laderr_graph successfully saved in: {output_path}")
 
     # @classmethod
-    # def save_laderr_graph_to_spec(cls, graph: Graph, output_path: str):
-    #     return GraphHandler.save_graph(graph, output_path)
+    # def save_laderr_graph_to_spec(cls, laderr_graph: Graph, output_path: str):
+    #     return GraphHandler.save_graph(laderr_graph, output_path)
