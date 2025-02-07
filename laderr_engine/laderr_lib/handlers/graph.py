@@ -141,21 +141,20 @@ class GraphHandler:
                 graph.add((instance_uri, LADERR_NS.state, state_uri))
                 has_state = True  # Mark that a state was explicitly provided
 
-            elif prop in {"capabilities", "vulnerabilities", "resiliences", "exposes", "exploits", "disables",
-                          "composedOf"}:  # Ensure these are stored as URIs
-                if isinstance(value, list):
-                    for item in value:
-                        graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{item}")))  # Store as URIRef
-                else:
-                    graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{value}")))  # Store as URIRef
-
-            else:
+            elif prop in {"label", "description"}:  # Ensure these are stored as URIs
                 # Default case: Store values as Literals unless explicitly listed above
                 if isinstance(value, list):
                     for item in value:
                         graph.add((instance_uri, LADERR_NS[prop], Literal(item)))
                 else:
                     graph.add((instance_uri, LADERR_NS[prop], Literal(value)))
+
+            else:
+                if isinstance(value, list):
+                    for item in value:
+                        graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{item}")))  # Store as URIRef
+                else:
+                    graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{value}")))  # Store as URIRef
 
         # Ensure state is always added as a URI
         if class_type in {"Disposition", "Capability", "Vulnerability"} and not has_state:
