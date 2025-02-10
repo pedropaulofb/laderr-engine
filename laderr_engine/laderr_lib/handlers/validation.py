@@ -8,7 +8,6 @@ as well as SHACL validation of RDF graphs.
 import os
 from urllib.parse import urlparse
 
-from icecream import ic
 from loguru import logger
 from pyshacl import validate
 from rdflib import Namespace, Graph

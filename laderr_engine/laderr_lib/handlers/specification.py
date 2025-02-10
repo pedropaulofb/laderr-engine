@@ -6,7 +6,7 @@ TOML-based specifications.
 import tomllib
 
 from loguru import logger
-from rdflib import Graph, Namespace, RDF, RDFS, Literal, XSD
+from rdflib import Graph, RDF, Literal
 
 
 class SpecificationHandler:

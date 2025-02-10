@@ -6,4 +6,5 @@ if __name__ == "__main__":
 
     laderr_graph = Laderr.load_spec_to_laderr_graph(laderr_file)
     Laderr.validate_laderr_graph(laderr_graph)
-    Laderr.save_laderr_graph(laderr_graph, "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_graph.ttl")
+    Laderr.save_laderr_graph(laderr_graph,
+                             "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_graph.ttl")

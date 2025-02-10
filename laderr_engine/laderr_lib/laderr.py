@@ -6,6 +6,7 @@ from laderr_engine.laderr_lib.handlers.validation import ValidationHandler
 
 VERBOSE = True
 
+
 class Laderr:
     """
     A utility class for providing methods to operate on RDF data and SHACL validation.
@@ -32,19 +33,16 @@ class Laderr:
         VERBOSE and logger.success(f"LaDeRR laderr_graph successfully created for: {laderr_file_path}")
         return laderr_graph
 
-    @classmethod
-    def validate_spec(cls, laderr_file_path: str):
-        return ValidationHandler.validate_specification(laderr_file_path)
-
-    @classmethod
-    def validate_laderr_graph(cls, laderr_graph: Graph):
+    @staticmethod
+    def validate_laderr_graph(laderr_graph: Graph) -> tuple[bool, str, Graph]:
         return ValidationHandler.validate_laderr_graph(laderr_graph)
 
-    @classmethod
-    def save_laderr_graph(cls, graph: Graph, output_path: str)->None:
+    @staticmethod
+    def validate_laderr_spec(laderr_file_path: str) -> tuple[bool, str, Graph]:
+        laderr_graph = GraphHandler.create_laderr_graph(laderr_file_path)
+        return ValidationHandler.validate_laderr_graph(laderr_graph)
+
+    @staticmethod
+    def save_laderr_graph(graph: Graph, output_path: str) -> None:
         GraphHandler.save_graph(graph, output_path)
         VERBOSE and logger.success(f"LaDeRR laderr_graph successfully saved in: {output_path}")
-
-    # @classmethod
-    # def save_laderr_graph_to_spec(cls, laderr_graph: Graph, output_path: str):
-    #     return GraphHandler.save_graph(laderr_graph, output_path)
