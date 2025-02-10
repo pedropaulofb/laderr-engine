@@ -1,0 +1,81 @@
+baseUri = "https://complex.example.com/laderr#"
+createdBy = ["Alice", "Bob", "Charlie"]
+createdOn = "2025-01-17T12:00:01Z"
+description = "A more complex specification for testing LaDeRR."
+modifiedOn = "2025-01-18T12:00:02Z"
+title = "Complex LaDeRR Specification"
+version = "2.0"
+
+[Object.obj1]
+label = "Main Object"
+description = "The primary object involved in the risk."
+capabilities = ["c1", "c2", "c3", "d1"]
+vulnerabilities = ["v1", "v2", "d1"]
+
+[Object.obj2]
+label = "Supporting Object"
+description = "An object that supports the main object."
+capabilities = ["c4"]
+vulnerabilities = ["v4"]
+
+[Object.obj3]
+label = "Dependent Object"
+description = "An object that depends on obj1 and obj2."
+capabilities = ["c5"]
+vulnerabilities = ["v3", "v5"]
+
+[Capability.c1]
+label = "Data Processing Capability"
+description = "Processes large volumes of data."
+
+[Capability.c2]
+label = "Communication Capability"
+description = "Enables secure communication."
+
+[Capability.c3]
+label = "Backup Capability"
+description = "Provides data backup functionality."
+
+[Capability.c4]
+label = "Monitoring Capability"
+description = "Monitors the system's status and health."
+
+[Capability.c5]
+label = "Analysis Capability"
+description = "Analyzes collected data."
+
+[Capability.d1]
+[Vulnerability.d1]
+label = "Shared Capability and Vulnerability"
+description = "This object serves as both a capability and a vulnerability."
+exposes = ["c2", "c4"]
+
+[Vulnerability.v1]
+label = "Data Breach Vulnerability"
+state = "enabled"
+description = "A vulnerability that exposes data to unauthorized access."
+exposes = "c1"
+
+[Vulnerability.v2]
+label = "Communication Interception Vulnerability"
+state = "enabled"
+description = "A vulnerability in secure communication channels."
+exposes = "c2"
+
+[Vulnerability.v3]
+label = "Backup Failure Vulnerability"
+state = "enabled"
+description = "A vulnerability that leads to backup failures."
+exposes = "c3"
+
+[Vulnerability.v4]
+label = "Monitoring Exploit Vulnerability"
+state = "disabled"
+description = "A vulnerability in the monitoring system."
+exposes = "c4"
+
+[Vulnerability.v5]
+label = "Analysis Exploit Vulnerability"
+state = "enabled"
+description = "A vulnerability in data analysis functionality."
+exposes = "c5"

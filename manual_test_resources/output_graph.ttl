@@ -1,60 +1,117 @@
-@prefix : <https://example123.com/laderr#> .
+@prefix : <https://complex.example.com/laderr#> .
 @prefix laderr: <https://w3id.org/pedropaulofb/laderr#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :LaderrSpecification a laderr:LaderrSpecification ;
-    laderr:baseUri "https://example123.com/laderr#"^^xsd:anyURI ;
-    laderr:composedOf :b1,
-        :c1,
+    laderr:baseUri "https://complex.example.com/laderr#"^^xsd:anyURI ;
+    laderr:composedOf :c1,
         :c2,
+        :c3,
+        :c4,
+        :c5,
         :d1,
+        :obj1,
+        :obj2,
+        :obj3,
         :v1,
-        :v2 ;
+        :v2,
+        :v3,
+        :v4,
+        :v5 ;
     laderr:createdBy "Alice"^^xsd:string,
-        "Bob"^^xsd:string ;
+        "Bob"^^xsd:string,
+        "Charlie"^^xsd:string ;
     laderr:createdOn "2025-01-17T12:00:01+00:00"^^xsd:dateTime ;
-    laderr:description "This is an example specification for LaDeRR."^^xsd:string ;
+    laderr:description "A more complex specification for testing LaDeRR."^^xsd:string ;
     laderr:modifiedOn "2025-01-18T12:00:02+00:00"^^xsd:dateTime ;
-    laderr:title "Example LaDeRR Specification"^^xsd:string ;
-    laderr:version "1.0"^^xsd:string .
+    laderr:title "Complex LaDeRR Specification"^^xsd:string ;
+    laderr:version "2.0"^^xsd:string .
 
-:b1 a laderr:Object ;
-    rdfs:label "Test Object" ;
+:obj1 a laderr:Object ;
+    rdfs:label "Main Object" ;
     laderr:capabilities :c1,
         :c2,
+        :c3,
         :d1 ;
-    laderr:description "An object involved in the risk." ;
+    laderr:description "The primary object involved in the risk." ;
     laderr:vulnerabilities :d1,
         :v1,
         :v2 .
 
+:obj2 a laderr:Object ;
+    rdfs:label "Supporting Object" ;
+    laderr:capabilities :c4 ;
+    laderr:description "An object that supports the main object." ;
+    laderr:vulnerabilities :v4 .
+
+:obj3 a laderr:Object ;
+    rdfs:label "Dependent Object" ;
+    laderr:capabilities :c5 ;
+    laderr:description "An object that depends on obj1 and obj2." ;
+    laderr:vulnerabilities :v3,
+        :v5 .
+
 :v1 a laderr:Vulnerability ;
-    rdfs:label "Vulnerability 1" ;
-    laderr:description "A vulnerability associated with the object." ;
-    laderr:exposes :c2 ;
+    rdfs:label "Data Breach Vulnerability" ;
+    laderr:description "A vulnerability that exposes data to unauthorized access." ;
+    laderr:exposes :c1 ;
     laderr:state laderr:enabled .
 
 :v2 a laderr:Vulnerability ;
-    rdfs:label "Vulnerability 2" ;
-    laderr:description "Another vulnerability associated with the object." ;
+    rdfs:label "Communication Interception Vulnerability" ;
+    laderr:description "A vulnerability in secure communication channels." ;
     laderr:exposes :c2 ;
+    laderr:state laderr:enabled .
+
+:v3 a laderr:Vulnerability ;
+    rdfs:label "Backup Failure Vulnerability" ;
+    laderr:description "A vulnerability that leads to backup failures." ;
+    laderr:exposes :c3 ;
+    laderr:state laderr:enabled .
+
+:v4 a laderr:Vulnerability ;
+    rdfs:label "Monitoring Exploit Vulnerability" ;
+    laderr:description "A vulnerability in the monitoring system." ;
+    laderr:exposes :c4 ;
     laderr:state laderr:disabled .
 
+:v5 a laderr:Vulnerability ;
+    rdfs:label "Analysis Exploit Vulnerability" ;
+    laderr:description "A vulnerability in data analysis functionality." ;
+    laderr:exposes :c5 ;
+    laderr:state laderr:enabled .
+
 :c1 a laderr:Capability ;
-    rdfs:label "Capability 1" ;
-    laderr:description "A capability of the object." ;
+    rdfs:label "Data Processing Capability" ;
+    laderr:description "Processes large volumes of data." ;
+    laderr:state laderr:enabled .
+
+:c3 a laderr:Capability ;
+    rdfs:label "Backup Capability" ;
+    laderr:description "Provides data backup functionality." ;
+    laderr:state laderr:enabled .
+
+:c5 a laderr:Capability ;
+    rdfs:label "Analysis Capability" ;
+    laderr:description "Analyzes collected data." ;
     laderr:state laderr:enabled .
 
 :d1 a laderr:Capability,
         laderr:Vulnerability ;
     rdfs:label "Shared Capability and Vulnerability" ;
     laderr:description "This object serves as both a capability and a vulnerability." ;
-    laderr:exposes :c1 ;
+    laderr:exposes :c2,
+        :c4 ;
     laderr:state laderr:enabled .
 
 :c2 a laderr:Capability ;
-    rdfs:label "Capability 2" ;
-    laderr:description "Another capability of the object." ;
+    rdfs:label "Communication Capability" ;
+    laderr:description "Enables secure communication." ;
+    laderr:state laderr:enabled .
+
+:c4 a laderr:Capability ;
+    rdfs:label "Monitoring Capability" ;
+    laderr:description "Monitors the system's status and health." ;
     laderr:state laderr:enabled .
 
