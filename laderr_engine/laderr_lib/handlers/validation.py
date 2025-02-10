@@ -8,6 +8,7 @@ as well as SHACL validation of RDF graphs.
 import os
 from urllib.parse import urlparse
 
+from icecream import ic
 from loguru import logger
 from pyshacl import validate
 from rdflib import Namespace, Graph
@@ -122,6 +123,8 @@ class ValidationHandler:
         combined_graph = GraphHandler.create_combined_graph(laderr_graph)
 
         shacl_graph = ValidationHandler.load_shacl_schemas(SHACL_FILES_PATH)
+
+        ic(len(laderr_graph), len(combined_graph), len(shacl_graph))
 
         conforms, report_graph, report_text = validate(data_graph=combined_graph, shacl_graph=shacl_graph,
                                                        inference="both", allow_infos=True, allow_warnings=True)

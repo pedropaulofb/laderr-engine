@@ -8,7 +8,7 @@ class VisualizationHandler:
     """
 
     @staticmethod
-    def visualize_graph(laderr_graph: Graph, output_file_path: str) -> None:
+    def create_graph_visualization(laderr_graph: Graph, output_file_path: str) -> None:
         """
         Generates a Graphviz visualization of the RDF graph and saves it as a PNG.
 

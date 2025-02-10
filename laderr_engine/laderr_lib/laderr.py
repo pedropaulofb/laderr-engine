@@ -4,6 +4,7 @@ from rdflib import Graph
 from laderr_engine.laderr_lib.handlers.graph import GraphHandler
 from laderr_engine.laderr_lib.handlers.specification import SpecificationHandler
 from laderr_engine.laderr_lib.handlers.validation import ValidationHandler
+from laderr_engine.laderr_lib.handlers.visualization import VisualizationHandler
 
 VERBOSE = True
 
@@ -31,6 +32,7 @@ class Laderr:
         :rtype: Graph
         """
         laderr_graph = GraphHandler.create_laderr_graph(laderr_file_path)
+        ValidationHandler.validate_laderr_graph(laderr_graph)
         VERBOSE and logger.success(f"LaDeRR laderr_graph successfully created for: {laderr_file_path}")
         return laderr_graph
 
@@ -51,3 +53,8 @@ class Laderr:
     @staticmethod
     def save_laderr_spec_from_graph(laderr_graph: Graph, output_file_path: str) -> None:
         SpecificationHandler.write_specification(laderr_graph, output_file_path)
+
+    @staticmethod
+    def create_visualization_laderr_spec(laderr_file_path: str, output_file_path: str) -> None:
+        laderr_graph = GraphHandler.create_laderr_graph(laderr_file_path)
+        VisualizationHandler.create_graph_visualization(laderr_graph, output_file_path)

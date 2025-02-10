@@ -6,9 +6,58 @@ modifiedOn = "2025-01-18T12:00:02Z"
 title = "Complex LaDeRR Specification"
 version = "2.0"
 
-[Capability.c4]
-description = "Monitors the system's status and health."
-label = "Monitoring Capability"
+[Object.obj1]
+capabilities = ["c1", "c2", "c3", "d1"]
+description = "The primary object involved in the risk."
+label = "Main Object"
+vulnerabilities = ["d1", "v1", "v2"]
+
+[Object.obj3]
+capabilities = "c5"
+description = "An object that depends on obj1 and obj2."
+label = "Dependent Object"
+vulnerabilities = ["v3", "v5"]
+
+[Object.obj2]
+capabilities = "c4"
+description = "An object that supports the main object."
+label = "Supporting Object"
+vulnerabilities = "v4"
+
+[Vulnerability.d1]
+description = "This object serves as both a capability and a vulnerability."
+exposes = ["c2", "c4"]
+label = "Shared Capability and Vulnerability"
+state = "enabled"
+
+[Vulnerability.v2]
+description = "A vulnerability in secure communication channels."
+exposes = "c2"
+label = "Communication Interception Vulnerability"
+state = "enabled"
+
+[Vulnerability.v4]
+description = "A vulnerability in the monitoring system."
+exposes = "c4"
+label = "Monitoring Exploit Vulnerability"
+state = "disabled"
+
+[Vulnerability.v1]
+description = "A vulnerability that exposes data to unauthorized access."
+exposes = "c1"
+label = "Data Breach Vulnerability"
+state = "enabled"
+
+[Vulnerability.v3]
+description = "A vulnerability that leads to backup failures."
+exposes = "c3"
+label = "Backup Failure Vulnerability"
+state = "enabled"
+
+[Vulnerability.v5]
+description = "A vulnerability in data analysis functionality."
+exposes = "c5"
+label = "Analysis Exploit Vulnerability"
 state = "enabled"
 
 [Capability.c3]
@@ -21,6 +70,11 @@ description = "Enables secure communication."
 label = "Communication Capability"
 state = "enabled"
 
+[Capability.c4]
+description = "Monitors the system's status and health."
+label = "Monitoring Capability"
+state = "enabled"
+
 [Capability.c5]
 description = "Analyzes collected data."
 label = "Analysis Capability"
@@ -30,57 +84,3 @@ state = "enabled"
 description = "Processes large volumes of data."
 label = "Data Processing Capability"
 state = "enabled"
-
-[Vulnerability.d1]
-description = "This object serves as both a capability and a vulnerability."
-exposes = ["c2", "c4"]
-label = "Shared Capability and Vulnerability"
-state = "enabled"
-
-[Vulnerability.v4]
-description = "A vulnerability in the monitoring system."
-exposes = "c4"
-label = "Monitoring Exploit Vulnerability"
-state = "disabled"
-
-[Vulnerability.v3]
-description = "A vulnerability that leads to backup failures."
-exposes = "c3"
-label = "Backup Failure Vulnerability"
-state = "enabled"
-
-[Vulnerability.v1]
-description = "A vulnerability that exposes data to unauthorized access."
-exposes = "c1"
-label = "Data Breach Vulnerability"
-state = "enabled"
-
-[Vulnerability.v2]
-description = "A vulnerability in secure communication channels."
-exposes = "c2"
-label = "Communication Interception Vulnerability"
-state = "enabled"
-
-[Vulnerability.v5]
-description = "A vulnerability in data analysis functionality."
-exposes = "c5"
-label = "Analysis Exploit Vulnerability"
-state = "enabled"
-
-[Object.obj3]
-capabilities = "c5"
-description = "An object that depends on obj1 and obj2."
-label = "Dependent Object"
-vulnerabilities = ["v3", "v5"]
-
-[Object.obj1]
-capabilities = ["c1", "c2", "c3", "d1"]
-description = "The primary object involved in the risk."
-label = "Main Object"
-vulnerabilities = ["d1", "v1", "v2"]
-
-[Object.obj2]
-capabilities = "c4"
-description = "An object that supports the main object."
-label = "Supporting Object"
-vulnerabilities = "v4"
