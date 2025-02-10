@@ -6,34 +6,34 @@ modifiedOn = 2025-01-18T12:00:02Z
 title = "Example LaDeRR Specification"
 version = "1.0"
 
-[Object.b1]
-label = "Test Object"
-description = "An object involved in the risk."
+[Entity.b1]
+label = "Test Entity"
+description = "An entity involved in the risk."
 capabilities = ["c1", "c2", "d1"]  # List of capability IDs
 vulnerabilities = ["v1", "v2", "d1"]  # List of disposition IDs
 
 [Capability.c1]
 label = "Capability 1"
-description = "A capability of the object."
+description = "A capability of the entity."
 
 [Capability.c2]
 label = "Capability 2"
-description = "Another capability of the object."
+description = "Another capability of the entity."
 
 [Vulnerability.v1]
 label = "Vulnerability 1"
 state = "enabled"
-description = "A vulnerability associated with the object."
+description = "A vulnerability associated with the entity."
 exposes = "c2"
 
 [Vulnerability.v2]
 label = "Vulnerability 2"
 state = "disabled"
-description = "Another vulnerability associated with the object."
+description = "Another vulnerability associated with the entity."
 exposes = "c2"
 
 [Capability.d1]
 [Vulnerability.d1]
 label = "Shared Capability and Vulnerability"
-description = "This object serves as both a capability and a vulnerability."
+description = "This entity serves as both a capability and a vulnerability."
 exposes = "c1"

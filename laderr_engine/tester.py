@@ -3,7 +3,7 @@ from laderr_engine.laderr_lib.services.visualization import GraphCreator
 
 if __name__ == "__main__":
     # Load spec_metadata_dict and data from the specification
-    laderr_file = "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\input_spec3.toml"
+    laderr_file = "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\example.toml"
 
     # laderr_graph = Laderr.load_spec_to_laderr_graph(laderr_file)
     # Laderr.validate_laderr_graph(laderr_graph)

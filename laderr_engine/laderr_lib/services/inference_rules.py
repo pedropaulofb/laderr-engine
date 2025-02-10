@@ -19,7 +19,7 @@ class InferenceRules:
     def execute_rule_protects(laderr_graph: Graph):
         """
         Applies the 'protects' inference rule: 
-        If an object with a capability disables a vulnerability of another object, it protects it.
+        If an entity with a capability disables a vulnerability of another entity, it protects it.
         """
         new_triples = set()
 
@@ -36,7 +36,7 @@ class InferenceRules:
     def execute_rule_inhibits(laderr_graph: Graph):
         """
         Applies the 'inhibits' inference rule: 
-        If a capability disables another capability, it inhibits the object possessing the latter capability.
+        If a capability disables another capability, it inhibits the entity possessing the latter capability.
         """
         new_triples = set()
 
@@ -53,7 +53,7 @@ class InferenceRules:
     def execute_rule_threatens(laderr_graph: Graph):
         """
         Applies the 'threatens' inference rule: 
-        If a capability exploits a vulnerability of another object, it threatens it.
+        If a capability exploits a vulnerability of another entity, it threatens it.
         """
         new_triples = set()
 

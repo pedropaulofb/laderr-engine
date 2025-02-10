@@ -1,70 +1,94 @@
-@prefix : <https://complex.example.com/laderr#> .
+@prefix : <https://socio-ecological.example.com/laderr#> .
 @prefix laderr: <https://w3id.org/pedropaulofb/laderr#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :LaderrSpecification a laderr:LaderrSpecification ;
-    laderr:baseUri "https://complex.example.com/laderr#"^^xsd:anyURI ;
-    laderr:composedOf :c1,
-        :c2,
-        :c3,
-        :o1,
-        :o2,
-        :o3,
-        :v1 ;
-    laderr:createdBy "Alice"^^xsd:string,
-        "Bob"^^xsd:string,
-        "Charlie"^^xsd:string ;
-    laderr:createdOn "2025-01-17T12:00:01+00:00"^^xsd:dateTime ;
-    laderr:description "A complex specification for testing all LaDeRR rules with SHACL compliance."^^xsd:string ;
-    laderr:modifiedOn "2025-01-18T12:00:02+00:00"^^xsd:dateTime ;
-    laderr:title "Complex LaDeRR Specification"^^xsd:string ;
-    laderr:version "2.0"^^xsd:string .
+    laderr:baseUri "https://socio-ecological.example.com/laderr#"^^xsd:anyURI ;
+    laderr:composedOf :flooding_potential,
+        :greenridge_dam,
+        :housing,
+        :levee_reinforcement,
+        :outdated_pumps,
+        :reinforcement_team,
+        :riverford,
+        :silverstream,
+        :water_control,
+        :weak_levees ;
+    laderr:createdBy "Pedro Paulo F. Barcelos"^^xsd:string ;
+    laderr:createdOn "2025-02-10T14:30:00+00:00"^^xsd:dateTime ;
+    laderr:description "A socio-ecological system model for flood risk and resilience."^^xsd:string ;
+    laderr:title "Flood Risk and Resilience Model"^^xsd:string ;
+    laderr:version "1.1"^^xsd:string .
 
-:o2 a laderr:Object ;
-    rdfs:label "Secondary Object" ;
-    laderr:capabilities :c2 ;
-    laderr:inhibits :o1 ;
-    laderr:protects :o1 .
+:greenridge_dam a laderr:Entity ;
+    rdfs:label "Greenridge Dam" ;
+    laderr:capabilities :water_control ;
+    laderr:protects :riverford .
 
-:o3 a laderr:Object ;
-    rdfs:label "Tertiary Object" ;
-    laderr:capabilities :c3 ;
-    laderr:threatens :o1 .
+:reinforcement_team a laderr:Entity ;
+    rdfs:label "Levee Reinforcement Team" ;
+    laderr:capabilities :levee_reinforcement ;
+    laderr:protects :riverford .
 
-:RAD a laderr:Resilience ;
-    laderr:preserves :c1 ;
-    laderr:preservesAgainst :c3 ;
-    laderr:preservesDespite :v1 .
+:silverstream a laderr:Entity ;
+    rdfs:label "Silverstream River" ;
+    laderr:capabilities :flooding_potential ;
+    laderr:threatens :riverford .
 
-:c2 a laderr:Capability ;
-    rdfs:label "Capability 2" ;
-    laderr:description "Disables vulnerabilities." ;
-    laderr:disables :c1,
-        :v1 ;
+:RI4 a laderr:Resilience ;
+    laderr:preserves :housing ;
+    laderr:preservesAgainst :flooding_potential ;
+    laderr:preservesDespite :weak_levees .
+
+:RLM a laderr:Resilience ;
+    laderr:preserves :housing ;
+    laderr:preservesAgainst :flooding_potential ;
+    laderr:preservesDespite :weak_levees .
+
+:levee_reinforcement a laderr:Capability ;
+    rdfs:label "Levee Reinforcement" ;
+    laderr:description "A capability that strengthens Riverford’s levees to prevent flood risks." ;
+    laderr:disables :weak_levees ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RAD .
+    laderr:sustains :RLM .
 
-:c3 a laderr:Capability ;
-    rdfs:label "Capability 3" ;
-    laderr:description "Exploits vulnerabilities." ;
-    laderr:exploits :v1 ;
+:water_control a laderr:Capability ;
+    rdfs:label "Water Flow Control" ;
+    laderr:description "Regulates water levels, mitigating flood risks." ;
+    laderr:disables :outdated_pumps,
+        :weak_levees ;
+    laderr:state laderr:enabled ;
+    laderr:sustains :RI4 .
+
+:outdated_pumps a laderr:Vulnerability ;
+    rdfs:label "Outdated Pumps" ;
+    laderr:description "A vulnerability where outdated pumps cannot efficiently handle floodwaters." ;
+    laderr:exposes :housing ;
     laderr:state laderr:enabled .
 
-:o1 a laderr:Object ;
-    rdfs:label "Primary Object" ;
-    laderr:capabilities :c1 ;
-    laderr:resiliences :RAD ;
-    laderr:vulnerabilities :v1 .
-
-:c1 a laderr:Capability ;
-    rdfs:label "Capability 1" ;
-    laderr:description "Provides core functionality." ;
+:flooding_potential a laderr:Capability ;
+    rdfs:label "Flooding Potential" ;
+    laderr:description "The river's potential to overflow and flood surrounding areas." ;
+    laderr:exploits :weak_levees ;
     laderr:state laderr:enabled .
 
-:v1 a laderr:Vulnerability ;
-    rdfs:label "Vulnerability 1" ;
-    laderr:description "A vulnerability exploitable by c3 and mitigated by c2." ;
-    laderr:exposes :c1 ;
+:riverford a laderr:Entity ;
+    rdfs:label "City of Riverford" ;
+    laderr:capabilities :housing ;
+    laderr:resiliences :RI4,
+        :RLM ;
+    laderr:vulnerabilities :outdated_pumps,
+        :weak_levees .
+
+:housing a laderr:Capability ;
+    rdfs:label "Housing Infrastructure" ;
+    laderr:description "The housing infrastructure of Riverford, which needs flood protection." ;
+    laderr:state laderr:enabled .
+
+:weak_levees a laderr:Vulnerability ;
+    rdfs:label "Weak Levees" ;
+    laderr:description "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential." ;
+    laderr:exposes :housing ;
     laderr:state laderr:enabled .
 

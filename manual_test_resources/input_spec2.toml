@@ -6,21 +6,21 @@ modifiedOn = "2025-01-18T12:00:02Z"
 title = "Complex LaDeRR Specification"
 version = "2.0"
 
-[Object.obj1]
-label = "Main Object"
-description = "The primary object involved in the risk."
+[Entity.obj1]
+label = "Main Entity"
+description = "The primary entity involved in the risk."
 capabilities = ["c1", "c2", "c3", "d1"]
 vulnerabilities = ["v1", "v2", "d1"]
 
-[Object.obj2]
-label = "Supporting Object"
-description = "An object that supports the main object."
+[Entity.obj2]
+label = "Supporting Entity"
+description = "An entity that supports the main entity."
 capabilities = ["c4"]
 vulnerabilities = ["v4"]
 
-[Object.obj3]
-label = "Dependent Object"
-description = "An object that depends on obj1 and obj2."
+[Entity.obj3]
+label = "Dependent Entity"
+description = "An entity that depends on obj1 and obj2."
 capabilities = ["c5"]
 vulnerabilities = ["v3", "v5"]
 
@@ -47,7 +47,7 @@ description = "Analyzes collected data."
 [Capability.d1]
 [Vulnerability.d1]
 label = "Shared Capability and Vulnerability"
-description = "This object serves as both a capability and a vulnerability."
+description = "This entity serves as both a capability and a vulnerability."
 exposes = ["c2", "c4"]
 
 [Vulnerability.v1]

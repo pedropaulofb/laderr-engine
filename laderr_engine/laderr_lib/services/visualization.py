@@ -26,22 +26,22 @@ class GraphCreator:
 
         # Create Graphviz Digraph
         dot = graphviz.Digraph(format='png')  # Use PNG format
-        dot.attr(dpi='300', fontname="Arial")
+        dot.attr(dpi='300', fontname="Arial", nodesep="0.5", ranksep="0.75")
 
-        # Define node styles
+        # Define node styles with fixed sizes
         node_styles = {
-            "Object": {"shape": "square", "color": "blue", "style": "filled"},
-            "Capability": {"shape": "circle", "color": "green", "style": "filled"},
-            "Vulnerability": {"shape": "circle", "color": "red", "style": "filled"},
-            "Resilience": {"shape": "doublecircle", "color": "orange", "style": "filled"},
-            "Mixed": {"shape": "circle", "color": "yellow", "style": "filled"},  # Both Capability and Vulnerability
+            "Entity": {"shape": "square", "color": "lightblue", "style": "filled", "width": "1.2", "height": "1.2"},
+            "Capability": {"shape": "circle", "color": "green", "style": "filled", "width": "1.2", "height": "1.2"},
+            "Vulnerability": {"shape": "circle", "color": "red", "style": "filled", "width": "1.2", "height": "1.2"},
+            "Resilience": {"shape": "doublecircle", "color": "orange", "style": "filled", "width": "1.2", "height": "1.2"},
+            "Mixed": {"shape": "circle", "color": "yellow", "style": "filled", "width": "1.2", "height": "1.2"},
         }
 
         # Define edge styles
         edge_styles = {
-            "protects": "red",
-            "inhibits": "red",
-            "threatens": "red",
+            "protects": "blue",
+            "inhibits": "blue",
+            "threatens": "blue",
             "preserves": "orange",
             "preservesAgainst": "orange",
             "preservesDespite": "orange",
@@ -53,23 +53,8 @@ class GraphCreator:
 
         # Process nodes
         for subject in laderr_graph.subjects(predicate=RDF.type):
-            instance_types = [
-                str(obj).split("#")[-1]
-                for obj in laderr_graph.objects(subject=subject, predicate=RDF.type)
-            ]
+            instance_types = [str(obj).split("#")[-1] for obj in laderr_graph.objects(subject=subject, predicate=RDF.type)]
             instance_id = str(subject).split("#")[-1]
-
-            if "Resilience" in instance_types:
-                style = node_styles["Resilience"]
-                dot.node(
-                    instance_id,
-                    instance_id,
-                    shape=style["shape"],
-                    color=style["color"],
-                    style=style["style"],
-                    fixedsize="true",  # Fix the size of the node
-                    width="0.5"  # Adjust the width as needed (smaller value for smaller node)
-                )
 
             # Determine the style for the node
             if "Resilience" in instance_types:
@@ -80,19 +65,22 @@ class GraphCreator:
                 style = node_styles["Capability"]
             elif "Vulnerability" in instance_types:
                 style = node_styles["Vulnerability"]
-            elif "Object" in instance_types:
-                style = node_styles["Object"]
+            elif "Entity" in instance_types:
+                style = node_styles["Entity"]
             else:
-                style = {"shape": "ellipse", "color": "black", "style": "filled"}  # Default style
+                style = {"shape": "ellipse", "color": "black", "style": "filled", "width": "1.2", "height": "1.2"}  # Default style
 
             # Skip RiskEntity and RiskSpecification
-
             if "LaderrSpecification" in instance_types:
                 continue
 
-            # Add node
+            # Add node with fixed size
             if instance_id not in added_nodes:
-                dot.node(instance_id, instance_id, shape=style["shape"], color=style["color"], style=style["style"])
+                dot.node(
+                    instance_id, instance_id,
+                    shape=style["shape"], color=style["color"], style=style["style"],
+                    fixedsize="true", width=style["width"], height=style["height"]
+                )
                 added_nodes.add(instance_id)
 
         # Process relationships (edges)
@@ -104,8 +92,7 @@ class GraphCreator:
             # Ensure valid node IDs and avoid self-loops
             if subject_id in added_nodes and obj_id in added_nodes and subject_id != obj_id:
                 edge_color = edge_styles.get(predicate_label, "black")
-                dot.edge(subject_id, obj_id, label=predicate_label, fontsize="8", color=edge_color,
-                         fontcolor=edge_color)
+                dot.edge(subject_id, obj_id, label=predicate_label, fontsize="10", color=edge_color, fontcolor=edge_color)
 
         # Save output
         dot.render(output_file_path[:-4], cleanup=True)  # Remove '.png' for Graphviz

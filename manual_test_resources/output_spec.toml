@@ -1,53 +1,74 @@
-baseUri = "https://complex.example.com/laderr#"
-createdBy = ["Alice", "Bob", "Charlie"]
-createdOn = "2025-01-17T12:00:01Z"
-description = "A complex specification for testing all LaDeRR rules with SHACL compliance."
-modifiedOn = "2025-01-18T12:00:02Z"
-title = "Complex LaDeRR Specification"
-version = "2.0"
+baseUri = "https://socio-ecological.example.com/laderr#"
+createdBy = "Pedro Paulo F. Barcelos"
+createdOn = "2025-02-10T14:30:00Z"
+description = "A socio-ecological system model for flood risk and resilience."
+title = "Flood Risk and Resilience Model"
+version = "1.1"
 
-[Object.o3]
-capabilities = "c3"
-label = "Tertiary Object"
-threatens = "o1"
+[Capability.water_control]
+description = "Regulates water levels, mitigating flood risks."
+disables = ["outdated_pumps", "weak_levees"]
+label = "Water Flow Control"
+state = "enabled"
+sustains = "RI4"
 
-[Object.o2]
-capabilities = "c2"
-inhibits = "o1"
-label = "Secondary Object"
-protects = "o1"
+[Capability.levee_reinforcement]
+description = "A capability that strengthens Riverford’s levees to prevent flood risks."
+disables = "weak_levees"
+label = "Levee Reinforcement"
+state = "enabled"
+sustains = "RLM"
 
-[Object.o1]
-capabilities = "c1"
-label = "Primary Object"
-resiliences = "RAD"
-vulnerabilities = "v1"
-
-[Capability.c3]
-description = "Exploits vulnerabilities."
-exploits = "v1"
-label = "Capability 3"
+[Capability.housing]
+description = "The housing infrastructure of Riverford, which needs flood protection."
+label = "Housing Infrastructure"
 state = "enabled"
 
-[Capability.c2]
-description = "Disables vulnerabilities."
-disables = ["c1", "v1"]
-label = "Capability 2"
-state = "enabled"
-sustains = "RAD"
-
-[Capability.c1]
-description = "Provides core functionality."
-label = "Capability 1"
+[Capability.flooding_potential]
+description = "The river's potential to overflow and flood surrounding areas."
+exploits = "weak_levees"
+label = "Flooding Potential"
 state = "enabled"
 
-[Vulnerability.v1]
-description = "A vulnerability exploitable by c3 and mitigated by c2."
-exposes = "c1"
-label = "Vulnerability 1"
+[Entity.greenridge_dam]
+capabilities = "water_control"
+label = "Greenridge Dam"
+protects = "riverford"
+
+[Entity.riverford]
+capabilities = "housing"
+label = "City of Riverford"
+resiliences = ["RI4", "RLM"]
+vulnerabilities = ["outdated_pumps", "weak_levees"]
+
+[Entity.silverstream]
+capabilities = "flooding_potential"
+label = "Silverstream River"
+threatens = "riverford"
+
+[Entity.reinforcement_team]
+capabilities = "levee_reinforcement"
+label = "Levee Reinforcement Team"
+protects = "riverford"
+
+[Vulnerability.outdated_pumps]
+description = "A vulnerability where outdated pumps cannot efficiently handle floodwaters."
+exposes = "housing"
+label = "Outdated Pumps"
 state = "enabled"
 
-[Resilience.RAD]
-preserves = "c1"
-preservesAgainst = "c3"
-preservesDespite = "v1"
+[Vulnerability.weak_levees]
+description = "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential."
+exposes = "housing"
+label = "Weak Levees"
+state = "enabled"
+
+[Resilience.RI4]
+preserves = "housing"
+preservesAgainst = "flooding_potential"
+preservesDespite = "weak_levees"
+
+[Resilience.RLM]
+preserves = "housing"
+preservesAgainst = "flooding_potential"
+preservesDespite = "weak_levees"

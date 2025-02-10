@@ -12,10 +12,10 @@ baseUri = "https://example123.com/laderr#"
 label = "Test Risk Event"
 description = "A risk event example."
 
-[Object.b]
+[Entity.b]
 id = "b1"
-label = "Test Object"
-description = "An object involved in the risk."
+label = "Test Entity"
+description = "An entity involved in the risk."
 
 [Disposition.c]
 description = "A disposition example."
