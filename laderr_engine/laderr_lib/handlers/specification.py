@@ -4,9 +4,14 @@ TOML-based specifications.
 """
 
 import tomllib
+from collections import defaultdict
+from datetime import datetime
 
+import tomli_w
 from loguru import logger
-from rdflib import Graph, RDF, Literal
+from rdflib import Graph, RDF, Literal, URIRef
+
+from laderr_engine.laderr_lib.constants import LADERR_NS
 
 
 class SpecificationHandler:
@@ -70,72 +75,112 @@ class SpecificationHandler:
             logger.error(f"Error: Syntactical error. Failed to parse LaDeRR/TOML file. {e}")
             raise e
 
-    @classmethod
-    def write_specification(cls, laderr_graph: Graph, output_file: str) -> None:
+    @staticmethod
+    def write_specification(laderr_graph: Graph, output_file_path: str) -> None:
         """
         Serializes a LaDeRR specification into TOML format and writes it to a file.
 
-        This function extracts metadata and data instances from the provided RDF graphs, converting them into a
+        Extracts metadata and data instances from an RDF graph, converting them into a
         structured dictionary format suitable for TOML serialization. Metadata fields are sorted for consistency.
 
-        Data instances are categorized by type and structured in a hierarchical format that preserves relationships.
-
-        :param metadata_graph: RDF laderr_graph containing metadata properties of the LaDeRR specification.
-        :type metadata_graph: Graph
-        :param data_graph: RDF laderr_graph containing data instances and their relationships.
-        :type data_graph: Graph
-        :param output_file: Destination file path for the serialized TOML specification.
-        :type output_file: str
-        :raises OSError: If the output file cannot be written to the specified location.
-        :raises Exception: If an unexpected serialization error occurs.
+        :param laderr_graph: RDF graph containing metadata and structured data instances.
+        :type laderr_graph: Graph
+        :param output_file_path: Destination file path for the serialized TOML specification.
+        :type output_file_path: str
         """
-        import toml
-        from collections import defaultdict
-
-        # Extract metadata from the metadata_graph
+        # Extract metadata from the graph
         metadata = {}
-        for subject, predicate, obj in metadata_graph:
-            # Use simple predicate names, removing namespace
-            predicate_name = predicate.split("#")[-1]
+        specification_uri = URIRef(f"{laderr_graph.value(predicate=RDF.type, object=LADERR_NS.LaderrSpecification)}")
+
+        for predicate, obj in laderr_graph.predicate_objects(subject=specification_uri):
+            prop_name = predicate.split("#")[-1]  # Extract property name
             if isinstance(obj, Literal):
                 value = obj.toPython()
-                if predicate_name in metadata:
-                    if not isinstance(metadata[predicate_name], list):
-                        metadata[predicate_name] = [metadata[predicate_name]]
-                    metadata[predicate_name].append(value)
+
+                # Ensure date-time is formatted in ISO 8601 (2025-01-17T12:00:00Z)
+                if isinstance(value, datetime):
+                    value = value.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                # Remove duplicates: Store values as sets (auto-removes duplicates)
+                if prop_name in metadata:
+                    if not isinstance(metadata[prop_name], set):
+                        metadata[prop_name] = {metadata[prop_name]}  # Convert single value to set
+                    metadata[prop_name].add(value)
                 else:
-                    metadata[predicate_name] = value
+                    metadata[prop_name] = {value} if isinstance(value, (int, float)) else value
 
-        # Sort metadata by keys
-        sorted_metadata = dict(sorted(metadata.items()))
+        # Convert sets back to lists (TOML does not support sets)
+        for key in metadata:
+            if isinstance(metadata[key], set):
+                values = sorted(list(metadata[key]))  # Sort values alphabetically
+                metadata[key] = values[0] if len(values) == 1 else values
+        # Sort metadata for consistency
+        sorted_metadata = dict(sorted(metadata.items()))  # Sort attributes alphabetically
 
-        # Extract data instances from the data_graph
-        instances = defaultdict(lambda: defaultdict(dict))
-        for subject, predicate, obj in data_graph:
-            if subject != metadata_graph.value(predicate=RDF.type, object=cls.LADER_NS.LaderrSpecification):
-                instance_type = str(data_graph.value(subject=subject, predicate=RDF.type)).split("#")[-1]
-                instance_id = str(subject).split("#")[-1]
-                predicate_name = predicate.split("#")[-1]
+        # Extract instances and store attributes
+        instances = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))
+        for subject in laderr_graph.subjects(predicate=RDF.type):
+            if subject == specification_uri:
+                continue  # Skip main specification entry
+
+            instance_type = str(laderr_graph.value(subject=subject, predicate=RDF.type)).split("#")[-1]
+            instance_id = str(subject).split("#")[-1]
+
+            for predicate, obj in laderr_graph.predicate_objects(subject=subject):
+                prop_name = predicate.split("#")[-1]
 
                 if isinstance(obj, Literal):
                     value = obj.toPython()
-                    if predicate_name in instances[instance_type][instance_id]:
-                        if not isinstance(instances[instance_type][instance_id][predicate_name], list):
-                            instances[instance_type][instance_id][predicate_name] = [
-                                instances[instance_type][instance_id][predicate_name]]
-                        instances[instance_type][instance_id][predicate_name].append(value)
-                    else:
-                        instances[instance_type][instance_id][predicate_name] = value
 
-        # Combine metadata and instances into a TOML structure
+                    # Ensure date-time values maintain correct format
+                    if isinstance(value, datetime):
+                        value = value.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                else:
+                    value = str(obj).split("#")[-1]  # Extract entity ID for URIs
+
+                # Store unique values using sets
+                instances[instance_type][instance_id][prop_name].add(value)
+
+        # Convert sets back to lists, but keep single values as plain strings
+        for instance_type in instances:
+            for instance_id in instances[instance_type]:
+                for key in instances[instance_type][instance_id]:
+                    values = sorted(list(instances[instance_type][instance_id][key]))  # ✅ Sort values alphabetically
+                    instances[instance_type][instance_id][key] = values[0] if len(values) == 1 else values
+
+        # Remove redundant "type" field
+        for instance_type in instances:
+            for instance_id in instances[instance_type]:
+                if "type" in instances[instance_type][instance_id]:
+                    del instances[instance_type][instance_id]["type"]
+
+        # Sort attributes inside each section alphabetically ✅
+        for instance_type in instances:
+            for instance_id in instances[instance_type]:
+                instances[instance_type][instance_id] = dict(sorted(instances[instance_type][instance_id].items()))
+
+        # Construct final TOML structure
         toml_structure = {**sorted_metadata,
                           **{instance_type: dict(instance_data) for instance_type, instance_data in instances.items()}}
 
-        # Write the TOML structure to the file
+        # Open file in text mode & write string instead of bytes
         try:
-            with open(output_file, "w", encoding="utf-8") as file:
-                toml.dump(toml_structure, file)
-            logger.success(f"Specification serialized successfully to '{output_file}'.")
+            with open(output_file_path, "w", encoding="utf-8") as file:
+                toml_string = tomli_w.dumps(toml_structure)  # Generate TOML string
+
+                # Ensure lists are formatted inline correctly
+                toml_string = toml_string.replace("[\n    ", "[")  # Remove leading spaces after opening bracket
+                toml_string = toml_string.replace(",\n    ", ", ")  # Remove newlines between list items
+                toml_string = toml_string.replace("\n]", "]")  # Ensure closing bracket is on the same line
+
+                # Ensure **NO trailing commas** before closing brackets
+                import re
+                toml_string = re.sub(r",(\s*)]", "]", toml_string)  # Remove last comma before closing bracket
+
+                file.write(toml_string)  # Write processed TOML string
+
+            logger.success(f"Specification serialized successfully to '{output_file_path}'.")
         except Exception as e:
             logger.error(f"Failed to serialize specification to TOML: {e}")
             raise

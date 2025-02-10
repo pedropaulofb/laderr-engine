@@ -1,0 +1,41 @@
+baseUri = "https://example123.com/laderr#"
+createdBy = ["Alice", "Bob"]
+createdOn = "2025-01-17T12:00:01Z"
+description = "This is an example specification for LaDeRR."
+modifiedOn = "2025-01-18T12:00:02Z"
+title = "Example LaDeRR Specification"
+version = "1.0"
+
+[Object.b1]
+capabilities = ["c1", "c2", "d1"]
+description = "An object involved in the risk."
+label = "Test Object"
+vulnerabilities = ["d1", "v1", "v2"]
+
+[Capability.d1]
+description = "This object serves as both a capability and a vulnerability."
+exposes = "c1"
+label = "Shared Capability and Vulnerability"
+state = "enabled"
+
+[Capability.c2]
+description = "Another capability of the object."
+label = "Capability 2"
+state = "enabled"
+
+[Capability.c1]
+description = "A capability of the object."
+label = "Capability 1"
+state = "enabled"
+
+[Vulnerability.v1]
+description = "A vulnerability associated with the object."
+exposes = "c2"
+label = "Vulnerability 1"
+state = "enabled"
+
+[Vulnerability.v2]
+description = "Another vulnerability associated with the object."
+exposes = "c2"
+label = "Vulnerability 2"
+state = "disabled"

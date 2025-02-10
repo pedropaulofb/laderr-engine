@@ -2,6 +2,7 @@ from loguru import logger
 from rdflib import Graph
 
 from laderr_engine.laderr_lib.handlers.graph import GraphHandler
+from laderr_engine.laderr_lib.handlers.specification import SpecificationHandler
 from laderr_engine.laderr_lib.handlers.validation import ValidationHandler
 
 VERBOSE = True
@@ -43,6 +44,10 @@ class Laderr:
         return ValidationHandler.validate_laderr_graph(laderr_graph)
 
     @staticmethod
-    def save_laderr_graph(graph: Graph, output_path: str) -> None:
-        GraphHandler.save_graph(graph, output_path)
-        VERBOSE and logger.success(f"LaDeRR laderr_graph successfully saved in: {output_path}")
+    def save_laderr_graph(laderr_graph: Graph, output_file_path: str) -> None:
+        GraphHandler.save_graph(laderr_graph, output_file_path)
+        VERBOSE and logger.success(f"LaDeRR laderr_graph successfully saved in: {output_file_path}")
+
+    @staticmethod
+    def save_laderr_spec_from_graph(laderr_graph: Graph, output_file_path: str) -> None:
+        SpecificationHandler.write_specification(laderr_graph, output_file_path)

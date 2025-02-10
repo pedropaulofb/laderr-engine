@@ -5,8 +5,7 @@
 
 :LaderrSpecification a laderr:LaderrSpecification ;
     laderr:baseUri "https://example123.com/laderr#"^^xsd:anyURI ;
-    laderr:composedOf :a,
-        :b1,
+    laderr:composedOf :b1,
         :c1,
         :c2,
         :d1,
@@ -14,15 +13,11 @@
         :v2 ;
     laderr:createdBy "Alice"^^xsd:string,
         "Bob"^^xsd:string ;
-    laderr:createdOn "2025-01-17T12:00:00+00:00"^^xsd:dateTime ;
+    laderr:createdOn "2025-01-17T12:00:01+00:00"^^xsd:dateTime ;
     laderr:description "This is an example specification for LaDeRR."^^xsd:string ;
-    laderr:modifiedOn "2025-01-18T12:00:00+00:00"^^xsd:dateTime ;
+    laderr:modifiedOn "2025-01-18T12:00:02+00:00"^^xsd:dateTime ;
     laderr:title "Example LaDeRR Specification"^^xsd:string ;
     laderr:version "1.0"^^xsd:string .
-
-:a a laderr:RiskEvent ;
-    rdfs:label "Test Risk Event" ;
-    laderr:description "A risk event example." .
 
 :b1 a laderr:Object ;
     rdfs:label "Test Object" ;
