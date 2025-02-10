@@ -1,10 +1,11 @@
 from loguru import logger
 from rdflib import Graph
 
-from laderr_engine.laderr_lib.handlers.graph import GraphHandler
-from laderr_engine.laderr_lib.handlers.specification import SpecificationHandler
-from laderr_engine.laderr_lib.handlers.validation import ValidationHandler
-from laderr_engine.laderr_lib.handlers.visualization import VisualizationHandler
+from laderr_engine.laderr_lib.services.graph import GraphHandler
+from laderr_engine.laderr_lib.services.reasoning import ReasoningHandler
+from laderr_engine.laderr_lib.services.specification import SpecificationHandler
+from laderr_engine.laderr_lib.services.validation import ValidationHandler
+from laderr_engine.laderr_lib.services.visualization import GraphCreator
 
 VERBOSE = True
 
@@ -57,4 +58,8 @@ class Laderr:
     @staticmethod
     def create_visualization_laderr_spec(laderr_file_path: str, output_file_path: str) -> None:
         laderr_graph = GraphHandler.create_laderr_graph(laderr_file_path)
-        VisualizationHandler.create_graph_visualization(laderr_graph, output_file_path)
+        GraphCreator.create_graph_visualization(laderr_graph, output_file_path)
+
+    @staticmethod
+    def exec_inferences_ladder_graph(laderr_graph: Graph) -> None:
+        ReasoningHandler.execute(laderr_graph)

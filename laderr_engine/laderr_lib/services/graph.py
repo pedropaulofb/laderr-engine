@@ -10,8 +10,8 @@ from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef
 from rdflib.exceptions import ParserError
 
 from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
-from laderr_engine.laderr_lib.handlers.specification import SpecificationHandler
-from laderr_engine.laderr_lib.handlers.validation import ValidationHandler
+from laderr_engine.laderr_lib.services.specification import SpecificationHandler
+from laderr_engine.laderr_lib.services.validation import ValidationHandler
 
 VERBOSE = True
 
@@ -291,3 +291,16 @@ class GraphHandler:
         laderr_graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
 
         return laderr_graph
+
+    @staticmethod
+    def get_base_prefix(graph: Graph) -> str:
+        """
+        Retrieves the base prefix (default namespace) of the RDF graph.
+
+        :param graph: The RDFLib graph
+        :return: The base prefix as a string, or None if not found
+        """
+        for prefix, namespace in graph.namespaces():
+            if prefix == "":  # The base namespace is always bound to an empty prefix ""
+                return str(namespace)
+        logger.warning("Base prefix not found")

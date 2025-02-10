@@ -8,13 +8,12 @@ as well as SHACL validation of RDF graphs.
 import os
 from urllib.parse import urlparse
 
-from icecream import ic
 from loguru import logger
 from pyshacl import validate
 from rdflib import Namespace, Graph
 
 from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
-from laderr_engine.laderr_lib.handlers.specification import SpecificationHandler
+from laderr_engine.laderr_lib.services.specification import SpecificationHandler
 
 VERBOSE = True
 
@@ -50,7 +49,7 @@ class ValidationHandler:
         :raises FileNotFoundError: If the specified file does not exist.
         :raises tomllib.TOMLDecodeError: If the TOML file contains invalid syntax.
         """
-        from laderr_engine.laderr_lib.handlers.graph import GraphHandler
+        from laderr_engine.laderr_lib.services.graph import GraphHandler
 
         # Syntactical validation
         spec_metadata_dict, spec_data_dict = SpecificationHandler._read_specification(laderr_file_path)
@@ -118,13 +117,11 @@ class ValidationHandler:
             - A graph representing the SHACL validation report.
         :rtype: tuple[bool, str, Graph]
         """
-        from laderr_engine.laderr_lib.handlers.graph import GraphHandler
+        from laderr_engine.laderr_lib.services.graph import GraphHandler
 
         combined_graph = GraphHandler.create_combined_graph(laderr_graph)
 
         shacl_graph = ValidationHandler.load_shacl_schemas(SHACL_FILES_PATH)
-
-        ic(len(laderr_graph), len(combined_graph), len(shacl_graph))
 
         conforms, report_graph, report_text = validate(data_graph=combined_graph, shacl_graph=shacl_graph,
                                                        inference="both", allow_infos=True, allow_warnings=True)
