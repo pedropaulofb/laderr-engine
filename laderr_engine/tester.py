@@ -12,9 +12,12 @@ if __name__ == "__main__":
 
     Laderr.exec_inferences_ladder_graph(laderr_graph)
 
-    Laderr.save_laderr_graph(laderr_graph,
-                             "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_graph.ttl")
-    Laderr.save_laderr_spec_from_graph(laderr_graph,
-                                       "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_spec.toml")
-    GraphCreator.create_graph_visualization(laderr_graph,
-                                            "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_graph.png")
+    Laderr.save_laderr_graph(
+        laderr_graph, "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_graph.ttl"
+    )
+    Laderr.save_laderr_spec_from_graph(
+        laderr_graph, "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_spec.toml"
+    )
+    GraphCreator.create_graph_visualization(
+        laderr_graph, "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_graph.png"
+    )

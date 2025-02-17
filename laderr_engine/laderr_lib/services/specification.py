@@ -161,8 +161,10 @@ class SpecificationHandler:
                 instances[instance_type][instance_id] = dict(sorted(instances[instance_type][instance_id].items()))
 
         # Construct final TOML structure
-        toml_structure = {**sorted_metadata,
-                          **{instance_type: dict(instance_data) for instance_type, instance_data in instances.items()}}
+        toml_structure = {
+            **sorted_metadata,
+            **{instance_type: dict(instance_data) for instance_type, instance_data in instances.items()},
+        }
 
         # Open file in text mode & write string instead of bytes
         try:
@@ -176,6 +178,7 @@ class SpecificationHandler:
 
                 # Ensure **NO trailing commas** before closing brackets
                 import re
+
                 toml_string = re.sub(r",(\s*)]", "]", toml_string)  # Remove last comma before closing bracket
 
                 file.write(toml_string)  # Write processed TOML string
