@@ -3,6 +3,7 @@ Module for handling RDF laderr_graph operations in the LaDeRR framework.
 
 This module provides functionalities for loading RDF schemas and saving RDF graphs in various formats.
 """
+
 import os
 
 from loguru import logger
@@ -46,7 +47,8 @@ class GraphHandler:
             graph.parse(LADERR_SCHEMA_PATH)
         except (ParserError, ValueError) as e:
             raise ValueError(
-                f"Failed to parse the RDF file '{LADERR_SCHEMA_PATH}'. Ensure it is a valid RDF file.") from e
+                f"Failed to parse the RDF file '{LADERR_SCHEMA_PATH}'. Ensure it is a valid RDF file."
+            ) from e
 
         return graph
 
@@ -105,8 +107,9 @@ class GraphHandler:
         return graph, data_ns, specification_uri
 
     @staticmethod
-    def _process_instance(graph: Graph, data_ns: Namespace, class_type: str, instance_id: str,
-                          properties: dict[str, object]) -> None:
+    def _process_instance(
+        graph: Graph, data_ns: Namespace, class_type: str, instance_id: str, properties: dict[str, object]
+    ) -> None:
         """
         Processes a single instance and adds it to the RDF graph.
 
@@ -162,8 +165,9 @@ class GraphHandler:
             VERBOSE and logger.info(f"Added default state 'enabled' to: {instance_uri}")
 
     @staticmethod
-    def convert_data_to_graph(spec_metadata: dict[str, object],
-                              spec_data: dict[str, dict[str, dict[str, object]]]) -> Graph:
+    def convert_data_to_graph(
+        spec_metadata: dict[str, object], spec_data: dict[str, dict[str, dict[str, object]]]
+    ) -> Graph:
         """
         Converts the 'data' section of a LaDeRR specification into an RDF laderr_graph.
 
@@ -188,7 +192,8 @@ class GraphHandler:
             for key, properties in instances.items():
                 if not isinstance(properties, dict):
                     raise ValueError(
-                        f"Invalid structure for instance '{key}' in '{class_type}'. Expected a dictionary of properties.")
+                        f"Invalid structure for instance '{key}' in '{class_type}'. Expected a dictionary of properties."
+                    )
 
                 instance_id = properties.get("id", key)
 
@@ -217,9 +222,15 @@ class GraphHandler:
         :raises ValueError: If the provided metadata contains invalid formats or unsupported data types.
         """
         # Define expected datatypes for spec_metadata_dict keys
-        expected_datatypes = {"title": XSD.string, "description": XSD.string, "version": XSD.string,
-                              "createdBy": XSD.string, "createdOn": XSD.dateTime, "modifiedOn": XSD.dateTime,
-                              "baseUri": XSD.anyURI, }
+        expected_datatypes = {
+            "title": XSD.string,
+            "description": XSD.string,
+            "version": XSD.string,
+            "createdBy": XSD.string,
+            "createdOn": XSD.dateTime,
+            "modifiedOn": XSD.dateTime,
+            "baseUri": XSD.anyURI,
+        }
 
         # Validate base URI and bind namespaces
         base_uri = ValidationHandler.validate_base_uri(metadata)

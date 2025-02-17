@@ -123,8 +123,9 @@ class ValidationHandler:
 
         shacl_graph = ValidationHandler.load_shacl_schemas(SHACL_FILES_PATH)
 
-        conforms, report_graph, report_text = validate(data_graph=combined_graph, shacl_graph=shacl_graph,
-                                                       inference="both", allow_infos=True, allow_warnings=True)
+        conforms, report_graph, report_text = validate(
+            data_graph=combined_graph, shacl_graph=shacl_graph, inference="both", allow_infos=True, allow_warnings=True
+        )
 
         # DEBUG OPTION
         # conforms, report_graph, report_text = validate(data_graph=laderr_graph, shacl_graph=shacl_graph, inference="both",

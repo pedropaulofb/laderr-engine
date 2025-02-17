@@ -18,7 +18,7 @@ class InferenceRules:
     @staticmethod
     def execute_rule_protects(laderr_graph: Graph):
         """
-        Applies the 'protects' inference rule: 
+        Applies the 'protects' inference rule:
         If an entity with a capability disables a vulnerability of another entity, it protects it.
         """
         new_triples = set()
@@ -35,7 +35,7 @@ class InferenceRules:
     @staticmethod
     def execute_rule_inhibits(laderr_graph: Graph):
         """
-        Applies the 'inhibits' inference rule: 
+        Applies the 'inhibits' inference rule:
         If a capability disables another capability, it inhibits the entity possessing the latter capability.
         """
         new_triples = set()
@@ -52,7 +52,7 @@ class InferenceRules:
     @staticmethod
     def execute_rule_threatens(laderr_graph: Graph):
         """
-        Applies the 'threatens' inference rule: 
+        Applies the 'threatens' inference rule:
         If a capability exploits a vulnerability of another entity, it threatens it.
         """
         new_triples = set()
@@ -75,30 +75,31 @@ class InferenceRules:
                 for o3, c3 in laderr_graph.subject_objects(LADERR_NS.capabilities):
                     for v1, c1_exposes in laderr_graph.subject_objects(LADERR_NS.exposes):
                         if (
-                                (o1, LADERR_NS.capabilities, c1) in laderr_graph and
-                                (o1, LADERR_NS.vulnerabilities, v1) in laderr_graph and
-                                (o2, LADERR_NS.capabilities, c2) in laderr_graph and
-                                (o3, LADERR_NS.capabilities, c3) in laderr_graph and
-                                (c2, LADERR_NS.disables, v1) in laderr_graph and
-                                (c3, LADERR_NS.exploits, v1) in laderr_graph
+                            (o1, LADERR_NS.capabilities, c1) in laderr_graph
+                            and (o1, LADERR_NS.vulnerabilities, v1) in laderr_graph
+                            and (o2, LADERR_NS.capabilities, c2) in laderr_graph
+                            and (o3, LADERR_NS.capabilities, c3) in laderr_graph
+                            and (c2, LADERR_NS.disables, v1) in laderr_graph
+                            and (c3, LADERR_NS.exploits, v1) in laderr_graph
                         ):
                             # Check if a Resilience individual already exists
                             existing_resilience = None
                             for r in laderr_graph.subjects(RDF.type, LADERR_NS.Resilience):
                                 if (
-                                        (o1, LADERR_NS.resiliences, r) in laderr_graph and
-                                        (r, LADERR_NS.preserves, c1) in laderr_graph and
-                                        (r, LADERR_NS.preservesAgainst, c3) in laderr_graph and
-                                        (r, LADERR_NS.preservesDespite, v1) in laderr_graph and
-                                        (c2, LADERR_NS.sustains, r) in laderr_graph
+                                    (o1, LADERR_NS.resiliences, r) in laderr_graph
+                                    and (r, LADERR_NS.preserves, c1) in laderr_graph
+                                    and (r, LADERR_NS.preservesAgainst, c3) in laderr_graph
+                                    and (r, LADERR_NS.preservesDespite, v1) in laderr_graph
+                                    and (c2, LADERR_NS.sustains, r) in laderr_graph
                                 ):
                                     existing_resilience = r
                                     break
 
                             if existing_resilience is None:
                                 # Generate a random Resilience ID
-                                resilience_id = "R" + ''.join(
-                                    random.choices(string.ascii_uppercase + string.digits, k=2))
+                                resilience_id = "R" + "".join(
+                                    random.choices(string.ascii_uppercase + string.digits, k=2)
+                                )
                                 base_uri = GraphHandler.get_base_prefix(laderr_graph)
                                 resilience_uri = URIRef(f"{base_uri}{resilience_id}")
 

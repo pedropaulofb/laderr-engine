@@ -91,4 +91,3 @@
     laderr:description "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential." ;
     laderr:exposes :housing ;
     laderr:state laderr:enabled .
-
