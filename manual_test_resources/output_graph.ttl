@@ -36,12 +36,12 @@
     laderr:capabilities :flooding_potential ;
     laderr:threatens :riverford .
 
-:RI4 a laderr:Resilience ;
+:R5G a laderr:Resilience ;
     laderr:preserves :housing ;
     laderr:preservesAgainst :flooding_potential ;
     laderr:preservesDespite :weak_levees .
 
-:RLM a laderr:Resilience ;
+:RBD a laderr:Resilience ;
     laderr:preserves :housing ;
     laderr:preservesAgainst :flooding_potential ;
     laderr:preservesDespite :weak_levees .
@@ -51,7 +51,7 @@
     laderr:description "A capability that strengthens Riverford’s levees to prevent flood risks." ;
     laderr:disables :weak_levees ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RLM .
+    laderr:sustains :RBD .
 
 :water_control a laderr:Capability ;
     rdfs:label "Water Flow Control" ;
@@ -59,7 +59,7 @@
     laderr:disables :outdated_pumps,
         :weak_levees ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RI4 .
+    laderr:sustains :R5G .
 
 :outdated_pumps a laderr:Vulnerability ;
     rdfs:label "Outdated Pumps" ;
@@ -76,8 +76,8 @@
 :riverford a laderr:Entity ;
     rdfs:label "City of Riverford" ;
     laderr:capabilities :housing ;
-    laderr:resiliences :RI4,
-        :RLM ;
+    laderr:resiliences :R5G,
+        :RBD ;
     laderr:vulnerabilities :outdated_pumps,
         :weak_levees .
 

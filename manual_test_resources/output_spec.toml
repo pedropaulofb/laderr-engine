@@ -5,57 +5,51 @@ description = "A socio-ecological system model for flood risk and resilience."
 title = "Flood Risk and Resilience Model"
 version = "1.1"
 
-[Capability.water_control]
-description = "Regulates water levels, mitigating flood risks."
-disables = ["outdated_pumps", "weak_levees"]
-label = "Water Flow Control"
-state = "enabled"
-sustains = "RI4"
-
-[Capability.levee_reinforcement]
-description = "A capability that strengthens Riverford’s levees to prevent flood risks."
-disables = "weak_levees"
-label = "Levee Reinforcement"
-state = "enabled"
-sustains = "RLM"
-
-[Capability.housing]
-description = "The housing infrastructure of Riverford, which needs flood protection."
-label = "Housing Infrastructure"
-state = "enabled"
-
 [Capability.flooding_potential]
 description = "The river's potential to overflow and flood surrounding areas."
 exploits = "weak_levees"
 label = "Flooding Potential"
 state = "enabled"
 
-[Entity.greenridge_dam]
-capabilities = "water_control"
-label = "Greenridge Dam"
-protects = "riverford"
+[Capability.water_control]
+description = "Regulates water levels, mitigating flood risks."
+disables = ["outdated_pumps", "weak_levees"]
+label = "Water Flow Control"
+state = "enabled"
+sustains = "R5G"
 
-[Entity.riverford]
-capabilities = "housing"
-label = "City of Riverford"
-resiliences = ["RI4", "RLM"]
-vulnerabilities = ["outdated_pumps", "weak_levees"]
+[Capability.levee_reinforcement]
+description = "A capability that strengthens Riverford’s levees to prevent flood risks."
+disables = "weak_levees"
+label = "Levee Reinforcement"
+state = "enabled"
+sustains = "RBD"
+
+[Capability.housing]
+description = "The housing infrastructure of Riverford, which needs flood protection."
+label = "Housing Infrastructure"
+state = "enabled"
 
 [Entity.silverstream]
 capabilities = "flooding_potential"
 label = "Silverstream River"
 threatens = "riverford"
 
+[Entity.riverford]
+capabilities = "housing"
+label = "City of Riverford"
+resiliences = ["R5G", "RBD"]
+vulnerabilities = ["outdated_pumps", "weak_levees"]
+
+[Entity.greenridge_dam]
+capabilities = "water_control"
+label = "Greenridge Dam"
+protects = "riverford"
+
 [Entity.reinforcement_team]
 capabilities = "levee_reinforcement"
 label = "Levee Reinforcement Team"
 protects = "riverford"
-
-[Vulnerability.outdated_pumps]
-description = "A vulnerability where outdated pumps cannot efficiently handle floodwaters."
-exposes = "housing"
-label = "Outdated Pumps"
-state = "enabled"
 
 [Vulnerability.weak_levees]
 description = "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential."
@@ -63,12 +57,18 @@ exposes = "housing"
 label = "Weak Levees"
 state = "enabled"
 
-[Resilience.RI4]
+[Vulnerability.outdated_pumps]
+description = "A vulnerability where outdated pumps cannot efficiently handle floodwaters."
+exposes = "housing"
+label = "Outdated Pumps"
+state = "enabled"
+
+[Resilience.R5G]
 preserves = "housing"
 preservesAgainst = "flooding_potential"
 preservesDespite = "weak_levees"
 
-[Resilience.RLM]
+[Resilience.RBD]
 preserves = "housing"
 preservesAgainst = "flooding_potential"
 preservesDespite = "weak_levees"
