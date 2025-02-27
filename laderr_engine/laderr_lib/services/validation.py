@@ -10,10 +10,9 @@ from urllib.parse import urlparse
 
 from loguru import logger
 from pyshacl import validate
-from rdflib import Namespace, Graph
+from rdflib import Graph
 
 from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
-from laderr_engine.laderr_lib.services.specification import SpecificationHandler
 
 VERBOSE = True
 
@@ -28,58 +27,6 @@ class ValidationHandler:
     :cvar LADERR_NS: Namespace for LaDeRR ontology.
     :vartype LADERR_NS: Namespace
     """
-
-    @classmethod
-    def validate_specification(cls, laderr_file_path: str):
-        """
-        Validates a LaDeRR specification file, performing both syntactic and semantic validation.
-
-        This method:
-        - Reads the TOML specification file.
-        - Parses it into structured metadata and data dictionaries.
-        - Converts the parsed data into RDF graphs.
-        - Combines metadata and data graphs into a unified RDF model.
-        - Loads SHACL schemas and performs validation against the specification.
-        - Reports the validation results and saves the processed RDF laderr_graph.
-
-        :param laderr_file_path: Path to the LaDeRR specification file to be validated.
-        :type laderr_file_path: str
-        :return: Boolean indicating whether the specification file is valid.
-        :rtype: bool
-        :raises FileNotFoundError: If the specified file does not exist.
-        :raises tomllib.TOMLDecodeError: If the TOML file contains invalid syntax.
-        """
-        from laderr_engine.laderr_lib.services.graph import GraphHandler
-
-        # Syntactical validation
-        spec_metadata_dict, spec_data_dict = SpecificationHandler._read_specification(laderr_file_path)
-
-        # Semantic validation
-        spec_metadata_graph = GraphHandler.convert_metadata_to_graph(spec_metadata_dict)
-        spec_data_graph = GraphHandler.convert_data_to_graph(spec_metadata_dict, spec_data_dict)
-
-        # Combine graphs
-        unified_graph = Graph()
-        unified_graph += spec_metadata_graph
-        unified_graph += spec_data_graph
-
-        SpecificationHandler.write_specification(spec_metadata_graph, spec_data_graph, "./test_output.toml")
-
-        # Combine instances with Schema for correct SHACL evaluation
-        laderr_schema = GraphHandler.load_laderr_schema()
-        validation_graph = Graph()
-        validation_graph += unified_graph
-        validation_graph += laderr_schema
-
-        # Bind namespaces in the unified laderr_graph
-        base_uri = cls.validate_base_uri(spec_metadata_dict)
-        unified_graph.bind("", Namespace(base_uri))  # Bind `:` to the base URI
-        unified_graph.bind("laderr", cls.LADER_NS)  # Bind `laderr:` to the schema namespace
-
-        conforms, _, report_text = cls._validate_with_shacl(validation_graph)
-        cls._report_validation_result(conforms, report_text)
-        GraphHandler.save_graph(unified_graph, "./manual_test_resources/result.ttl")
-        return conforms
 
     @classmethod
     def validate_base_uri(cls, spec_metadata_dict: dict[str, object]) -> str:
@@ -126,7 +73,7 @@ class ValidationHandler:
         conforms, report_graph, report_text = validate(data_graph=combined_graph, shacl_graph=shacl_graph,
                                                        inference="both", allow_infos=True, allow_warnings=True)
 
-        # DEBUG OPTION
+        # VERBOSE OPTION
         # conforms, report_graph, report_text = validate(data_graph=laderr_graph, shacl_graph=shacl_graph, inference="both",
         #                                                allow_infos=True, allow_warnings=True, meta_shacl=True)
 

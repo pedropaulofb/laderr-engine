@@ -19,8 +19,7 @@ class GraphCreator:
     """
 
     @staticmethod
-    def create_graph_visualization(
-            laderr_graph: Graph, output_file_path: str, include_legend: bool = False) -> None:
+    def create_graph_visualization(laderr_graph: Graph, output_file_path: str, include_legend: bool = False) -> None:
         """
         Generates a Graphviz visualization of the RDF graph and saves it as a PNG.
 
@@ -73,7 +72,8 @@ class GraphCreator:
         :rtype: graphviz.Digraph
         """
         dot = graphviz.Digraph(format='png')
-        dot.attr(dpi='300', fontname="Arial", nodesep="0.5", ranksep="0.75")
+        dot.attr(dpi='300', fontname="Arial", nodesep="0.2", ranksep="0.4",
+                 labelloc="c")  # Ensures labels are centered vertically
         return dot
 
     @staticmethod
@@ -81,23 +81,23 @@ class GraphCreator:
         """
         Defines node and edge styles used in the visualization.
 
+        This method:
+        - Specifies the default styles for nodes, including their shape, color, and border properties.
+        - Defines color schemes for different Entity subtypes (Asset, Control, Threat).
+        - Configures the colors of various edges representing relationships in the RDF graph.
+
         :return: A tuple containing dictionaries for node styles and edge styles.
         :rtype: tuple[dict, dict]
         """
-        node_styles = {
-            "Entity": {"shape": "square", "color": "lightblue", "style": "filled", "width": "1.2", "height": "1.2"},
-            "Capability": {"shape": "circle", "color": "green", "style": "filled", "width": "1.2", "height": "1.2"},
-            "Vulnerability": {"shape": "circle", "color": "red", "style": "filled", "width": "1.2", "height": "1.2"},
-            "Resilience": {"shape": "doublecircle", "color": "orange", "style": "filled", "width": "1.2",
-                           "height": "1.2"},
-            "Mixed": {"shape": "circle", "color": "yellow", "style": "filled", "width": "1.2", "height": "1.2"},
-        }
+        node_styles = {"Entity": {"shape": "square", "color": "white", "style": "filled", "penwidth": "2"},
+                       "Asset": {"color": "green"}, "Control": {"color": "blue"}, "Threat": {"color": "red"},
+                       "Capability": {"shape": "circle", "color": "green", "style": "filled"},
+                       "Vulnerability": {"shape": "circle", "color": "red", "style": "filled"},
+                       "Resilience": {"shape": "doublecircle", "color": "orange", "style": "filled"},
+                       "Mixed": {"shape": "circle", "color": "yellow", "style": "filled"}, }
 
-        edge_styles = {
-            "protects": "blue", "inhibits": "blue", "threatens": "blue",
-            "preserves": "orange", "preservesAgainst": "orange", "preservesDespite": "orange",
-            "sustains": "orange",
-        }
+        edge_styles = {"protects": "blue", "inhibits": "blue", "threatens": "blue", "preserves": "orange",
+                       "preservesAgainst": "orange", "preservesDespite": "orange", "sustains": "orange", }
 
         return node_styles, edge_styles
 
@@ -134,19 +134,56 @@ class GraphCreator:
             elif "Vulnerability" in instance_types:
                 style = node_styles["Vulnerability"]
             elif "Entity" in instance_types:
-                style = node_styles["Entity"]
+                # ic(instance_types, node_styles)
+                style = GraphCreator._get_entity_style(instance_types, node_styles)  # ic(style)
             else:
-                style = {"shape": "ellipse", "color": "black", "style": "filled", "width": "1.2", "height": "1.2"}
+                style = {"shape": "ellipse", "color": "black", "style": "filled"}
 
             if instance_id not in added_nodes:
-                dot.node(
-                    instance_id, instance_id,
-                    shape=style["shape"], color=style["color"], style=style["style"],
-                    fixedsize="true", width=style["width"], height=style["height"]
+                dot.node(instance_id, shape=style["shape"], color=style["color"], style=style["style"],
+                    penwidth=style.get("penwidth", "1"), fillcolor=style.get("fillcolor", "white"),
+                    gradientangle=style.get("gradientangle", ""), fixedsize="true", width="0.6", height="0.6",
+                    fontname="Arial", fontsize="6", label=f"<<B>{instance_id}</B>>", margin="0.05"  # Adjust padding
                 )
+
                 added_nodes.add(instance_id)
 
         return added_nodes
+
+    @staticmethod
+    def _get_entity_style(instance_types: list, node_styles: dict) -> dict:
+        """
+        Determines the visual style of an Entity based on its subtypes using appropriate Graphviz styles.
+
+        :param instance_types: List of types associated with the entity.
+        :type instance_types: list
+        :param node_styles: Dictionary defining styles for different node types.
+        :type node_styles: dict
+        :return: A dictionary containing Graphviz node style attributes.
+        :rtype: dict
+        """
+        base_style = node_styles["Entity"]
+        entity_types = [t for t in ["Asset", "Control", "Threat"] if t in instance_types]
+
+        # ic(base_style, entity_types)
+
+        if not entity_types:
+            return {**base_style, "fillcolor": "grey", "style": "filled"}
+
+        if len(entity_types) == 1:
+            return {**base_style, "fillcolor": node_styles[entity_types[0]]["color"], "style": "filled"}
+
+        if len(entity_types) == 2:
+            return {**base_style,
+                "fillcolor": f"{node_styles[entity_types[0]]['color']}:{node_styles[entity_types[1]]['color']}",
+                "style": "striped"}
+
+        if len(entity_types) == 3:
+            return {**base_style,
+                "fillcolor": f"{node_styles['Asset']['color']};0.33:{node_styles['Control']['color']};0.33:{node_styles['Threat']['color']};0.34",
+                "style": "striped"}
+
+        return base_style  # Fallback, should not be reached
 
     @staticmethod
     def _process_edges(laderr_graph: Graph, dot: graphviz.Digraph, added_nodes: set, edge_styles: dict) -> None:
@@ -169,7 +206,7 @@ class GraphCreator:
 
             if subject_id in added_nodes and obj_id in added_nodes and subject_id != obj_id:
                 edge_color = edge_styles.get(predicate_label, "black")
-                dot.edge(subject_id, obj_id, label=predicate_label, fontsize="10", color=edge_color,
+                dot.edge(subject_id, obj_id, label=predicate_label, fontsize="6", color=edge_color,
                          fontcolor=edge_color)
 
     @staticmethod

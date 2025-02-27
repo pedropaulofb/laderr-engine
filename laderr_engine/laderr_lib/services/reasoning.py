@@ -1,11 +1,11 @@
 import hashlib
 
-from icecream import ic
+from owlrl import DeductiveClosure, RDFS_Semantics
 from rdflib import Graph
 
+from laderr_engine.laderr_lib.constants import LADERR_NS
+from laderr_engine.laderr_lib.services.graph import GraphHandler
 from laderr_engine.laderr_lib.services.inference_rules import InferenceRules
-
-DEBUG = False
 
 
 class ReasoningHandler:
@@ -45,27 +45,23 @@ class ReasoningHandler:
         hash_before = 1
         hash_after = 2
 
-        teste = 1
+        base_prefix = GraphHandler.get_base_prefix(graph)
+        graph = GraphHandler.create_combined_graph(graph)
+
+        # Rebind prefixes after merging
+        graph.bind("", base_prefix)  # Bind the `laderr:` namespace
+        graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
 
         while hash_before != hash_after:
-
             hash_before = ReasoningHandler.calculate_hash(graph)
-            DEBUG and ic(hash_before)
+
+            DeductiveClosure(RDFS_Semantics).expand(graph)
 
             InferenceRules.execute_rule_inhibits(graph)
-            DEBUG and ic("inhibits", ReasoningHandler.calculate_hash(graph))
             InferenceRules.execute_rule_protects(graph)
-            DEBUG and ic("protects", ReasoningHandler.calculate_hash(graph))
             InferenceRules.execute_rule_threatens(graph)
-            DEBUG and ic("threatens", ReasoningHandler.calculate_hash(graph))
             InferenceRules.execute_rule_resilience(graph)
-            DEBUG and ic("resilience", ReasoningHandler.calculate_hash(graph))
 
             hash_after = ReasoningHandler.calculate_hash(graph)
-            DEBUG and ic(hash_after)
 
-            if teste == 2:
-                break
-            teste = 2
-
-        return graph
+        return GraphHandler.clean_graph(graph, base_prefix)

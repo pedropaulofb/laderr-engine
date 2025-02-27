@@ -61,5 +61,5 @@ class Laderr:
         GraphCreator.create_graph_visualization(laderr_graph, output_file_path)
 
     @staticmethod
-    def exec_inferences_ladder_graph(laderr_graph: Graph) -> None:
-        ReasoningHandler.execute(laderr_graph)
+    def exec_inferences_ladder_graph(laderr_graph: Graph) -> Graph:
+        return ReasoningHandler.execute(laderr_graph)

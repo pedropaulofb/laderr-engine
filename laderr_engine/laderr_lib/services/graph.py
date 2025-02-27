@@ -6,7 +6,7 @@ This module provides functionalities for loading RDF schemas and saving RDF grap
 import os
 
 from loguru import logger
-from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef
+from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode
 from rdflib.exceptions import ParserError
 
 from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
@@ -217,9 +217,11 @@ class GraphHandler:
         :raises ValueError: If the provided metadata contains invalid formats or unsupported data types.
         """
         # Define expected datatypes for spec_metadata_dict keys
-        expected_datatypes = {"title": XSD.string, "description": XSD.string, "version": XSD.string,
-                              "createdBy": XSD.string, "createdOn": XSD.dateTime, "modifiedOn": XSD.dateTime,
-                              "baseUri": XSD.anyURI, }
+        expected_datatypes = {
+            "title": XSD.string, "description": XSD.string, "version": XSD.string,
+            "createdBy": XSD.string, "createdOn": XSD.dateTime, "modifiedOn": XSD.dateTime,
+            "baseUri": XSD.anyURI
+        }
 
         # Validate base URI and bind namespaces
         base_uri = ValidationHandler.validate_base_uri(metadata)
@@ -234,8 +236,11 @@ class GraphHandler:
         specification = data_ns.LaderrSpecification
         graph.add((specification, RDF.type, LADERR_NS.LaderrSpecification))
 
-        # Add spec_metadata_dict as properties of the specification
+        # Add metadata properties, excluding `scenario`
         for key, value in metadata.items():
+            if key == "scenario":
+                continue  # Skip, will be handled separately
+
             property_uri = LADERR_NS[key]  # Schema properties come from laderr namespace
             datatype = expected_datatypes.get(key, XSD.anyURI)  # Default to xsd:string if not specified
 
@@ -246,6 +251,20 @@ class GraphHandler:
             else:
                 # Add single value with specified datatype
                 graph.add((specification, property_uri, Literal(value, datatype=datatype)))
+
+        # Process `scenario` separately as an individual reference
+        scenario_mapping = {
+            "operational": LADERR_NS.operational,
+            "incident": LADERR_NS.incident,
+            "resilient": LADERR_NS.resilient,
+            "not_resilient": LADERR_NS.not_resilient
+        }
+
+        scenario_value = metadata.get("scenario")
+        if scenario_value in scenario_mapping:
+            graph.add((specification, LADERR_NS.scenario, scenario_mapping[scenario_value]))
+        elif scenario_value is not None:
+            logger.warning(f"Unknown scenario '{scenario_value}', skipping scenario assignment.")
 
         return graph, data_ns
 
@@ -304,3 +323,36 @@ class GraphHandler:
             if prefix == "":  # The base namespace is always bound to an empty prefix ""
                 return str(namespace)
         logger.warning("Base prefix not found")
+
+    @staticmethod
+    def clean_graph(graph: Graph, base_url: str) -> Graph:
+        """
+        Cleans the RDF graph by removing unwanted triples.
+
+        This method removes all triples that:
+        1. Have a subject that does not start with the given `base_url`.
+        2. Contain any blank node (`BNode`) in the subject, predicate, or object.
+        3. Are of the form `X a rdfs:Resource`, which are redundant and unnecessary.
+
+        This ensures that only relevant triples remain in the graph, improving clarity
+        and reducing unnecessary noise.
+
+        :param graph: The RDF graph to be cleaned.
+        :type graph: Graph
+        :param base_url: The base URL prefix that subjects must start with to be kept.
+        :type base_url: str
+        :return: A cleaned RDF graph containing only relevant triples.
+        :rtype: Graph
+        """
+        triples_to_remove = {
+            (s, p, o) for s, p, o in graph
+            if (not str(s).startswith(base_url))  # Remove triples where subject is not in base_url
+               or isinstance(s, BNode) or isinstance(p, BNode) or isinstance(o,
+                                                                             BNode)  # Remove triples with blank nodes
+               or (p == RDF.type and o == RDFS.Resource)  # Remove "X a rdfs:Resource"
+        }
+
+        for triple in triples_to_remove:
+            graph.remove(triple)
+
+        return graph
