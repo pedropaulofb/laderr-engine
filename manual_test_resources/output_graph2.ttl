@@ -23,6 +23,8 @@
     laderr:title "Flood Risk and Resilience Model"^^xsd:string ;
     laderr:version "1.1"^^xsd:string .
 
+:test a laderr:Disposition .
+
 :greenridge_dam a laderr:Asset,
         laderr:Control,
         laderr:Entity,
@@ -49,14 +51,14 @@
     laderr:capabilities :flooding_potential ;
     laderr:threatens :riverford .
 
-:RJJ a laderr:LaderrConstruct,
+:R3I a laderr:LaderrConstruct,
         laderr:Resilience ;
     owl:topObjectProperty :flooding_potential ;
     laderr:preserves :housing ;
     laderr:preservesAgainst :flooding_potential ;
     laderr:preservesDespite :weak_levees .
 
-:RLM a laderr:LaderrConstruct,
+:RSP a laderr:LaderrConstruct,
         laderr:Resilience ;
     owl:topObjectProperty :flooding_potential ;
     laderr:preserves :housing ;
@@ -65,12 +67,13 @@
 
 :levee_reinforcement a laderr:Capability,
         laderr:Disposition,
-        laderr:LaderrConstruct ;
+        laderr:LaderrConstruct,
+        laderr:Vulnerability ;
     rdfs:label "Levee Reinforcement" ;
     laderr:description "A capability that strengthens Riverford’s levees to prevent flood risks." ;
     laderr:disables :weak_levees ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RJJ .
+    laderr:sustains :R3I .
 
 :water_control a laderr:Capability,
         laderr:Disposition,
@@ -80,7 +83,7 @@
     laderr:disables :outdated_pumps,
         :weak_levees ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RLM .
+    laderr:sustains :RSP .
 
 :outdated_pumps a laderr:Disposition,
         laderr:LaderrConstruct,
@@ -104,8 +107,8 @@
         laderr:LaderrConstruct ;
     rdfs:label "City of Riverford" ;
     laderr:capabilities :housing ;
-    laderr:resiliences :RJJ,
-        :RLM ;
+    laderr:resiliences :R3I,
+        :RSP ;
     laderr:vulnerabilities :outdated_pumps,
         :weak_levees .
 
