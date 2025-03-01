@@ -1,6 +1,5 @@
 @prefix : <https://socio-ecological.example.com/laderr#> .
 @prefix laderr: <https://w3id.org/laderr#> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
@@ -31,7 +30,6 @@
         laderr:LaderrConstruct,
         laderr:Threat ;
     rdfs:label "Greenridge Dam" ;
-    owl:topObjectProperty :riverford ;
     laderr:capabilities :water_control ;
     laderr:protects :riverford .
 
@@ -40,7 +38,6 @@
         laderr:LaderrConstruct,
         laderr:Threat ;
     rdfs:label "Levee Reinforcement Team" ;
-    owl:topObjectProperty :riverford ;
     laderr:capabilities :levee_reinforcement ;
     laderr:protects :riverford .
 
@@ -51,16 +48,14 @@
     laderr:capabilities :flooding_potential ;
     laderr:threatens :riverford .
 
-:R3I a laderr:LaderrConstruct,
+:RAT a laderr:LaderrConstruct,
         laderr:Resilience ;
-    owl:topObjectProperty :flooding_potential ;
     laderr:preserves :housing ;
     laderr:preservesAgainst :flooding_potential ;
     laderr:preservesDespite :weak_levees .
 
-:RSP a laderr:LaderrConstruct,
+:RX9 a laderr:LaderrConstruct,
         laderr:Resilience ;
-    owl:topObjectProperty :flooding_potential ;
     laderr:preserves :housing ;
     laderr:preservesAgainst :flooding_potential ;
     laderr:preservesDespite :weak_levees .
@@ -73,7 +68,7 @@
     laderr:description "A capability that strengthens Riverford’s levees to prevent flood risks." ;
     laderr:disables :weak_levees ;
     laderr:state laderr:enabled ;
-    laderr:sustains :R3I .
+    laderr:sustains :RX9 .
 
 :water_control a laderr:Capability,
         laderr:Disposition,
@@ -83,13 +78,12 @@
     laderr:disables :outdated_pumps,
         :weak_levees ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RSP .
+    laderr:sustains :RAT .
 
 :outdated_pumps a laderr:Disposition,
         laderr:LaderrConstruct,
         laderr:Vulnerability ;
     rdfs:label "Outdated Pumps" ;
-    owl:topObjectProperty :housing ;
     laderr:description "A vulnerability where outdated pumps cannot efficiently handle floodwaters." ;
     laderr:exposes :housing ;
     laderr:state laderr:enabled .
@@ -107,24 +101,23 @@
         laderr:LaderrConstruct ;
     rdfs:label "City of Riverford" ;
     laderr:capabilities :housing ;
-    laderr:resiliences :R3I,
-        :RSP ;
+    laderr:resiliences :RAT,
+        :RX9 ;
     laderr:vulnerabilities :outdated_pumps,
         :weak_levees .
-
-:weak_levees a laderr:Disposition,
-        laderr:LaderrConstruct,
-        laderr:Vulnerability ;
-    rdfs:label "Weak Levees" ;
-    owl:topObjectProperty :housing ;
-    laderr:description "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential." ;
-    laderr:exposes :housing ;
-    laderr:state laderr:enabled .
 
 :housing a laderr:Capability,
         laderr:Disposition,
         laderr:LaderrConstruct ;
     rdfs:label "Housing Infrastructure" ;
     laderr:description "The housing infrastructure of Riverford, which needs flood protection." ;
+    laderr:state laderr:enabled .
+
+:weak_levees a laderr:Disposition,
+        laderr:LaderrConstruct,
+        laderr:Vulnerability ;
+    rdfs:label "Weak Levees" ;
+    laderr:description "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential." ;
+    laderr:exposes :housing ;
     laderr:state laderr:enabled .
 

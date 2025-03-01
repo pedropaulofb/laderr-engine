@@ -6,7 +6,7 @@ This module provides functionalities for loading RDF schemas and saving RDF grap
 import os
 
 from loguru import logger
-from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode
+from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL
 from rdflib.exceptions import ParserError
 
 from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
@@ -350,6 +350,7 @@ class GraphHandler:
                or isinstance(s, BNode) or isinstance(p, BNode) or isinstance(o,
                                                                              BNode)  # Remove triples with blank nodes
                or (p == RDF.type and o == RDFS.Resource)  # Remove "X a rdfs:Resource"
+               or (p == OWL.topObjectProperty)  # Remove "X owl:topObjectProperty Y"
         }
 
         for triple in triples_to_remove:
