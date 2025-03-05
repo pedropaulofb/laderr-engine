@@ -7,7 +7,7 @@ LaDeRR RDF models, extracts entities and relationships, applies predefined style
 
 import graphviz
 from loguru import logger
-from rdflib import Graph, RDF
+from rdflib import Graph, RDF, URIRef
 
 
 class GraphCreator:
@@ -74,7 +74,15 @@ class GraphCreator:
     @staticmethod
     def _process_nodes(laderr_graph: Graph, dot: graphviz.Digraph) -> set:
         """
-        Processes RDF nodes, assigns styles, and adds them to the Graphviz Digraph.
+        Processes RDF nodes, assigns styles based on their types and states (enabled/disabled), and adds them to the Graphviz Digraph.
+
+        Dispositions (Capabilities and Vulnerabilities) have different colors depending on whether they are enabled or disabled:
+        - Enabled capabilities: light green
+        - Disabled capabilities: dark green
+        - Enabled vulnerabilities: light red (lightcoral)
+        - Disabled vulnerabilities: dark red
+
+        If a disposition is both a Capability and a Vulnerability, it uses a 50%-50% striped color, combining both colors.
 
         :param laderr_graph: RDFLib graph containing LaDeRR data.
         :type laderr_graph: Graph
@@ -84,19 +92,21 @@ class GraphCreator:
         :rtype: set
         """
         added_nodes = set()
+        disabled_state = URIRef("https://w3id.org/laderr#disabled")
 
         for subject in laderr_graph.subjects(predicate=RDF.type):
-            instance_types = [str(obj).split("#")[-1] for obj in
-                              laderr_graph.objects(subject=subject, predicate=RDF.type)]
+            instance_types = [str(obj).split("#")[-1] for obj in laderr_graph.objects(subject=subject, predicate=RDF.type)]
             instance_id = str(subject).split("#")[-1]
 
             if "LaderrSpecification" in instance_types:
                 continue
 
+            is_disabled = (subject, URIRef("https://w3id.org/laderr#state"), disabled_state) in laderr_graph
+
             if "Resilience" in instance_types:
                 style = {"shape": "ellipse", "color": "white", "style": "filled", "fillcolor": "orange"}
             elif any(item in instance_types for item in ["Disposition", "Capability", "Vulnerability"]):
-                style = GraphCreator._get_disposition_style(instance_types)
+                style = GraphCreator._get_disposition_style(instance_types, is_disabled)
             elif "Entity" in instance_types:
                 style = GraphCreator._get_entity_style(instance_types)
             else:
@@ -113,25 +123,48 @@ class GraphCreator:
         return added_nodes
 
     @staticmethod
-    def _get_disposition_style(instance_types: list) -> dict:
+    def _get_disposition_style(instance_types: list, is_disabled: bool) -> dict:
         """
-        Determines the visual style of a Disposition based on whether it is a Capability, Vulnerability, or both.
+        Determines the visual style of a Disposition based on whether it is a Capability, Vulnerability, or both,
+        and whether it is enabled or disabled.
+
+        - Enabled capabilities are light green.
+        - Disabled capabilities are dark green.
+        - Enabled vulnerabilities are light red (lightcoral).
+        - Disabled vulnerabilities are dark red.
+        - If the disposition is both a capability and a vulnerability, it uses a striped color:
+            - Enabled: light green and light red (lightcoral)
+            - Disabled: dark green and dark red
 
         :param instance_types: List of types associated with the disposition.
         :type instance_types: list
+        :param is_disabled: Whether the disposition is currently disabled.
+        :type is_disabled: bool
         :return: A dictionary containing Graphviz node style attributes.
         :rtype: dict
         """
-        base_style = {"shape": "circle", "style": "filled", "color": "white"}
+        base_style = {"shape": "circle", "style": "filled", "color": "black"}
 
-        if "Capability" in instance_types and "Vulnerability" in instance_types:
-            return {**base_style, "fillcolor": "green:red", "style": "wedged"}
-        elif "Capability" in instance_types:
-            return {**base_style, "fillcolor": "green"}
-        elif "Vulnerability" in instance_types:
-            return {**base_style, "fillcolor": "red"}
+        is_capability = "Capability" in instance_types
+        is_vulnerability = "Vulnerability" in instance_types
+
+        if is_capability and is_vulnerability:
+            if is_disabled:
+                fillcolor = "darkgreen:darkred"
+            else:
+                fillcolor = "lightgreen:lightcoral"
+            style = "wedged"
+        elif is_capability:
+            fillcolor = "darkgreen" if is_disabled else "lightgreen"
+            style = "filled"
+        elif is_vulnerability:
+            fillcolor = "darkred" if is_disabled else "lightcoral"
+            style = "filled"
         else:
-            return {**base_style, "fillcolor": "grey"}
+            fillcolor = "grey"
+            style = "filled"
+
+        return {**base_style, "fillcolor": fillcolor, "style": style}
 
     @staticmethod
     def _get_entity_style(instance_types: list) -> dict:
@@ -143,8 +176,8 @@ class GraphCreator:
         :return: A dictionary containing Graphviz node style attributes.
         :rtype: dict
         """
-        node_styles = {"Entity": {"shape": "square", "color": "white", "style": "filled"}, "Asset": {"color": "green"},
-                       "Control": {"color": "#789df5"}, "Threat": {"color": "red"}}
+        node_styles = {"Entity": {"shape": "square", "color": "white", "style": "filled"}, "Asset": {"color": "lightgreen"},
+                       "Control": {"color": "#789df5"}, "Threat": {"color": "lightcoral"}}
 
         base_style = node_styles["Entity"]
         entity_types = [t for t in ["Asset", "Control", "Threat"] if t in instance_types]

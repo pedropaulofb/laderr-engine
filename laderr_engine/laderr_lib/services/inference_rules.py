@@ -67,50 +67,66 @@ class InferenceRules:
             VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:threatens {triple[2]}")
 
     @staticmethod
-    def execute_rule_resilience(laderr_graph: Graph):
+    def execute_rule_resilience(laderr_graph):
         new_triples = set()
 
+        enabled = LADERR_NS.enabled
+
+        # Iterate over all combinations of entities and capabilities
         for o1, c1 in laderr_graph.subject_objects(LADERR_NS.capabilities):
             for o2, c2 in laderr_graph.subject_objects(LADERR_NS.capabilities):
                 for o3, c3 in laderr_graph.subject_objects(LADERR_NS.capabilities):
-                    for v1, c1_exposes in laderr_graph.subject_objects(LADERR_NS.exposes):
-                        if (
-                                (o1, LADERR_NS.capabilities, c1) in laderr_graph and
-                                (o1, LADERR_NS.vulnerabilities, v1) in laderr_graph and
-                                (o2, LADERR_NS.capabilities, c2) in laderr_graph and
-                                (o3, LADERR_NS.capabilities, c3) in laderr_graph and
-                                (c2, LADERR_NS.disables, v1) in laderr_graph and
-                                (c3, LADERR_NS.exploits, v1) in laderr_graph
+                    for o1_vuln, v1 in laderr_graph.subject_objects(LADERR_NS.vulnerabilities):
+                        # Check entities align
+                        if o1 != o1_vuln:
+                            continue
+
+                        # Check capabilities belong to distinct entities
+                        if o1 in {o2, o3}:
+                            continue
+
+                        # Capability c2 must have state ENABLED
+                        if (c2, LADERR_NS.state, enabled) not in laderr_graph:
+                            continue
+
+                        # Check the required property relationships
+                        if not (
+                            (c2, LADERR_NS.disables, v1) in laderr_graph and
+                            (c1, LADERR_NS.exposedBy, v1) in laderr_graph and
+                            (c3, LADERR_NS.exploits, v1) in laderr_graph
                         ):
-                            # Check if a Resilience individual already exists
-                            existing_resilience = None
-                            for r in laderr_graph.subjects(RDF.type, LADERR_NS.Resilience):
-                                if (
-                                        (o1, LADERR_NS.resiliences, r) in laderr_graph and
-                                        (r, LADERR_NS.preserves, c1) in laderr_graph and
-                                        (r, LADERR_NS.preservesAgainst, c3) in laderr_graph and
-                                        (r, LADERR_NS.preservesDespite, v1) in laderr_graph and
-                                        (c2, LADERR_NS.sustains, r) in laderr_graph
-                                ):
-                                    existing_resilience = r
-                                    break
+                            continue
 
-                            if existing_resilience is None:
-                                # Generate a random Resilience ID
-                                resilience_id = "R" + ''.join(
-                                    random.choices(string.ascii_uppercase + string.digits, k=2))
-                                base_uri = GraphHandler.get_base_prefix(laderr_graph)
-                                resilience_uri = URIRef(f"{base_uri}{resilience_id}")
+                        # Check if Resilience already exists
+                        existing_resilience = None
+                        for r in laderr_graph.subjects(RDF.type, LADERR_NS.Resilience):
+                            if (
+                                (o1, LADERR_NS.resiliences, r) in laderr_graph and
+                                (r, LADERR_NS.preserves, c1) in laderr_graph and
+                                (r, LADERR_NS.preservesAgainst, c3) in laderr_graph and
+                                (r, LADERR_NS.preservesDespite, v1) in laderr_graph and
+                                (c2, LADERR_NS.sustains, r) in laderr_graph
+                            ):
+                                existing_resilience = r
+                                break
 
-                                # Add the new Resilience individual and relationships
-                                new_triples.add((resilience_uri, RDF.type, LADERR_NS.Resilience))
-                                new_triples.add((o1, LADERR_NS.resiliences, resilience_uri))
-                                new_triples.add((resilience_uri, LADERR_NS.preserves, c1))
-                                new_triples.add((resilience_uri, LADERR_NS.preservesAgainst, c3))
-                                new_triples.add((resilience_uri, LADERR_NS.preservesDespite, v1))
-                                new_triples.add((c2, LADERR_NS.sustains, resilience_uri))
+                        if existing_resilience is None:
+                            # Create new Resilience individual
+                            resilience_id = "R" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=2))
+                            base_uri = GraphHandler.get_base_prefix(laderr_graph)
+                            resilience_uri = URIRef(f"{base_uri}{resilience_id}")
+
+                            # Add triples for new Resilience
+                            new_triples.update({
+                                (resilience_uri, RDF.type, LADERR_NS.Resilience),
+                                (o1, LADERR_NS.resiliences, resilience_uri),
+                                (resilience_uri, LADERR_NS.preserves, c1),
+                                (resilience_uri, LADERR_NS.preservesAgainst, c3),
+                                (resilience_uri, LADERR_NS.preservesDespite, v1),
+                                (c2, LADERR_NS.sustains, resilience_uri),
+                                (resilience_uri, LADERR_NS.state, enabled)  # New requirement: resilience must also be ENABLED
+                            })
 
         for triple in new_triples:
-            # Ensure the base namespace is correctly bound
             laderr_graph.add(triple)
             VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")

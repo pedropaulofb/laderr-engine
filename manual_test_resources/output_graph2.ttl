@@ -48,17 +48,13 @@
     laderr:capabilities :flooding_potential ;
     laderr:threatens :riverford .
 
-:RAT a laderr:LaderrConstruct,
-        laderr:Resilience ;
-    laderr:preserves :housing ;
-    laderr:preservesAgainst :flooding_potential ;
-    laderr:preservesDespite :weak_levees .
-
-:RX9 a laderr:LaderrConstruct,
-        laderr:Resilience ;
-    laderr:preserves :housing ;
-    laderr:preservesAgainst :flooding_potential ;
-    laderr:preservesDespite :weak_levees .
+:flooding_potential a laderr:Capability,
+        laderr:Disposition,
+        laderr:LaderrConstruct ;
+    rdfs:label "Flooding Potential" ;
+    laderr:description "The river's potential to overflow and flood surrounding areas." ;
+    laderr:exploits :weak_levees ;
+    laderr:state laderr:disabled .
 
 :levee_reinforcement a laderr:Capability,
         laderr:Disposition,
@@ -67,8 +63,7 @@
     rdfs:label "Levee Reinforcement" ;
     laderr:description "A capability that strengthens Riverford’s levees to prevent flood risks." ;
     laderr:disables :weak_levees ;
-    laderr:state laderr:enabled ;
-    laderr:sustains :RX9 .
+    laderr:state laderr:disabled .
 
 :water_control a laderr:Capability,
         laderr:Disposition,
@@ -77,8 +72,7 @@
     laderr:description "Regulates water levels, mitigating flood risks." ;
     laderr:disables :outdated_pumps,
         :weak_levees ;
-    laderr:state laderr:enabled ;
-    laderr:sustains :RAT .
+    laderr:state laderr:disabled .
 
 :outdated_pumps a laderr:Disposition,
         laderr:LaderrConstruct,
@@ -86,32 +80,22 @@
     rdfs:label "Outdated Pumps" ;
     laderr:description "A vulnerability where outdated pumps cannot efficiently handle floodwaters." ;
     laderr:exposes :housing ;
-    laderr:state laderr:enabled .
-
-:flooding_potential a laderr:Capability,
-        laderr:Disposition,
-        laderr:LaderrConstruct ;
-    rdfs:label "Flooding Potential" ;
-    laderr:description "The river's potential to overflow and flood surrounding areas." ;
-    laderr:exploits :weak_levees ;
-    laderr:state laderr:enabled .
-
-:riverford a laderr:Asset,
-        laderr:Entity,
-        laderr:LaderrConstruct ;
-    rdfs:label "City of Riverford" ;
-    laderr:capabilities :housing ;
-    laderr:resiliences :RAT,
-        :RX9 ;
-    laderr:vulnerabilities :outdated_pumps,
-        :weak_levees .
+    laderr:state laderr:disabled .
 
 :housing a laderr:Capability,
         laderr:Disposition,
         laderr:LaderrConstruct ;
     rdfs:label "Housing Infrastructure" ;
     laderr:description "The housing infrastructure of Riverford, which needs flood protection." ;
-    laderr:state laderr:enabled .
+    laderr:state laderr:disabled .
+
+:riverford a laderr:Asset,
+        laderr:Entity,
+        laderr:LaderrConstruct ;
+    rdfs:label "City of Riverford" ;
+    laderr:capabilities :housing ;
+    laderr:vulnerabilities :outdated_pumps,
+        :weak_levees .
 
 :weak_levees a laderr:Disposition,
         laderr:LaderrConstruct,
@@ -119,5 +103,5 @@
     rdfs:label "Weak Levees" ;
     laderr:description "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential." ;
     laderr:exposes :housing ;
-    laderr:state laderr:enabled .
+    laderr:state laderr:disabled .
 

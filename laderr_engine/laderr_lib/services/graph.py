@@ -5,6 +5,7 @@ This module provides functionalities for loading RDF schemas and saving RDF grap
 """
 import os
 
+from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL
 from rdflib.exceptions import ParserError
@@ -129,6 +130,7 @@ class GraphHandler:
         has_state = False  # Track if state exists
 
         for prop, value in properties.items():
+
             if prop == "id":
                 continue  # Skip `id`, already used as URI
 
