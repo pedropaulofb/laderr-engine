@@ -104,7 +104,7 @@ class GraphCreator:
             is_disabled = (subject, URIRef("https://w3id.org/laderr#state"), disabled_state) in laderr_graph
 
             if "Resilience" in instance_types:
-                style = {"shape": "ellipse", "color": "white", "style": "filled", "fillcolor": "orange"}
+                style = {"shape": "ellipse", "color": "black", "style": "filled", "fillcolor": "orange"}
             elif any(item in instance_types for item in ["Disposition", "Capability", "Vulnerability"]):
                 style = GraphCreator._get_disposition_style(instance_types, is_disabled)
             elif "Entity" in instance_types:
@@ -176,7 +176,7 @@ class GraphCreator:
         :return: A dictionary containing Graphviz node style attributes.
         :rtype: dict
         """
-        node_styles = {"Entity": {"shape": "square", "color": "white", "style": "filled"}, "Asset": {"color": "lightgreen"},
+        node_styles = {"Entity": {"shape": "square", "color": "black", "style": "filled"}, "Asset": {"color": "lightgreen"},
                        "Control": {"color": "#789df5"}, "Threat": {"color": "lightcoral"}}
 
         base_style = node_styles["Entity"]
