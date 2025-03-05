@@ -1,5 +1,6 @@
 import hashlib
 
+from icecream import ic
 from owlrl import DeductiveClosure, RDFS_Semantics
 from rdflib import Graph
 
@@ -57,10 +58,15 @@ class ReasoningHandler:
 
             DeductiveClosure(RDFS_Semantics).expand(graph)
 
-            InferenceRules.execute_rule_inhibits(graph)
             InferenceRules.execute_rule_protects(graph)
+            InferenceRules.execute_rule_inhibits(graph)
             InferenceRules.execute_rule_threatens(graph)
+            InferenceRules.execute_rule_disabled_state(graph)
             InferenceRules.execute_rule_resilience(graph)
+            InferenceRules.execute_rule_succeed_to_damage(graph)
+            InferenceRules.execute_rule_failed_to_damage(graph)
+            InferenceRules.execute_rule_scenario_not_resilient(graph)
+            InferenceRules.execute_rule_scenario_resilient(graph)
 
             hash_after = ReasoningHandler.calculate_hash(graph)
 

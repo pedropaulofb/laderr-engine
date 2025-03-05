@@ -130,3 +130,196 @@ class InferenceRules:
         for triple in new_triples:
             laderr_graph.add(triple)
             VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
+
+    @staticmethod
+    def execute_rule_succeed_to_damage(laderr_graph: Graph):
+        """
+        Applies the 'succeededToDamage' inference rule:
+        If an entity (o2) has a capability that exploits a vulnerability of another entity (o1),
+        and that vulnerability exposes a capability of o1, and both the vulnerability and the exploiting capability
+        are enabled, then o2 succeeded to damage o1.
+
+        :param laderr_graph: RDFLib graph containing LaDeRR data.
+        :type laderr_graph: Graph
+        """
+        new_triples = set()
+
+        enabled = LADERR_NS.enabled
+
+        # Iterate over all entities and their capabilities and vulnerabilities
+        for o1, c1 in laderr_graph.subject_objects(LADERR_NS.capabilities):
+            for o1_vuln, v1 in laderr_graph.subject_objects(LADERR_NS.vulnerabilities):
+                if o1 != o1_vuln:
+                    continue
+
+                for o2, c2 in laderr_graph.subject_objects(LADERR_NS.capabilities):
+                    # Check if capability c2 exploits vulnerability v1
+                    if (c2, LADERR_NS.exploits, v1) not in laderr_graph:
+                        continue
+
+                    # Check if vulnerability v1 exposes capability c1
+                    if (v1, LADERR_NS.exposes, c1) not in laderr_graph:
+                        continue
+
+                    # Both the vulnerability and the exploiting capability must be enabled
+                    if (v1, LADERR_NS.state, enabled) not in laderr_graph or (c2, LADERR_NS.state, enabled) not in laderr_graph:
+                        continue
+
+                    # If all conditions match, o2 succeeded to damage o1
+                    new_triples.add((o2, LADERR_NS.succeededToDamage, o1))
+
+        for triple in new_triples:
+            laderr_graph.add(triple)
+            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:succeededToDamage {triple[2]}")
+
+    @staticmethod
+    def execute_rule_scenario_not_resilient(laderr_graph: Graph):
+        """
+        Applies the 'scenario = NOT_RESILIENT' inference rule:
+        If a LaDeRR Specification (ls) contains two entities (o1 and o2) where o1 succeeded to damage o2,
+        then the scenario of the specification is set to NOT_RESILIENT.
+
+        :param laderr_graph: RDFLib graph containing LaDeRR data.
+        :type laderr_graph: Graph
+        """
+        new_triples = set()
+
+        not_resilient = LADERR_NS.not_resilient
+
+        # For each LaderrSpecification
+        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
+            entities = set()
+
+            # Collect all entities that are part of this specification
+            for entity in laderr_graph.objects(ls, LADERR_NS.composedOf):
+                entities.add(entity)
+
+            # Check for any pair (o1, o2) within the same specification where o1 succeeded to damage o2
+            for o1 in entities:
+                for o2 in entities:
+                    if (o1, LADERR_NS.succeededToDamage, o2) in laderr_graph:
+                        # Set the scenario of this specification to NOT_RESILIENT
+                        new_triples.add((ls, LADERR_NS.scenario, not_resilient))
+
+        for triple in new_triples:
+            laderr_graph.add(triple)
+            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:scenario {triple[2]}")
+
+    @staticmethod
+    def execute_rule_scenario_resilient(laderr_graph: Graph):
+        """
+        Applies the 'scenario = RESILIENT' inference rule:
+        If a LaDeRR Specification (ls) contains an entity (o) with a vulnerability (v) that is DISABLED,
+        and the current scenario of the specification is INCIDENT,
+        then the scenario of the specification is set to RESILIENT.
+
+        :param laderr_graph: RDFLib graph containing LaDeRR data.
+        :type laderr_graph: Graph
+        """
+        new_triples = set()
+
+        disabled = LADERR_NS.disabled
+        incident = LADERR_NS.incident
+        resilient = LADERR_NS.resilient
+
+        # For each LaderrSpecification
+        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
+            # Check if current scenario is INCIDENT
+            if (ls, LADERR_NS.scenario, incident) not in laderr_graph:
+                continue
+
+            scenario_should_be_resilient = False
+
+            # Collect all entities within this specification
+            for o in laderr_graph.objects(ls, LADERR_NS.composedOf):
+                # Check all vulnerabilities of this entity
+                for v in laderr_graph.objects(o, LADERR_NS.vulnerabilities):
+                    # If any vulnerability is DISABLED, condition is met
+                    if (v, LADERR_NS.state, disabled) in laderr_graph:
+                        scenario_should_be_resilient = True
+                        break
+
+                if scenario_should_be_resilient:
+                    break
+
+            if scenario_should_be_resilient:
+                new_triples.add((ls, LADERR_NS.scenario, resilient))
+
+        for triple in new_triples:
+            laderr_graph.add(triple)
+            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:scenario {triple[2]}")
+
+    @staticmethod
+    def execute_rule_disabled_state(laderr_graph: Graph):
+        """
+        Applies the 'disabled state' inference rule:
+        If a disposition (c1) has state ENABLED and disables another disposition (c2),
+        then c2's state is set to DISABLED.
+
+        :param laderr_graph: RDFLib graph containing LaDeRR data.
+        :type laderr_graph: Graph
+        """
+        new_triples = set()
+
+        enabled = LADERR_NS.enabled
+        disabled = LADERR_NS.disabled
+
+        # Iterate over all dispositions
+        for c1 in laderr_graph.subjects(RDF.type, LADERR_NS.Disposition):
+            if (c1, LADERR_NS.state, enabled) not in laderr_graph:
+                continue
+
+            # Check which dispositions are disabled by this enabled disposition
+            for c2 in laderr_graph.objects(c1, LADERR_NS.disables):
+                if (c2, RDF.type, LADERR_NS.Disposition) not in laderr_graph:
+                    continue
+
+                # Infer that c2 must have state DISABLED
+                new_triples.add((c2, LADERR_NS.state, disabled))
+
+        for triple in new_triples:
+            laderr_graph.add(triple)
+            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:state {triple[2]}")
+
+    @staticmethod
+    def execute_rule_failed_to_damage(laderr_graph: Graph):
+        """
+        Applies the 'failedToDamage' inference rule:
+        If an entity (o2) has a capability that exploits a vulnerability of another entity (o1),
+        and that vulnerability exposes a capability of o1, and the vulnerability is DISABLED,
+        while the exploiting capability is ENABLED, then o2 failed to damage o1.
+
+        :param laderr_graph: RDFLib graph containing LaDeRR data.
+        :type laderr_graph: Graph
+        """
+        new_triples = set()
+
+        enabled = LADERR_NS.enabled
+        disabled = LADERR_NS.disabled
+
+        # Iterate over all entities and their capabilities and vulnerabilities
+        for o1, c1 in laderr_graph.subject_objects(LADERR_NS.capabilities):
+            for o1_vuln, v1 in laderr_graph.subject_objects(LADERR_NS.vulnerabilities):
+                if o1 != o1_vuln:
+                    continue
+
+                for o2, c2 in laderr_graph.subject_objects(LADERR_NS.capabilities):
+                    # Check if capability c2 exploits vulnerability v1
+                    if (c2, LADERR_NS.exploits, v1) not in laderr_graph:
+                        continue
+
+                    # Check if vulnerability v1 exposes capability c1
+                    if (v1, LADERR_NS.exposes, c1) not in laderr_graph:
+                        continue
+
+                    # Vulnerability must be DISABLED, and the exploiting capability must be ENABLED
+                    if (v1, LADERR_NS.state, disabled) not in laderr_graph or (
+                    c2, LADERR_NS.state, enabled) not in laderr_graph:
+                        continue
+
+                    # If all conditions match, infer failedToDamage relation
+                    new_triples.add((o2, LADERR_NS.failedToDamage, o1))
+
+        for triple in new_triples:
+            laderr_graph.add(triple)
+            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:failedToDamage {triple[2]}")

@@ -9,6 +9,8 @@ import graphviz
 from loguru import logger
 from rdflib import Graph, RDF, URIRef
 
+from laderr_engine.laderr_lib.constants import LADERR_NS
+
 
 class GraphCreator:
     """
@@ -92,7 +94,7 @@ class GraphCreator:
         :rtype: set
         """
         added_nodes = set()
-        disabled_state = URIRef("https://w3id.org/laderr#disabled")
+        disabled_state = LADERR_NS.disabled
 
         for subject in laderr_graph.subjects(predicate=RDF.type):
             instance_types = [str(obj).split("#")[-1] for obj in laderr_graph.objects(subject=subject, predicate=RDF.type)]
@@ -101,7 +103,7 @@ class GraphCreator:
             if "LaderrSpecification" in instance_types:
                 continue
 
-            is_disabled = (subject, URIRef("https://w3id.org/laderr#state"), disabled_state) in laderr_graph
+            is_disabled = (subject, LADERR_NS.state, disabled_state) in laderr_graph
 
             if "Resilience" in instance_types:
                 style = {"shape": "ellipse", "color": "black", "style": "filled", "fillcolor": "orange"}
