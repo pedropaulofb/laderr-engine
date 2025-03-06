@@ -1,5 +1,3 @@
-from rdflib import URIRef, RDF
-
 from laderr_engine.laderr_lib.laderr import Laderr
 from laderr_engine.laderr_lib.services.visualization import GraphCreator
 

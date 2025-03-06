@@ -7,7 +7,7 @@ LaDeRR RDF models, extracts entities and relationships, applies predefined style
 
 import graphviz
 from loguru import logger
-from rdflib import Graph, RDF, URIRef
+from rdflib import Graph, RDF
 
 from laderr_engine.laderr_lib.constants import LADERR_NS
 
@@ -97,7 +97,8 @@ class GraphCreator:
         disabled_state = LADERR_NS.disabled
 
         for subject in laderr_graph.subjects(predicate=RDF.type):
-            instance_types = [str(obj).split("#")[-1] for obj in laderr_graph.objects(subject=subject, predicate=RDF.type)]
+            instance_types = [str(obj).split("#")[-1] for obj in
+                              laderr_graph.objects(subject=subject, predicate=RDF.type)]
             instance_id = str(subject).split("#")[-1]
 
             if "LaderrSpecification" in instance_types:
@@ -178,7 +179,8 @@ class GraphCreator:
         :return: A dictionary containing Graphviz node style attributes.
         :rtype: dict
         """
-        node_styles = {"Entity": {"shape": "square", "color": "black", "style": "filled"}, "Asset": {"color": "lightgreen"},
+        node_styles = {"Entity": {"shape": "square", "color": "black", "style": "filled"},
+                       "Asset": {"color": "lightgreen"},
                        "Control": {"color": "#789df5"}, "Threat": {"color": "lightcoral"}}
 
         base_style = node_styles["Entity"]

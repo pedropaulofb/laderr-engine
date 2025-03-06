@@ -5,7 +5,6 @@ This module provides functionalities for loading RDF schemas and saving RDF grap
 """
 import os
 
-from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL
 from rdflib.exceptions import ParserError

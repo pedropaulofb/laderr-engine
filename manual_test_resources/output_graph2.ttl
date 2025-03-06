@@ -18,8 +18,7 @@
     laderr:createdBy "Pedro Paulo F. Barcelos"^^xsd:string ;
     laderr:createdOn "2025-02-10T14:30:00+00:00"^^xsd:dateTime ;
     laderr:description "A socio-ecological system model for flood risk and resilience."^^xsd:string ;
-    laderr:scenario laderr:not_resilient,
-        laderr:operational ;
+    laderr:scenario laderr:operational ;
     laderr:title "Flood Risk and Resilience Model"^^xsd:string ;
     laderr:version "1.1"^^xsd:string .
 
@@ -43,7 +42,6 @@
     rdfs:label "Silverstream River" ;
     laderr:capabilities :flooding_potential ;
     laderr:failedToDamage :riverford ;
-    laderr:succeededToDamage :riverford ;
     laderr:threatens :riverford .
 
 :flooding_potential a laderr:Capability,
@@ -77,8 +75,7 @@
     rdfs:label "Outdated Pumps" ;
     laderr:description "A vulnerability where outdated pumps cannot efficiently handle floodwaters." ;
     laderr:exposes :housing ;
-    laderr:state laderr:disabled,
-        laderr:enabled .
+    laderr:state laderr:disabled .
 
 :housing a laderr:Capability,
         laderr:Disposition,
@@ -87,15 +84,6 @@
     laderr:description "The housing infrastructure of Riverford, which needs flood protection." ;
     laderr:state laderr:enabled .
 
-:weak_levees a laderr:Disposition,
-        laderr:LaderrConstruct,
-        laderr:Vulnerability ;
-    rdfs:label "Weak Levees" ;
-    laderr:description "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential." ;
-    laderr:exposes :housing ;
-    laderr:state laderr:disabled,
-        laderr:enabled .
-
 :riverford a laderr:Asset,
         laderr:Entity,
         laderr:LaderrConstruct ;
@@ -103,4 +91,12 @@
     laderr:capabilities :housing ;
     laderr:vulnerabilities :outdated_pumps,
         :weak_levees .
+
+:weak_levees a laderr:Disposition,
+        laderr:LaderrConstruct,
+        laderr:Vulnerability ;
+    rdfs:label "Weak Levees" ;
+    laderr:description "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential." ;
+    laderr:exposes :housing ;
+    laderr:state laderr:disabled .
 

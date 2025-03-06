@@ -1,6 +1,5 @@
 import hashlib
 
-from icecream import ic
 from owlrl import DeductiveClosure, RDFS_Semantics
 from rdflib import Graph
 
