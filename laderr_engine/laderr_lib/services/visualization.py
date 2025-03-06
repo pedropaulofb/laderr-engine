@@ -23,16 +23,7 @@ class GraphCreator:
     @staticmethod
     def create_graph_visualization(laderr_graph: Graph, output_file_path: str) -> None:
         """
-        Generates a Graphviz visualization of the RDF graph and saves it as a PNG.
-
-        This method:
-        - Validates the output file path.
-        - Creates a Graphviz Digraph.
-        - Defines node and edge styles.
-        - Processes nodes from the RDF graph and adds them to the visualization.
-        - Processes relationships between nodes and adds edges with appropriate styles.
-        - (Optional) Adds a text-only legend listing descriptions of node and edge styles.
-        - Saves the final visualization as a PNG file.
+        Generates a Graphviz visualization of the RDF graph and saves it as a PNG, applying scenario-based background color.
 
         :param laderr_graph: RDFLib graph containing LaDeRR data.
         :type laderr_graph: Graph
@@ -41,11 +32,21 @@ class GraphCreator:
         :raises ValueError: If the output file does not have a '.png' extension.
         """
         GraphCreator._validate_output_path(output_file_path)
-        dot = GraphCreator._initialize_graph()
+        bgcolor = GraphCreator._get_scenario_bgcolor(laderr_graph)
+
+        # Get the scenario type explicitly
+        scenario_type = ""
+        for specification in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
+            scenario = laderr_graph.value(specification, LADERR_NS.scenario)
+            if scenario:
+                scenario_type = str(scenario).split("#")[-1].upper()
+                break
+
+        dot = GraphCreator._initialize_graph(bgcolor, scenario_type)
 
         added_nodes = GraphCreator._process_nodes(laderr_graph, dot)
         GraphCreator._process_edges(laderr_graph, dot, added_nodes)
-        dot.render(output_file_path[:-4], cleanup=True)  # Remove '.png' for Graphviz
+        dot.render(output_file_path[:-4], cleanup=True)
         logger.success(f"Graph saved as {output_file_path}")
 
     @staticmethod
@@ -61,17 +62,47 @@ class GraphCreator:
             raise ValueError(f"Invalid file path: '{output_file_path}'. The output file must have a '.png' extension.")
 
     @staticmethod
-    def _initialize_graph() -> graphviz.Digraph:
+    def _initialize_graph(bgcolor: str = "white", scenario_type: str = "") -> graphviz.Digraph:
         """
-        Initializes a Graphviz Digraph with predefined attributes.
+        Initializes a Graphviz Digraph with predefined attributes, including background color and scenario label.
 
+        :param bgcolor: Background color for the graph visualization.
+        :type bgcolor: str
+        :param scenario_type: Scenario type label to display on the upper-left corner.
+        :type scenario_type: str
         :return: A Graphviz Digraph instance with configured attributes.
         :rtype: graphviz.Digraph
         """
         dot = graphviz.Digraph(format='png')
         dot.attr(dpi='300', fontname="Arial", nodesep="0.2", ranksep="0.4",
-                 labelloc="c")  # Ensures labels are centered vertically
+                 labelloc="t", bgcolor=bgcolor, labeljust='l', fontsize="10",
+                 label=f"{scenario_type.upper()} scenario" if scenario_type else "")
         return dot
+
+    @staticmethod
+    def _get_scenario_bgcolor(laderr_graph: Graph) -> str:
+        """
+        Determines the background color of the visualization based on the LaderrSpecification scenario.
+
+        :param laderr_graph: RDFLib graph containing LaDeRR data.
+        :type laderr_graph: Graph
+        :return: Hex color code for background.
+        :rtype: str
+        """
+        scenario_colors = {
+            'operational': '#FFFFFF',  # white
+            'incident': '#E6E6E3',  # very light grey
+            'resilient': '#EBFFEB',  # very light green
+            'not_resilient': '#FDE8E8'  # very light red
+        }
+
+        for specification in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
+            scenario = laderr_graph.value(specification, LADERR_NS.scenario)
+            if scenario:
+                scenario_type = str(scenario).split("#")[-1].lower()
+                return scenario_colors.get(scenario_type, "white")
+
+        return "white"  # Default background color
 
     @staticmethod
     def _process_nodes(laderr_graph: Graph, dot: graphviz.Digraph) -> set:
