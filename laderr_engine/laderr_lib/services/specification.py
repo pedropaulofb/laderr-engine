@@ -17,6 +17,8 @@ from rdflib import Graph, RDF, Literal, URIRef
 
 from laderr_engine.laderr_lib.constants import LADERR_NS
 
+VERBOSE = True
+
 
 class SpecificationHandler:
     """
@@ -72,28 +74,25 @@ class SpecificationHandler:
     @staticmethod
     def _apply_defaults(spec_metadata: dict[str, object], spec_data: dict[str, object]) -> None:
         """
-        Applies all required default values to the metadata and data sections of the specification.
+        Applies all necessary default values to the metadata and data parts of the specification.
 
-        Metadata Defaults:
-        - scenario = "operational" if missing.
-        - baseUri = "https://laderr.laderr#" if missing.
-        - createdBy is normalized into a list if given as a string.
+        This includes adding `id` directly from the section key, adding default `label`, and `status`
+        to data constructs, and ensuring `scenario`, `baseUri`, and `createdBy` are correctly set in the metadata.
 
-        Data Defaults:
-        - Each construct (entity, capability, vulnerability, etc.) gets:
-            - id = section key if missing.
-            - label = id if missing.
-            - status = "enabled" if missing (for Dispositions like Capability and Vulnerability).
+        Each time a default is applied, this is logged to inform the user.
 
-        :param spec_metadata: Metadata dictionary.
-        :param spec_data: Dictionary representing all constructs (Entity, Capability, Vulnerability, etc.).
+        :param spec_metadata: Dictionary with metadata attributes.
+        :param spec_data: Dictionary representing structured data instances.
         """
+
         # Metadata defaults
         if "scenario" not in spec_metadata:
             spec_metadata["scenario"] = "operational"
+            VERBOSE and logger.info("Added default value 'operational' for metadata field 'scenario'.")
 
         if "baseUri" not in spec_metadata:
             spec_metadata["baseUri"] = "https://laderr.laderr#"
+            VERBOSE and logger.info("Added default value 'https://laderr.laderr#' for metadata field 'baseUri'.")
 
         if "createdBy" in spec_metadata and isinstance(spec_metadata["createdBy"], str):
             spec_metadata["createdBy"] = [spec_metadata["createdBy"]]
@@ -103,14 +102,18 @@ class SpecificationHandler:
             if isinstance(instances, dict):
                 for key, properties in instances.items():
                     if isinstance(properties, dict):
-                        if "id" not in properties:
-                            properties["id"] = key
+                        # Force `id` to be derived from section key
+                        properties["id"] = key
 
                         if "label" not in properties:
                             properties["label"] = properties["id"]
+                            VERBOSE and logger.info(
+                                f"For {class_type} with id '{properties['id']}', added default 'label' = '{properties['label']}'")
 
                         if class_type in {"Disposition", "Capability", "Vulnerability"} and "status" not in properties:
                             properties["status"] = "enabled"
+                            VERBOSE and logger.info(
+                                f"For {class_type} with id '{properties['id']}', added default 'status' = 'enabled'")
 
     @staticmethod
     def write_specification(laderr_graph: Graph, output_file_path: str) -> None:
