@@ -131,3 +131,101 @@ def dict_to_toml_str(d: dict, indent_level=0) -> str:
         else:
             toml_str += f"{indent}{key} = {value}\n"
     return toml_str
+
+import logging
+from loguru import logger
+
+@pytest.fixture
+def loguru_caplog(caplog):
+    """ Redirect Loguru logs into `caplog`, so pytest can capture them. """
+    class PropagateHandler(logging.Handler):
+        def emit(self, record):
+            logging.getLogger(record.name).handle(record)
+
+    handler_id = logger.add(PropagateHandler(), level=0)
+    yield caplog
+    logger.remove(handler_id)
+
+
+@pytest.mark.parametrize("construct_type, section_key, provided_id",
+                         [("Entity", "riverford", "wrong_id"),
+                          ("Capability", "flood_control", "unexpected_id")])
+def test_id_conflict_warning(temp_toml_file, loguru_caplog, construct_type, section_key, provided_id):
+    """
+    Tests that a warning is logged if the user provides a conflicting 'id'.
+    """
+    loguru_caplog.clear()
+
+    toml_content = {
+        f"{construct_type}.{section_key}": {"id": provided_id}
+    }
+
+    with open(temp_toml_file, "w", encoding="utf-8") as f:
+        f.write(dict_to_toml_str(toml_content))
+
+    SpecificationHandler.read_specification(temp_toml_file)
+
+    warning_found = any(
+        f"Ignoring user-provided 'id' = '{provided_id}'" in message
+        for message in loguru_caplog.text.splitlines()
+    )
+
+    assert warning_found, f"Expected warning about 'id' conflict was not found in logs for {construct_type}.{section_key}"
+
+
+def test_no_unnecessary_defaults(temp_toml_file):
+    """
+    Tests that fully defined constructs are not modified by _apply_defaults.
+    """
+    toml_content = {
+        "Capability.flood_control": {
+            "id": "flood_control",
+            "label": "Flood Control System",
+            "status": "disabled"
+        }
+    }
+
+    with open(temp_toml_file, "w", encoding="utf-8") as f:
+        f.write(dict_to_toml_str(toml_content))
+
+    _, data = SpecificationHandler.read_specification(temp_toml_file)
+
+    assert data["Capability"]["flood_control"] == {
+        "id": "flood_control",
+        "label": "Flood Control System",
+        "status": "disabled"
+    }
+
+def test_empty_specification(temp_toml_file):
+    """
+    Tests behavior when the specification is completely empty.
+    """
+    with open(temp_toml_file, "w", encoding="utf-8") as f:
+        f.write("")
+
+    metadata, data = SpecificationHandler.read_specification(temp_toml_file)
+
+    assert metadata == {
+        "scenario": "operational",
+        "baseUri": "https://laderr.laderr#"
+    }
+    assert data == {}
+
+def test_unrecognized_constructs_are_preserved(temp_toml_file):
+    """
+    Tests that unrecognized constructs are preserved in the parsed result.
+    """
+    toml_content = {
+        "UnknownType.strange": {
+            "someField": "someValue"
+        }
+    }
+
+    with open(temp_toml_file, "w", encoding="utf-8") as f:
+        f.write(dict_to_toml_str(toml_content))
+
+    _, data = SpecificationHandler.read_specification(temp_toml_file)
+
+    assert "UnknownType" in data
+    assert "strange" in data["UnknownType"]
+    assert data["UnknownType"]["strange"]["someField"] == "someValue"

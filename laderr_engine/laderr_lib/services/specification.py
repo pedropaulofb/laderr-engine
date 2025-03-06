@@ -79,7 +79,7 @@ class SpecificationHandler:
         This includes adding `id` directly from the section key, adding default `label`, and `status`
         to data constructs, and ensuring `scenario`, `baseUri`, and `createdBy` are correctly set in the metadata.
 
-        Each time a default is applied, this is logged to inform the user.
+        Each time a default is applied, this is logged to inform the user (if VERBOSE is True).
 
         :param spec_metadata: Dictionary with metadata attributes.
         :param spec_data: Dictionary representing structured data instances.
@@ -102,19 +102,29 @@ class SpecificationHandler:
             if isinstance(instances, dict):
                 for key, properties in instances.items():
                     if isinstance(properties, dict):
+                        # If user provided `id`, check if it's conflicting
+                        if "id" in properties and properties["id"] != key:
+                            logger.warning(
+                                f"Ignoring user-provided 'id' = '{properties['id']}' for {class_type} '{key}', "
+                                f"as 'id' must match the section key."
+                            )
+
                         # Force `id` to be derived from section key
                         properties["id"] = key
 
                         if "label" not in properties:
                             properties["label"] = properties["id"]
                             VERBOSE and logger.info(
-                                f"For {class_type} with id '{properties['id']}', added default 'label' = '{properties['label']}'")
+                                f"For {class_type} with id '{properties['id']}', added default 'label' = '{properties['label']}'"
+                            )
 
                         if class_type in {"Disposition", "Capability", "Vulnerability"} and "status" not in properties:
                             properties["status"] = "enabled"
                             VERBOSE and logger.info(
-                                f"For {class_type} with id '{properties['id']}', added default 'status' = 'enabled'")
+                                f"For {class_type} with id '{properties['id']}', added default 'status' = 'enabled'"
+                            )
 
+    # TODO: To be re-evaluated and tested.
     @staticmethod
     def write_specification(laderr_graph: Graph, output_file_path: str) -> None:
         """

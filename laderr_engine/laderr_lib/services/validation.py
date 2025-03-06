@@ -23,13 +23,10 @@ class ValidationHandler:
 
     This class provides methods for validating RDF data against SHACL constraints, ensuring that LaDeRR
     specifications conform to syntactic and semantic requirements.
-
-    :cvar LADERR_NS: Namespace for LaDeRR ontology.
-    :vartype LADERR_NS: Namespace
     """
 
-    @classmethod
-    def validate_base_uri(cls, spec_metadata_dict: dict[str, object]) -> str:
+    @staticmethod
+    def validate_base_uri(spec_metadata_dict: dict[str, object]) -> str:
         """
         (Internal) Ensures that the base URI provided in the specification metadata is valid.
 
@@ -109,13 +106,13 @@ class ValidationHandler:
 
             # Skip non-files and non-SHACL files
             if not os.path.isfile(file_path) or not filename.endswith(".shacl"):
-                logger.info(f"Skipping non-SHACL file: {filename}")
+                VERBOSE and logger.info(f"Skipping non-SHACL file: {filename}")
                 continue
 
             # Attempt to parse the SHACL file
             try:
                 merged_graph.parse(file_path, format="turtle")
-                logger.info(f"Loaded SHACL file: {filename}")
+                VERBOSE and logger.info(f"Loaded SHACL file: {filename}")
             except Exception as e:
                 logger.warning(f"Failed to parse SHACL file '{filename}': {e}")
 
@@ -125,8 +122,8 @@ class ValidationHandler:
 
         return merged_graph
 
-    @classmethod
-    def _report_validation_result(cls, conforms: bool, report_text: str) -> None:
+    @staticmethod
+    def _report_validation_result(conforms: bool, report_text: str) -> None:
         """
         (Internal) Reports the results of SHACL validation to the user.
 
@@ -143,4 +140,4 @@ class ValidationHandler:
             logger.error("The LaDeRR specification is not correct.")
 
         # Print the full textual validation report
-        logger.info(f"\nFull Validation Report: {report_text}")
+        VERBOSE and logger.info(f"\nFull Validation Report: {report_text}")
