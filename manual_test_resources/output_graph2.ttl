@@ -67,7 +67,8 @@
     laderr:description "Regulates water levels, mitigating flood risks." ;
     laderr:disables :outdated_pumps,
         :weak_levees ;
-    laderr:state laderr:enabled .
+    laderr:state laderr:enabled ;
+    laderr:status :disabled .
 
 :outdated_pumps a laderr:Disposition,
         laderr:LaderrConstruct,
@@ -82,12 +83,13 @@
         laderr:LaderrConstruct ;
     rdfs:label "Housing Infrastructure" ;
     laderr:description "The housing infrastructure of Riverford, which needs flood protection." ;
-    laderr:state laderr:enabled .
+    laderr:state laderr:enabled ;
+    laderr:status :enabled .
 
 :riverford a laderr:Asset,
         laderr:Entity,
         laderr:LaderrConstruct ;
-    rdfs:label "City of Riverford" ;
+    rdfs:label "riverford" ;
     laderr:capabilities :housing ;
     laderr:vulnerabilities :outdated_pumps,
         :weak_levees .

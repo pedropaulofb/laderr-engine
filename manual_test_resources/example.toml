@@ -7,7 +7,7 @@ version = "1.1"
 scenario = "operational"
 
 [Entity.riverford]
-label = "City of Riverford"
+#label = "City of Riverford"
 capabilities = "housing"
 vulnerabilities = ["weak_levees", "outdated_pumps"]
 
@@ -26,18 +26,18 @@ label = "Levee Reinforcement Team"
 [Capability.housing]
 description = "The housing infrastructure of Riverford, which needs flood protection."
 label = "Housing Infrastructure"
-
+status = "enabled"
 
 [Capability.flooding_potential]
 description = "The river's potential to overflow and flood surrounding areas."
 exploits = "weak_levees"
 label = "Flooding Potential"
 
-
 [Capability.water_control]
 description = "Regulates water levels, mitigating flood risks."
 disables = ["outdated_pumps", "weak_levees"]
 label = "Water Flow Control"
+status = "disabled"
 
 
 [Capability.levee_reinforcement]

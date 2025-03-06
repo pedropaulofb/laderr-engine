@@ -1,13 +1,17 @@
 """
 Module for handling LaDeRR specification operations, including reading, writing, and conversion between RDF graphs and
 TOML-based specifications.
-"""
 
+This module provides functionality to:
+- Read a LaDeRR specification from a TOML file into structured metadata and data dictionaries.
+- Apply default values where necessary to ensure the specification is complete.
+- Convert a LaDeRR specification (represented as an RDF graph) into TOML and write it to disk.
+"""
 import tomllib
 from collections import defaultdict
 from datetime import datetime
 
-import tomli_w
+import tomli_w  # Used only for writing TOML, not reading
 from loguru import logger
 from rdflib import Graph, RDF, Literal, URIRef
 
@@ -18,52 +22,42 @@ class SpecificationHandler:
     """
     Handles reading, writing, and converting LaDeRR specifications between TOML format and RDF graphs.
 
-    This class provides utility methods for processing specification metadata and data, ensuring correct transformation
-    into RDF triples while maintaining relationships and properties. The methods support serialization, validation, and
-    data extraction.
-
-    :cvar LADERR_NS: Namespace for LaDeRR ontology.
-    :vartype LADERR_NS: Namespace
+    Responsibilities:
+    - Parsing LaDeRR specifications from TOML files.
+    - Ensuring all required attributes have default values if they are missing.
+    - Serializing LaDeRR specifications from RDF graphs to TOML files.
+    - Sorting and formatting data for consistent TOML output.
     """
 
-    @classmethod
-    def read_specification(cls, laderr_file_path: str) -> tuple[dict[str, object], dict[str, object]]:
+    @staticmethod
+    def read_specification(laderr_file_path: str) -> tuple[dict[str, object], dict[str, object]]:
         """
         Reads a LaDeRR specification from a TOML file and extracts structured metadata and data sections.
 
-        This function parses the TOML file, separating top-level metadata from structured data sections.
-        Metadata attributes that appear at the root level are stored in a dedicated metadata dictionary,
-        while the remaining data is organized into nested dictionaries.
+        The TOML file is split into:
+        - `spec_metadata`: Top-level attributes (title, version, createdBy, etc.).
+        - `spec_data`: Nested constructs such as entities, capabilities, and vulnerabilities.
 
-        If the `createdBy` field is a single string, it is automatically converted into a list for consistency.
+        If `createdBy` is a string, it is normalized into a list.
+        If `scenario`, `baseUri`, or other defaults are missing, they are added.
 
         :param laderr_file_path: Path to the TOML file containing the LaDeRR specification.
         :type laderr_file_path: str
         :return: A tuple containing:
-            - `spec_metadata`: Dictionary with metadata attributes.
-            - `spec_data`: Dictionary representing structured data instances.
+            - spec_metadata (dict): Top-level metadata attributes.
+            - spec_data (dict): Structured constructs (entities, capabilities, vulnerabilities).
         :rtype: tuple[dict[str, object], dict[str, object]]
-        :raises FileNotFoundError: If the specified TOML file does not exist.
-        :raises tomllib.TOMLDecodeError: If the TOML file is malformed or contains syntactical errors.
+        :raises FileNotFoundError: If the file does not exist.
+        :raises tomllib.TOMLDecodeError: If the file is not valid TOML.
         """
         try:
             with open(laderr_file_path, "rb") as file:
                 data: dict[str, object] = tomllib.load(file)
 
-            # Separate spec_metadata_dict and data
             spec_metadata = {key: value for key, value in data.items() if not isinstance(value, dict)}
             spec_data = {key: value for key, value in data.items() if isinstance(value, dict)}
 
-            # Add `id` to each item in spec_data if missing
-            for class_type, instances in spec_data.items():
-                if isinstance(instances, dict):
-                    for key, properties in instances.items():
-                        if isinstance(properties, dict) and "id" not in properties:
-                            properties["id"] = key  # Default `id` to the section key
-
-            # Normalize `createdBy` to always be a list if it's a string
-            if "createdBy" in spec_metadata and isinstance(spec_metadata["createdBy"], str):
-                spec_metadata["createdBy"] = [spec_metadata["createdBy"]]
+            SpecificationHandler._apply_defaults(spec_metadata, spec_data)
 
             logger.success("LaDeRR specification's syntax successfully validated.")
             return spec_metadata, spec_data
@@ -76,17 +70,66 @@ class SpecificationHandler:
             raise e
 
     @staticmethod
+    def _apply_defaults(spec_metadata: dict[str, object], spec_data: dict[str, object]) -> None:
+        """
+        Applies all required default values to the metadata and data sections of the specification.
+
+        Metadata Defaults:
+        - scenario = "operational" if missing.
+        - baseUri = "https://laderr.laderr#" if missing.
+        - createdBy is normalized into a list if given as a string.
+
+        Data Defaults:
+        - Each construct (entity, capability, vulnerability, etc.) gets:
+            - id = section key if missing.
+            - label = id if missing.
+            - status = "enabled" if missing (for Dispositions like Capability and Vulnerability).
+
+        :param spec_metadata: Metadata dictionary.
+        :param spec_data: Dictionary representing all constructs (Entity, Capability, Vulnerability, etc.).
+        """
+        # Metadata defaults
+        if "scenario" not in spec_metadata:
+            spec_metadata["scenario"] = "operational"
+
+        if "baseUri" not in spec_metadata:
+            spec_metadata["baseUri"] = "https://laderr.laderr#"
+
+        if "createdBy" in spec_metadata and isinstance(spec_metadata["createdBy"], str):
+            spec_metadata["createdBy"] = [spec_metadata["createdBy"]]
+
+        # Data defaults
+        for class_type, instances in spec_data.items():
+            if isinstance(instances, dict):
+                for key, properties in instances.items():
+                    if isinstance(properties, dict):
+                        if "id" not in properties:
+                            properties["id"] = key
+
+                        if "label" not in properties:
+                            properties["label"] = properties["id"]
+
+                        if class_type in {"Disposition", "Capability", "Vulnerability"} and "status" not in properties:
+                            properties["status"] = "enabled"
+
+    @staticmethod
     def write_specification(laderr_graph: Graph, output_file_path: str) -> None:
         """
-        Serializes a LaDeRR specification into TOML format and writes it to a file.
+        Serializes a LaDeRR specification (RDF graph) into TOML format and writes it to a file.
 
-        Extracts metadata and data instances from an RDF graph, converting them into a
-        structured dictionary format suitable for TOML serialization. Metadata fields are sorted for consistency.
+        This method extracts:
+        - Metadata attributes (title, version, createdBy, etc.) from the `LaderrSpecification` individual.
+        - Structured constructs (entities, capabilities, vulnerabilities, etc.), grouped by type.
 
-        :param laderr_graph: RDF graph containing metadata and structured data instances.
+        The extracted content is written into TOML format, with:
+        - Alphabetical sorting of metadata fields.
+        - Consistent sorting of attributes within each construct.
+
+        :param laderr_graph: RDF graph containing the LaDeRR specification.
         :type laderr_graph: Graph
-        :param output_file_path: Destination file path for the serialized TOML specification.
+        :param output_file_path: Path to write the output TOML file.
         :type output_file_path: str
+        :raises Exception: If writing the file fails for any reason.
         """
         # Extract metadata from the graph
         metadata = {}
@@ -184,3 +227,5 @@ class SpecificationHandler:
         except Exception as e:
             logger.error(f"Failed to serialize specification to TOML: {e}")
             raise
+
+# TODO: Specification of Resilience is not being handled.

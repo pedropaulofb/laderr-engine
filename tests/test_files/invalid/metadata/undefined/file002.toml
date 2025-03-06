@@ -1,7 +1,0 @@
-title = "Example Specification"
-description = "An example description"
-version = "1.0"
-createdBy = "John Doe"
-createdOn = "2023-10-10T12:00:00Z"
-baseUri = "https://example.com/laderr#"
-extraMetadata = 12345  # Integer type for an undefined element

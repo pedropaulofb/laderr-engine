@@ -1,6 +1,0 @@
-title = "Example Title"
-description = "An example description"
-version = "1.0"
-createdBy = "John Doe"
-createdOn = "10/10/2023 12:00"  # Invalid format
-baseUri = "https://example.com/laderr#"
