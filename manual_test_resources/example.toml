@@ -1,4 +1,4 @@
-baseUri = "https://teste.teste#"
+baseURI = "https://teste.teste#"
 createdBy = "Pedro Paulo F. Barcelos"
 createdOn = "2025-02-10T14:30:00Z"
 description = "A socio-ecological system model for flood risk and resilience."
@@ -26,7 +26,7 @@ label = "Levee Reinforcement Team"
 [Capability.housing]
 description = "The housing infrastructure of Riverford, which needs flood protection."
 label = "Housing Infrastructure"
-status = "enabled"
+state = "enabled"
 
 [Capability.flooding_potential]
 description = "The river's potential to overflow and flood surrounding areas."
@@ -37,7 +37,7 @@ label = "Flooding Potential"
 description = "Regulates water levels, mitigating flood risks."
 disables = ["outdated_pumps", "weak_levees"]
 label = "Water Flow Control"
-status = "disabled"
+state = "disabled"
 
 
 [Capability.levee_reinforcement]

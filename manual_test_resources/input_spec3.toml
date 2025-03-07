@@ -1,4 +1,4 @@
-baseUri = "https://complex.example.com/laderr#"
+baseURI = "https://complex.example.com/laderr#"
 createdBy = ["Alice", "Bob", "Charlie"]
 createdOn = "2025-01-17T12:00:01Z"
 description = "A complex specification for testing all LaDeRR rules with SHACL compliance."

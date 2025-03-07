@@ -1,4 +1,4 @@
-baseUri = "https://example123.com/laderr#"
+baseURI = "https://example123.com/laderr#"
 createdBy = ["Alice", "Bob"]
 createdOn = "2025-01-17T12:00:01Z"
 description = "This is an example specification for LaDeRR."

@@ -4,7 +4,7 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :LaderrSpecification a laderr:LaderrSpecification ;
-    laderr:baseUri "https://socio-ecological.example.com/laderr#"^^xsd:anyURI ;
+    laderr:baseURI "https://socio-ecological.example.com/laderr#"^^xsd:anyURI ;
     laderr:composedOf :flooding_potential,
         :greenridge_dam,
         :housing,

@@ -4,7 +4,7 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :LaderrSpecification a laderr:LaderrSpecification ;
-    laderr:baseUri "https://teste.teste#"^^xsd:anyURI ;
+    laderr:baseURI "https://teste.teste#"^^xsd:anyURI ;
     laderr:composedOf :flooding_potential,
         :greenridge_dam,
         :housing,
@@ -57,8 +57,7 @@
     laderr:description "Regulates water levels, mitigating flood risks." ;
     laderr:disables :outdated_pumps,
         :weak_levees ;
-    laderr:state laderr:enabled ;
-    laderr:status :disabled .
+    laderr:state laderr:disabled .
 
 :outdated_pumps a laderr:Vulnerability ;
     rdfs:label "Outdated Pumps" ;
@@ -69,8 +68,7 @@
 :housing a laderr:Capability ;
     rdfs:label "Housing Infrastructure" ;
     laderr:description "The housing infrastructure of Riverford, which needs flood protection." ;
-    laderr:state laderr:enabled ;
-    laderr:status :enabled .
+    laderr:state laderr:enabled .
 
 :weak_levees a laderr:Vulnerability ;
     rdfs:label "Weak Levees" ;

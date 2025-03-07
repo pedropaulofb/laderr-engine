@@ -40,7 +40,7 @@ class SpecificationHandler:
         - `spec_data`: Nested constructs such as entities, capabilities, and vulnerabilities.
 
         If `createdBy` is a string, it is normalized into a list.
-        If `scenario`, `baseUri`, or other defaults are missing, they are added.
+        If `scenario`, `baseURI`, or other defaults are missing, they are added.
 
         :param laderr_file_path: Path to the TOML file containing the LaDeRR specification.
         :type laderr_file_path: str
@@ -76,7 +76,7 @@ class SpecificationHandler:
     def _apply_defaults(spec_metadata: dict[str, object], spec_data: dict[str, object]) -> None:
         """
         Applies all necessary default values to the metadata and data parts of the specification,
-        including validating the 'baseUri' field.
+        including validating the 'baseURI' field.
 
         Each time a default is applied or a correction is made, it is logged to inform the user (if VERBOSE is True).
 
@@ -84,16 +84,16 @@ class SpecificationHandler:
         :param spec_data: Dictionary representing structured data instances.
         """
 
-        # Validate and apply default to baseUri
+        # Validate and apply default to baseURI
         default_base_uri = "https://laderr.laderr#"
-        base_uri = spec_metadata.get("baseUri", default_base_uri)
+        base_uri = spec_metadata.get("baseURI", default_base_uri)
         parsed = urlparse(base_uri)
 
         if not all([parsed.scheme, parsed.netloc]):
             logger.warning(f"Invalid base URI '{base_uri}' provided. Using default '{default_base_uri}'.")
-            spec_metadata["baseUri"] = default_base_uri
+            spec_metadata["baseURI"] = default_base_uri
         else:
-            spec_metadata["baseUri"] = base_uri  # Reassign explicitly in case it was missing
+            spec_metadata["baseURI"] = base_uri  # Reassign explicitly in case it was missing
 
         # Metadata defaults
         if "scenario" not in spec_metadata:

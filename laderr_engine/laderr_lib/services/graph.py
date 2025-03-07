@@ -91,7 +91,7 @@ class GraphHandler:
         :return: A tuple containing the RDF graph, data namespace, and specification URI.
         :rtype: tuple[Graph, Namespace, Namespace]
         """
-        base_uri = spec_metadata["baseUri"]  # baseUri has been validated during specification reading
+        base_uri = spec_metadata["baseURI"]  # baseURI has been validated during specification reading
         data_ns = Namespace(base_uri)
         graph = Graph()
         graph.bind("", data_ns)  # Bind default namespace
@@ -193,7 +193,7 @@ class GraphHandler:
         Converts LaDeRR specification metadata into an RDF laderr_graph.
 
         This method extracts metadata attributes and represents them as RDF triples, ensuring proper data types
-        (e.g., `xsd:string`, `xsd:dateTime`). The `baseUri` is used to establish the namespace, and all metadata
+        (e.g., `xsd:string`, `xsd:dateTime`). The `baseURI` is used to establish the namespace, and all metadata
         properties are assigned to the `LaderrSpecification` instance.
 
         :param metadata: Dictionary containing metadata attributes such as title, version, and authorship.
@@ -206,11 +206,11 @@ class GraphHandler:
         expected_datatypes = {
             "title": XSD.string, "description": XSD.string, "version": XSD.string,
             "createdBy": XSD.string, "createdOn": XSD.dateTime, "modifiedOn": XSD.dateTime,
-            "baseUri": XSD.anyURI
+            "baseURI": XSD.anyURI
         }
 
         # Validate base URI and bind namespaces
-        base_uri = metadata["baseUri"]  # baseUri has been validated during specification reading
+        base_uri = metadata["baseURI"]  # baseURI has been validated during specification reading
         data_ns = Namespace(base_uri)
 
         # Create a new laderr_graph
