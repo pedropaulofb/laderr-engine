@@ -30,8 +30,6 @@ if __name__ == "__main__":
     Laderr.save_laderr_graph(laderr_graph,
                              "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_graph1.ttl")
 
-    exit(0)
-
     laderr_graph = Laderr.exec_inferences_ladder_graph(laderr_graph)
 
     replace_scenario(laderr_graph, 'incident')  # replace with 'operational', 'resilient', etc. as needed

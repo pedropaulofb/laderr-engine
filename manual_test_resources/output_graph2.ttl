@@ -1,10 +1,10 @@
-@prefix : <https://socio-ecological.example.com/laderr#> .
+@prefix : <https://teste.teste#> .
 @prefix laderr: <https://w3id.org/laderr#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :LaderrSpecification a laderr:LaderrSpecification ;
-    laderr:baseURI "https://socio-ecological.example.com/laderr#"^^xsd:anyURI ;
+    laderr:baseURI "https://teste.teste#"^^xsd:anyURI ;
     laderr:composedOf :flooding_potential,
         :greenridge_dam,
         :housing,
@@ -44,6 +44,8 @@
     laderr:failedToDamage :riverford ;
     laderr:threatens :riverford .
 
+"https://teste.teste#"^^xsd:anyURI a xsd:anyURI .
+
 :flooding_potential a laderr:Capability,
         laderr:Disposition,
         laderr:LaderrConstruct ;
@@ -67,8 +69,7 @@
     laderr:description "Regulates water levels, mitigating flood risks." ;
     laderr:disables :outdated_pumps,
         :weak_levees ;
-    laderr:state laderr:enabled ;
-    laderr:status :disabled .
+    laderr:state laderr:disabled .
 
 :outdated_pumps a laderr:Disposition,
         laderr:LaderrConstruct,
@@ -76,15 +77,14 @@
     rdfs:label "Outdated Pumps" ;
     laderr:description "A vulnerability where outdated pumps cannot efficiently handle floodwaters." ;
     laderr:exposes :housing ;
-    laderr:state laderr:disabled .
+    laderr:state laderr:enabled .
 
 :housing a laderr:Capability,
         laderr:Disposition,
         laderr:LaderrConstruct ;
     rdfs:label "Housing Infrastructure" ;
     laderr:description "The housing infrastructure of Riverford, which needs flood protection." ;
-    laderr:state laderr:enabled ;
-    laderr:status :enabled .
+    laderr:state laderr:enabled .
 
 :riverford a laderr:Asset,
         laderr:Entity,

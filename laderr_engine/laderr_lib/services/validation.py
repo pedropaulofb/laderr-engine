@@ -6,7 +6,6 @@ as well as SHACL validation of RDF graphs.
 """
 
 import os
-from urllib.parse import urlparse
 
 from loguru import logger
 from pyshacl import validate
@@ -22,6 +21,7 @@ class ValidationHandler:
     This class provides methods for validating RDF data against SHACL constraints, ensuring that LaDeRR
     specifications conform to syntactic and semantic requirements.
     """
+
     @staticmethod
     def validate_laderr_graph(laderr_graph: Graph) -> tuple[bool, str, Graph]:
         """
@@ -46,10 +46,6 @@ class ValidationHandler:
 
         conforms, report_graph, report_text = validate(data_graph=combined_graph, shacl_graph=shacl_graph,
                                                        inference="both", allow_infos=True, allow_warnings=True)
-
-        # VERBOSE OPTION
-        # conforms, report_graph, report_text = validate(data_graph=laderr_graph, shacl_graph=shacl_graph, inference="both",
-        #                                                allow_infos=True, allow_warnings=True, meta_shacl=True)
 
         ValidationHandler._report_validation_result(conforms, report_text)
 
@@ -112,9 +108,9 @@ class ValidationHandler:
         :type report_text: str
         """
         if conforms:
-            logger.success("The LaDeRR specification is correct.")
+            logger.success("The input LaDeRR specification is VALID.")
         else:
-            logger.error("The LaDeRR specification is invalid.")
+            logger.error("The input LaDeRR specification is INVALID.")
 
         # Print the full textual validation report
         VERBOSE and logger.info(f"Full Validation Report: {report_text}")

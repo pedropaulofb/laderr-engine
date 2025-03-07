@@ -240,6 +240,9 @@ class GraphCreator:
         """
         Processes RDF relationships, assigns edge styles, and adds them to the Graphviz Digraph.
 
+        For edges with predicate in [capabilities, vulnerabilities, resiliences], the arrowhead on the **source end**
+        will be a diamond. Other edges retain their default style (normal arrow on target side).
+
         :param laderr_graph: RDFLib graph containing LaDeRR data.
         :type laderr_graph: Graph
         :param dot: Graphviz Digraph instance to which edges will be added.
@@ -247,9 +250,17 @@ class GraphCreator:
         :param added_nodes: Set of added node IDs to ensure valid edges.
         :type added_nodes: set
         """
+        edge_styles = {
+            "protects": "blue",
+            "inhibits": "blue",
+            "threatens": "blue",
+            "preserves": "orange",
+            "preservesAgainst": "orange",
+            "preservesDespite": "orange",
+            "sustains": "orange",
+        }
 
-        edge_styles = {"protects": "blue", "inhibits": "blue", "threatens": "blue", "preserves": "orange",
-                       "preservesAgainst": "orange", "preservesDespite": "orange", "sustains": "orange", }
+        diamond_source_edges = {"capabilities", "vulnerabilities", "resiliences"}
 
         for subject, predicate, obj in laderr_graph:
             subject_id = str(subject).split("#")[-1]
@@ -258,5 +269,12 @@ class GraphCreator:
 
             if subject_id in added_nodes and obj_id in added_nodes and subject_id != obj_id:
                 edge_color = edge_styles.get(predicate_label, "black")
-                dot.edge(subject_id, obj_id, label=predicate_label, fontsize="6", color=edge_color,
-                         fontcolor=edge_color)
+
+                if predicate_label in diamond_source_edges:
+                    # Edge with diamond at source end
+                    dot.edge(subject_id, obj_id, label=predicate_label, fontsize="6",
+                             color=edge_color, fontcolor=edge_color, arrowhead="none", arrowtail="diamond", dir="both")
+                else:
+                    # Normal edge (arrow at target end)
+                    dot.edge(subject_id, obj_id, label=predicate_label, fontsize="6",
+                             color=edge_color, fontcolor=edge_color)
