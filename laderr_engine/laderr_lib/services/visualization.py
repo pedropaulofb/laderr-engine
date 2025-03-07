@@ -6,6 +6,7 @@ LaDeRR RDF models, extracts entities and relationships, applies predefined style
 """
 
 import graphviz
+from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF
 
@@ -147,6 +148,9 @@ class GraphCreator:
                 style = {"shape": "ellipse", "color": "black", "style": "filled"}
 
             if instance_id not in added_nodes:
+                if not instance_id:
+                    logger.warning("An unnamed instance was received for plotting.")
+                    instance_id = "UNNAMED"
                 dot.node(instance_id, shape=style["shape"], color=style["color"], style=style["style"],
                          penwidth=style.get("penwidth", "1"), fillcolor=style.get("fillcolor", "white"),
                          gradientangle=style.get("gradientangle", ""), fixedsize="true", width="0.6", height="0.6",
@@ -258,6 +262,9 @@ class GraphCreator:
             "preservesAgainst": "orange",
             "preservesDespite": "orange",
             "sustains": "orange",
+            "failToDamage": "green",
+            "succeededToDamage": "red",
+            "disables":"darkred",
         }
 
         diamond_source_edges = {"capabilities", "vulnerabilities", "resiliences"}
