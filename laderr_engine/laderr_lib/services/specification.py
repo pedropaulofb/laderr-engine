@@ -10,14 +10,13 @@ This module provides functionality to:
 import tomllib
 from collections import defaultdict
 from datetime import datetime
+from urllib.parse import urlparse
 
 import tomli_w  # Used only for writing TOML, not reading
 from loguru import logger
 from rdflib import Graph, RDF, Literal, URIRef
 
-from laderr_engine.laderr_lib.constants import LADERR_NS
-
-VERBOSE = True
+from laderr_engine.laderr_lib.constants import LADERR_NS, VERBOSE
 
 
 class SpecificationHandler:
@@ -71,28 +70,35 @@ class SpecificationHandler:
             logger.error(f"Error: Syntactical error. Failed to parse LaDeRR/TOML file. {e}")
             raise e
 
+    from urllib.parse import urlparse  # <-- Add this import at the top of your module
+
     @staticmethod
     def _apply_defaults(spec_metadata: dict[str, object], spec_data: dict[str, object]) -> None:
         """
-        Applies all necessary default values to the metadata and data parts of the specification.
+        Applies all necessary default values to the metadata and data parts of the specification,
+        including validating the 'baseUri' field.
 
-        This includes adding `id` directly from the section key, adding default `label`, and `status`
-        to data constructs, and ensuring `scenario`, `baseUri`, and `createdBy` are correctly set in the metadata.
-
-        Each time a default is applied, this is logged to inform the user (if VERBOSE is True).
+        Each time a default is applied or a correction is made, it is logged to inform the user (if VERBOSE is True).
 
         :param spec_metadata: Dictionary with metadata attributes.
         :param spec_data: Dictionary representing structured data instances.
         """
 
+        # Validate and apply default to baseUri
+        default_base_uri = "https://laderr.laderr#"
+        base_uri = spec_metadata.get("baseUri", default_base_uri)
+        parsed = urlparse(base_uri)
+
+        if not all([parsed.scheme, parsed.netloc]):
+            logger.warning(f"Invalid base URI '{base_uri}' provided. Using default '{default_base_uri}'.")
+            spec_metadata["baseUri"] = default_base_uri
+        else:
+            spec_metadata["baseUri"] = base_uri  # Reassign explicitly in case it was missing
+
         # Metadata defaults
         if "scenario" not in spec_metadata:
             spec_metadata["scenario"] = "operational"
             VERBOSE and logger.info("Added default value 'operational' for metadata field 'scenario'.")
-
-        if "baseUri" not in spec_metadata:
-            spec_metadata["baseUri"] = "https://laderr.laderr#"
-            VERBOSE and logger.info("Added default value 'https://laderr.laderr#' for metadata field 'baseUri'.")
 
         if "createdBy" in spec_metadata and isinstance(spec_metadata["createdBy"], str):
             spec_metadata["createdBy"] = [spec_metadata["createdBy"]]
@@ -118,10 +124,10 @@ class SpecificationHandler:
                                 f"For {class_type} with id '{properties['id']}', added default 'label' = '{properties['label']}'"
                             )
 
-                        if class_type in {"Disposition", "Capability", "Vulnerability"} and "status" not in properties:
-                            properties["status"] = "enabled"
+                        if class_type in {"Disposition", "Capability", "Vulnerability"} and "state" not in properties:
+                            properties["state"] = "enabled"
                             VERBOSE and logger.info(
-                                f"For {class_type} with id '{properties['id']}', added default 'status' = 'enabled'"
+                                f"For {class_type} with id '{properties['id']}', added default 'state' = 'enabled'"
                             )
 
     # TODO: To be re-evaluated and tested.

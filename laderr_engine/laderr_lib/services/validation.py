@@ -12,9 +12,7 @@ from loguru import logger
 from pyshacl import validate
 from rdflib import Graph
 
-from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
-
-VERBOSE = True
+from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH, VERBOSE
 
 
 class ValidationHandler:
@@ -24,27 +22,6 @@ class ValidationHandler:
     This class provides methods for validating RDF data against SHACL constraints, ensuring that LaDeRR
     specifications conform to syntactic and semantic requirements.
     """
-
-    @staticmethod
-    def validate_base_uri(spec_metadata_dict: dict[str, object]) -> str:
-        """
-        (Internal) Ensures that the base URI provided in the specification metadata is valid.
-
-        If the base URI is missing or invalid, a default URI (`https://laderr.laderr#`) is assigned.
-
-        :param spec_metadata_dict: Metadata dictionary containing the base URI field.
-        :type spec_metadata_dict: dict[str, object]
-        :return: A validated base URI.
-        :rtype: str
-        """
-        base_uri = spec_metadata_dict.get("baseUri", "https://laderr.laderr#")
-        # Check if base_uri is a valid URI
-        parsed = urlparse(base_uri)
-        if not all([parsed.scheme, parsed.netloc]):
-            logger.warning(f"Invalid base URI '{base_uri}' provided. Using default 'https://laderr.laderr#'.")
-
-        return base_uri
-
     @staticmethod
     def validate_laderr_graph(laderr_graph: Graph) -> tuple[bool, str, Graph]:
         """
@@ -137,7 +114,7 @@ class ValidationHandler:
         if conforms:
             logger.success("The LaDeRR specification is correct.")
         else:
-            logger.error("The LaDeRR specification is not correct.")
+            logger.error("The LaDeRR specification is invalid.")
 
         # Print the full textual validation report
-        VERBOSE and logger.info(f"\nFull Validation Report: {report_text}")
+        VERBOSE and logger.info(f"Full Validation Report: {report_text}")

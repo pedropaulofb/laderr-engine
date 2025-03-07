@@ -10,11 +10,9 @@ from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL
 from rdflib.exceptions import ParserError
 
-from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
+from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS, VERBOSE
 from laderr_engine.laderr_lib.services.specification import SpecificationHandler
 from laderr_engine.laderr_lib.services.validation import ValidationHandler
-
-VERBOSE = True
 
 
 class GraphHandler:
@@ -83,17 +81,17 @@ class GraphHandler:
     @staticmethod
     def _initialize_graph_with_namespaces(spec_metadata: dict[str, object]) -> tuple[Graph, Namespace, Namespace]:
         """
-        Initializes an RDFLib laderr_graph with the appropriate namespaces.
+        Initializes an RDFLib graph with the appropriate namespaces.
 
-        This method creates an RDF laderr_graph and binds the necessary namespaces, ensuring that
+        This method creates an RDF graph and binds the necessary namespaces, ensuring that
         all RDF entities can be correctly referenced.
 
-        :param spec_metadata: Dictionary containing metadata information, including base URI.
+        :param spec_metadata: Dictionary containing metadata information, including a validated base URI.
         :type spec_metadata: dict[str, object]
-        :return: A tuple containing the RDF laderr_graph, data namespace, and specification URI.
+        :return: A tuple containing the RDF graph, data namespace, and specification URI.
         :rtype: tuple[Graph, Namespace, Namespace]
         """
-        base_uri = ValidationHandler.validate_base_uri(spec_metadata)
+        base_uri = spec_metadata["baseUri"]  # baseUri has been validated during specification reading
         data_ns = Namespace(base_uri)
         graph = Graph()
         graph.bind("", data_ns)  # Bind default namespace
@@ -109,13 +107,10 @@ class GraphHandler:
     def _process_instance(graph: Graph, data_ns: Namespace, class_type: str, instance_id: str,
                           properties: dict[str, object]) -> None:
         """
-        Processes a single instance and adds it to the RDF graph.
+        Processes a single instance and adds it to the RDF graph without duplicating default states.
 
         This method converts an instance's properties into RDF triples, including handling labels,
-        lists, and special mappings (such as 'state' for Dispositions, Capabilities, and Vulnerabilities).
-
-        If a 'Disposition', 'Capability', or 'Vulnerability' instance does not have a 'state',
-        a default state 'laderr:Enabled' is assigned **only once**.
+        lists, and special mappings such as 'state'.
 
         :param graph: The RDF graph being constructed.
         :param data_ns: The namespace to use for instance URIs.
@@ -124,27 +119,21 @@ class GraphHandler:
         :param properties: Dictionary of properties for the instance.
         :raises ValueError: If the properties structure is invalid.
         """
-        instance_uri = URIRef(f"{data_ns}{instance_id}")  # Ensure instance is URI
+        instance_uri = URIRef(f"{data_ns}{instance_id}")
         graph.add((instance_uri, RDF.type, LADERR_NS[class_type]))
 
-        has_state = False  # Track if state exists
-
         for prop, value in properties.items():
-
             if prop == "id":
-                continue  # Skip `id`, already used as URI
+                continue  # Skip 'id', already used as URI
 
             if prop == "label":
-                graph.add((instance_uri, RDFS.label, Literal(value)))  # Label remains a Literal
+                graph.add((instance_uri, RDFS.label, Literal(value)))
 
             elif prop == "state":
-                # Convert state to URI (NOT a string literal)
                 state_uri = LADERR_NS.enabled if value.lower() == "enabled" else LADERR_NS.disabled
                 graph.add((instance_uri, LADERR_NS.state, state_uri))
-                has_state = True  # Mark that a state was explicitly provided
 
-            elif prop in {"label", "description"}:  # Ensure these are stored as URIs
-                # Default case: Store values as Literals unless explicitly listed above
+            elif prop in {"label", "description"}:
                 if isinstance(value, list):
                     for item in value:
                         graph.add((instance_uri, LADERR_NS[prop], Literal(item)))
@@ -154,14 +143,9 @@ class GraphHandler:
             else:
                 if isinstance(value, list):
                     for item in value:
-                        graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{item}")))  # Store as URIRef
+                        graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{item}")))
                 else:
-                    graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{value}")))  # Store as URIRef
-
-        # Ensure state is always added as a URI
-        if class_type in {"Disposition", "Capability", "Vulnerability"} and not has_state:
-            graph.add((instance_uri, LADERR_NS.state, LADERR_NS.enabled))  # Store as URI
-            VERBOSE and logger.info(f"Added default state 'enabled' to: {instance_uri}")
+                    graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{value}")))
 
     @staticmethod
     def convert_data_to_graph(spec_metadata: dict[str, object],
@@ -226,7 +210,7 @@ class GraphHandler:
         }
 
         # Validate base URI and bind namespaces
-        base_uri = ValidationHandler.validate_base_uri(metadata)
+        base_uri = metadata["baseUri"]  # baseUri has been validated during specification reading
         data_ns = Namespace(base_uri)
 
         # Create a new laderr_graph

@@ -3,12 +3,9 @@ from rdflib import Graph
 
 from laderr_engine.laderr_lib.services.graph import GraphHandler
 from laderr_engine.laderr_lib.services.reasoning import ReasoningHandler
-from laderr_engine.laderr_lib.services.specification import SpecificationHandler
+from laderr_engine.laderr_lib.services.specification import SpecificationHandler, VERBOSE
 from laderr_engine.laderr_lib.services.validation import ValidationHandler
 from laderr_engine.laderr_lib.services.visualization import GraphCreator
-
-VERBOSE = True
-
 
 class Laderr:
     """
@@ -34,7 +31,7 @@ class Laderr:
         """
         laderr_graph = GraphHandler.create_laderr_graph(laderr_file_path)
         ValidationHandler.validate_laderr_graph(laderr_graph)
-        VERBOSE and logger.success(f"LaDeRR laderr_graph successfully created for: {laderr_file_path}")
+        VERBOSE and logger.success(f"Graph with LaDeRR specification successfully created for: {laderr_file_path}")
         return laderr_graph
 
     @staticmethod

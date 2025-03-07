@@ -4,11 +4,8 @@ import string
 from loguru import logger
 from rdflib import Graph, URIRef, RDF
 
-from laderr_engine.laderr_lib.constants import LADERR_NS
+from laderr_engine.laderr_lib.constants import LADERR_NS, VERBOSE
 from laderr_engine.laderr_lib.services.graph import GraphHandler
-
-VERBOSE = True
-
 
 class InferenceRules:
     """

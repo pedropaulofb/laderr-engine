@@ -31,19 +31,68 @@ def temp_toml_file():
         yield temp_file.name
 
 
-@pytest.mark.parametrize("toml_content, expected_metadata_defaults", [  # Case 1: Metadata is completely empty
+@pytest.mark.parametrize("toml_content, expected_metadata_defaults", [
+    # Existing cases remain unchanged
     ({}, {"scenario": "operational", "baseUri": "https://laderr.laderr#"}),
-    # Case 2: Metadata has some fields but is missing defaults
-    ({"title": "My Spec", "createdOn": "2025-03-06T12:00:00Z"},
-     {"title": "My Spec", "createdOn": "2025-03-06T12:00:00Z", "scenario": "operational",
-      "baseUri": "https://laderr.laderr#"}),  # Case 3: Metadata with all fields present (no defaults applied)
-    ({"title": "My Spec", "scenario": "incident", "baseUri": "https://custom.uri#", "createdBy": ["Alice"],
-      "createdOn": "2025-03-06T12:00:00Z"},
-     {"title": "My Spec", "scenario": "incident", "baseUri": "https://custom.uri#", "createdBy": ["Alice"],
-      "createdOn": "2025-03-06T12:00:00Z"})])
+    (
+        {"title": "My Spec", "createdOn": "2025-03-06T12:00:00Z"},
+        {
+            "title": "My Spec",
+            "createdOn": "2025-03-06T12:00:00Z",
+            "scenario": "operational",
+            "baseUri": "https://laderr.laderr#"
+        }
+    ),
+    (
+        {
+            "title": "My Spec",
+            "scenario": "incident",
+            "baseUri": "https://custom.uri#",
+            "createdBy": ["Alice"],
+            "createdOn": "2025-03-06T12:00:00Z"
+        },
+        {
+            "title": "My Spec",
+            "scenario": "incident",
+            "baseUri": "https://custom.uri#",
+            "createdBy": ["Alice"],
+            "createdOn": "2025-03-06T12:00:00Z"
+        }
+    ),
+
+    # New cases for invalid baseUri
+    (
+        {"baseUri": "invalid_uri"},
+        {
+            "scenario": "operational",
+            "baseUri": "https://laderr.laderr#"
+        }
+    ),
+    (
+        {"scenario": "resilient", "baseUri": "://missing.scheme"},
+        {
+            "scenario": "resilient",
+            "baseUri": "https://laderr.laderr#"
+        }
+    ),
+    (
+        {"scenario": "incident", "baseUri": "http:///missing-host"},
+        {
+            "scenario": "incident",
+            "baseUri": "https://laderr.laderr#"
+        }
+    ),
+    (
+        {"scenario": "not_resilient", "baseUri": ""},
+        {
+            "scenario": "not_resilient",
+            "baseUri": "https://laderr.laderr#"
+        }
+    ),
+])
 def test_metadata_defaults(temp_toml_file, toml_content, expected_metadata_defaults):
     """
-    Tests that metadata defaults are correctly applied by read_specification.
+    Tests that metadata defaults (including validation of baseUri) are correctly applied by read_specification.
     """
     with open(temp_toml_file, "w", encoding="utf-8") as f:
         f.write(dict_to_toml_str(toml_content))
@@ -54,18 +103,19 @@ def test_metadata_defaults(temp_toml_file, toml_content, expected_metadata_defau
         assert metadata[key] == expected_value
 
 
+
 @pytest.mark.parametrize("construct_type, instance_key, initial_properties, expected_properties",
                          [("Entity", "riverford", {}, {"id": "riverford", "label": "riverford"}), (
                                  "Capability", "flood_control", {},
-                                 {"id": "flood_control", "label": "flood_control", "status": "enabled"}), (
+                                 {"id": "flood_control", "label": "flood_control", "state": "enabled"}), (
                                   "Vulnerability", "weak_levee", {},
-                                  {"id": "weak_levee", "label": "weak_levee", "status": "enabled"}), (
+                                  {"id": "weak_levee", "label": "weak_levee", "state": "enabled"}), (
                                   "Capability", "custom_capability",
-                                  {"id": "custom_capability", "label": "Custom Label", "status": "disabled"},
-                                  {"id": "custom_capability", "label": "Custom Label", "status": "disabled"})])
+                                  {"id": "custom_capability", "label": "Custom Label", "state": "disabled"},
+                                  {"id": "custom_capability", "label": "Custom Label", "state": "disabled"})])
 def test_construct_defaults(temp_toml_file, construct_type, instance_key, initial_properties, expected_properties):
     """
-    Tests that defaults for constructs (id, label, status) are correctly applied by read_specification.
+    Tests that defaults for constructs (id, label, state) are correctly applied by read_specification.
     """
 
     # Flattened representation - the parser expects this format:
@@ -181,7 +231,7 @@ def test_no_unnecessary_defaults(temp_toml_file):
         "Capability.flood_control": {
             "id": "flood_control",
             "label": "Flood Control System",
-            "status": "disabled"
+            "state": "disabled"
         }
     }
 
@@ -193,7 +243,7 @@ def test_no_unnecessary_defaults(temp_toml_file):
     assert data["Capability"]["flood_control"] == {
         "id": "flood_control",
         "label": "Flood Control System",
-        "status": "disabled"
+        "state": "disabled"
     }
 
 def test_empty_specification(temp_toml_file):
@@ -229,3 +279,31 @@ def test_unrecognized_constructs_are_preserved(temp_toml_file):
     assert "UnknownType" in data
     assert "strange" in data["UnknownType"]
     assert data["UnknownType"]["strange"]["someField"] == "someValue"
+
+
+@pytest.mark.parametrize("invalid_base_uri", [
+    "invalid_uri",
+    "://missing.scheme",
+    "http:///missing-host",
+    ""
+])
+def test_invalid_base_uri_warning(temp_toml_file, loguru_caplog, invalid_base_uri):
+    """
+    Tests that a warning is logged when an invalid base URI is provided.
+    """
+    loguru_caplog.clear()
+
+    toml_content = {"baseUri": invalid_base_uri}
+
+    with open(temp_toml_file, "w", encoding="utf-8") as f:
+        f.write(dict_to_toml_str(toml_content))
+
+    SpecificationHandler.read_specification(temp_toml_file)
+
+    expected_warning = (
+        f"Invalid base URI '{invalid_base_uri}' provided. Using default 'https://laderr.laderr#'."
+    )
+
+    assert any(expected_warning in message for message in loguru_caplog.text.splitlines()), (
+        f"Expected warning '{expected_warning}' was not logged."
+    )
