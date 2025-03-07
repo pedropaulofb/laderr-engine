@@ -1,8 +1,9 @@
 import random
 import string
 
+from icecream import ic
 from loguru import logger
-from rdflib import Graph, URIRef, RDF
+from rdflib import Graph, URIRef, RDF, RDFS, Literal
 
 from laderr_engine.laderr_lib.constants import LADERR_NS, VERBOSE
 from laderr_engine.laderr_lib.services.graph import GraphHandler
@@ -27,6 +28,9 @@ class InferenceRules:
 
         enabled = LADERR_NS.enabled
         disabled = LADERR_NS.disabled
+
+        if (None, RDF.type, LADERR_NS.Disposition) not in laderr_graph:
+            return
 
         # Iterate over all dispositions
         for c1 in laderr_graph.subjects(RDF.type, LADERR_NS.Disposition):
@@ -65,6 +69,11 @@ class InferenceRules:
         If an entity with a capability disables a vulnerability of another entity,
         and the protects relationship does not already exist between them, infer that the second entity protects the first.
         """
+        if (None, LADERR_NS.capabilities, None) not in laderr_graph or \
+                (None, LADERR_NS.vulnerabilities, None) not in laderr_graph or \
+                (None, LADERR_NS.disables, None) not in laderr_graph:
+            return
+
         new_triples = set()
 
         for o1, d1 in laderr_graph.subject_objects(LADERR_NS.vulnerabilities):
@@ -84,6 +93,10 @@ class InferenceRules:
         and the inhibits relationship does not already exist between their respective entities,
         infer that the second entity inhibits the first entity.
         """
+        if (None, LADERR_NS.capabilities, None) not in laderr_graph or \
+                (None, LADERR_NS.disables, None) not in laderr_graph:
+            return
+
         new_triples = set()
 
         for o1, d1 in laderr_graph.subject_objects(LADERR_NS.capabilities):
@@ -103,6 +116,11 @@ class InferenceRules:
         and the threatens relationship does not already exist between them,
         infer that the second entity threatens the first.
         """
+        if (None, LADERR_NS.capabilities, None) not in laderr_graph or \
+                (None, LADERR_NS.vulnerabilities, None) not in laderr_graph or \
+                (None, LADERR_NS.exploits, None) not in laderr_graph:
+            return
+
         new_triples = set()
 
         for o1, d1 in laderr_graph.subject_objects(LADERR_NS.vulnerabilities):
@@ -116,6 +134,13 @@ class InferenceRules:
 
     @staticmethod
     def execute_rule_resilience(laderr_graph):
+        if (None, LADERR_NS.capabilities, None) not in laderr_graph or \
+                (None, LADERR_NS.vulnerabilities, None) not in laderr_graph or \
+                (None, LADERR_NS.disables, None) not in laderr_graph or \
+                (None, LADERR_NS.exploits, None) not in laderr_graph or \
+                (None, LADERR_NS.exposes, None) not in laderr_graph:
+            return
+
         new_triples = set()
 
         enabled = LADERR_NS.enabled
@@ -139,7 +164,7 @@ class InferenceRules:
 
                         # Check the required property relationships
                         if not ((c2, LADERR_NS.disables, v1) in laderr_graph and (
-                                c1, LADERR_NS.exposedBy, v1) in laderr_graph and (
+                                v1, LADERR_NS.exposes, c1) in laderr_graph and (
                                 c3, LADERR_NS.exploits, v1) in laderr_graph):
                             continue
 
@@ -167,8 +192,8 @@ class InferenceRules:
                                                 (resilience_uri, LADERR_NS.preservesAgainst, c3),
                                                 (resilience_uri, LADERR_NS.preservesDespite, v1),
                                                 (c2, LADERR_NS.sustains, resilience_uri),
+                                                (resilience_uri, RDFS.label, Literal(resilience_id)),
                                                 (resilience_uri, LADERR_NS.state, enabled)
-                                                # New requirement: resilience must also be ENABLED
                                                 })
 
         for triple in new_triples:
@@ -176,48 +201,61 @@ class InferenceRules:
             VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
-    def execute_rule_succeed_to_damage(laderr_graph: Graph):
+    def execute_rule_succeeded_to_damage(laderr_graph: Graph):
         """
-        Applies the 'succeededToDamage' inference rule:
-        If an entity (o2) has a capability that exploits a vulnerability of another entity (o1),
-        and that vulnerability exposes a capability of o1, and both the vulnerability and the exploiting capability
-        are enabled, and the succeededToDamage relationship does not already exist between them,
-        then o2 succeeded to damage o1.
-
-        :param laderr_graph: RDFLib graph containing LaDeRR data.
-        :type laderr_graph: Graph
+        Applies the 'succeededToDamage' inference rule based on the updated definition:
+        If two entities belong to the same LaderrSpecification, and an incident scenario applies,
+        and one entity's capability exploits the other entity's vulnerability, exposing a capability,
+        then the second entity succeeded to damage the first, and the scenario changes to NOT_RESILIENT.
         """
-        new_triples = set()
+        # For each LaderrSpecification
+        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
+            # Check if scenario(ls) = INCIDENT
+            if (ls, LADERR_NS.scenario, LADERR_NS.incident) not in laderr_graph:
+                continue
 
-        enabled = LADERR_NS.enabled
+            # Get all entities composed in this specification
+            entities = set(laderr_graph.objects(ls, LADERR_NS.composedOf))
 
-        # Iterate over all entities and their capabilities and vulnerabilities
-        for o1, c1 in laderr_graph.subject_objects(LADERR_NS.capabilities):
-            for o1_vuln, v1 in laderr_graph.subject_objects(LADERR_NS.vulnerabilities):
-                if o1 != o1_vuln:
-                    continue
+            # Check all pairs of distinct entities (o1, o2)
+            for o1 in entities:
+                for o2 in entities:
+                    if o1 == o2:
+                        continue  # Skip self-pairing
 
-                for o2, c2 in laderr_graph.subject_objects(LADERR_NS.capabilities):
-                    # Check if capability c2 exploits vulnerability v1
-                    if (c2, LADERR_NS.exploits, v1) not in laderr_graph:
-                        continue
+                    # Search for a valid c1, v1, c2 matching the logic
+                    found_valid_combination = False
 
-                    # Check if vulnerability v1 exposes capability c1
-                    if (v1, LADERR_NS.exposes, c1) not in laderr_graph:
-                        continue
+                    for c1 in laderr_graph.objects(o1, LADERR_NS.capabilities):
+                        for v1 in laderr_graph.objects(o1, LADERR_NS.vulnerabilities):
+                            for c2 in laderr_graph.objects(o2, LADERR_NS.capabilities):
+                                if not (
+                                        (c2, LADERR_NS.exploits, v1) in laderr_graph and
+                                        (v1, LADERR_NS.exposes, c1) in laderr_graph and
+                                        (v1, LADERR_NS.state, LADERR_NS.enabled) in laderr_graph and
+                                        (c2, LADERR_NS.state, LADERR_NS.enabled) in laderr_graph
+                                ):
+                                    continue
 
-                    # Both the vulnerability and the exploiting capability must be enabled
-                    if (v1, LADERR_NS.state, enabled) not in laderr_graph or (
-                            c2, LADERR_NS.state, enabled) not in laderr_graph:
-                        continue
+                                # All conditions met — success to damage
+                                found_valid_combination = True
+                                break
 
-                    # Only add succeededToDamage if not already present
-                    if (o2, LADERR_NS.succeededToDamage, o1) not in laderr_graph:
-                        new_triples.add((o2, LADERR_NS.succeededToDamage, o1))
+                            if found_valid_combination:
+                                break
 
-        for triple in new_triples:
-            laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:succeededToDamage {triple[2]}")
+                        if found_valid_combination:
+                            break
+
+                    if found_valid_combination:
+                        # If succeededToDamage does not already exist, infer it
+                        if (o2, LADERR_NS.succeededToDamage, o1) not in laderr_graph:
+                            laderr_graph.add((o2, LADERR_NS.succeededToDamage, o1))
+                            VERBOSE and logger.info(f"Inferred: {o2} laderr:succeededToDamage {o1}")
+
+                        # Update scenario to NOT_RESILIENT (this is new)
+                        laderr_graph.set((ls, LADERR_NS.scenario, LADERR_NS.not_resilient))
+                        VERBOSE and logger.info(f"Updated scenario of {ls} to NOT_RESILIENT")
 
     @staticmethod
     def execute_rule_failed_to_damage(laderr_graph: Graph):
@@ -263,62 +301,6 @@ class InferenceRules:
         for triple in new_triples:
             laderr_graph.add(triple)
             VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:failedToDamage {triple[2]}")
-
-    @staticmethod
-    def execute_rule_scenario_not_resilient(laderr_graph: Graph):
-        """
-        Applies the 'scenario = NOT_RESILIENT' inference rule:
-        If a LaDeRR Specification (ls) contains two entities (o1 and o2) where o1 succeeded to damage o2,
-        and the current scenario of the specification is INCIDENT, then the scenario is changed to NOT_RESILIENT.
-
-        This method ensures that the schema rule allowing only one scenario is respected:
-        - The existing `scenario` relation to INCIDENT will be removed before adding the new relation to NOT_RESILIENT.
-
-        :param laderr_graph: RDFLib graph containing LaDeRR data.
-        :type laderr_graph: Graph
-        """
-        new_triples = set()
-        removed_triples = set()
-
-        incident = LADERR_NS.incident
-        not_resilient = LADERR_NS.not_resilient
-
-        # For each LaderrSpecification
-        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
-            entities = set()
-
-            # Collect all entities that are part of this specification
-            for entity in laderr_graph.objects(ls, LADERR_NS.composedOf):
-                entities.add(entity)
-
-            # Check if current scenario is INCIDENT
-            if (ls, LADERR_NS.scenario, incident) not in laderr_graph:
-                continue  # Skip if not incident, because the rule does not apply
-
-            # Check for any pair (o1, o2) within the same specification where o1 succeeded to damage o2
-            for o1 in entities:
-                for o2 in entities:
-                    if (o1, LADERR_NS.succeededToDamage, o2) in laderr_graph:
-                        # We need to remove the current (incident) scenario
-                        removed_triples.add((ls, LADERR_NS.scenario, incident))
-
-                        # Set the new scenario to NOT_RESILIENT
-                        new_triples.add((ls, LADERR_NS.scenario, not_resilient))
-
-                        # No need to keep checking once condition is satisfied for this spec
-                        break
-                else:
-                    continue
-                break
-
-        # Apply changes to the graph
-        for triple in removed_triples:
-            laderr_graph.remove(triple)
-            VERBOSE and logger.info(f"Removed: {triple[0]} laderr:scenario {triple[2]}")
-
-        for triple in new_triples:
-            laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:scenario {triple[2]}")
 
     @staticmethod
     def execute_rule_scenario_resilient(laderr_graph: Graph):

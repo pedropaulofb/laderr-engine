@@ -262,7 +262,7 @@ class GraphCreator:
             "preservesAgainst": "orange",
             "preservesDespite": "orange",
             "sustains": "orange",
-            "failToDamage": "green",
+            "failedToDamage": "green",
             "succeededToDamage": "red",
             "disables":"darkred",
         }

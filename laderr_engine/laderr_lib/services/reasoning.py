@@ -62,9 +62,8 @@ class ReasoningHandler:
             InferenceRules.execute_rule_threatens(graph)
             InferenceRules.execute_rule_disabled_state(graph)
             InferenceRules.execute_rule_resilience(graph)
-            InferenceRules.execute_rule_succeed_to_damage(graph)
+            InferenceRules.execute_rule_succeeded_to_damage(graph)
             InferenceRules.execute_rule_failed_to_damage(graph)
-            InferenceRules.execute_rule_scenario_not_resilient(graph)
             InferenceRules.execute_rule_scenario_resilient(graph)
 
             hash_after = ReasoningHandler.calculate_hash(graph)

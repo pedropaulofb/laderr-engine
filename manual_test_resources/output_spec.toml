@@ -5,6 +5,48 @@ description = "A socio-ecological system model for flood risk and resilience."
 title = "Flood Risk and Resilience Model"
 version = "1.1"
 
+[Capability.water_control]
+description = "Regulates water levels, mitigating flood risks."
+disables = ["outdated_pumps", "weak_levees"]
+label = "Water Flow Control"
+state = "disabled"
+
+[Capability.levee_reinforcement]
+description = "A capability that strengthens Riverford’s levees to prevent flood risks."
+disables = "weak_levees"
+label = "Levee Reinforcement"
+state = "enabled"
+sustains = "RT4"
+
+[Capability.housing]
+description = "The housing infrastructure of Riverford, which needs flood protection."
+label = "Housing Infrastructure"
+state = "enabled"
+
+[Capability.flooding_potential]
+description = "The river's potential to overflow and flood surrounding areas."
+exploits = "weak_levees"
+label = "Flooding Potential"
+state = "enabled"
+
+[Vulnerability.weak_levees]
+description = "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential."
+exposes = "housing"
+label = "Weak Levees"
+state = "disabled"
+
+[Vulnerability.outdated_pumps]
+description = "A vulnerability where outdated pumps cannot efficiently handle floodwaters."
+exposes = "housing"
+label = "Outdated Pumps"
+state = "enabled"
+
+[Entity.riverford]
+capabilities = "housing"
+label = "riverford"
+resiliences = "RT4"
+vulnerabilities = ["outdated_pumps", "weak_levees"]
+
 [Entity.reinforcement_team]
 capabilities = "levee_reinforcement"
 label = "Levee Reinforcement Team"
@@ -21,44 +63,11 @@ failedToDamage = "riverford"
 label = "Silverstream River"
 threatens = "riverford"
 
-[Entity.riverford]
-capabilities = "housing"
-label = "riverford"
-vulnerabilities = ["outdated_pumps", "weak_levees"]
-
-[Capability.levee_reinforcement]
-description = "A capability that strengthens Riverford’s levees to prevent flood risks."
-disables = "weak_levees"
-label = "Levee Reinforcement"
+[Resilience.RT4]
+label = "RT4"
+preserves = "housing"
+preservesAgainst = "flooding_potential"
+preservesDespite = "weak_levees"
 state = "enabled"
-
-[Capability.flooding_potential]
-description = "The river's potential to overflow and flood surrounding areas."
-exploits = "weak_levees"
-label = "Flooding Potential"
-state = "enabled"
-
-[Capability.housing]
-description = "The housing infrastructure of Riverford, which needs flood protection."
-label = "Housing Infrastructure"
-state = "enabled"
-
-[Capability.water_control]
-description = "Regulates water levels, mitigating flood risks."
-disables = ["outdated_pumps", "weak_levees"]
-label = "Water Flow Control"
-state = "disabled"
-
-[Vulnerability.outdated_pumps]
-description = "A vulnerability where outdated pumps cannot efficiently handle floodwaters."
-exposes = "housing"
-label = "Outdated Pumps"
-state = "enabled"
-
-[Vulnerability.weak_levees]
-description = "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential."
-exposes = "housing"
-label = "Weak Levees"
-state = "disabled"
 
 [anyURI.""]

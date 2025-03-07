@@ -46,12 +46,13 @@
 
 "https://teste.teste#"^^xsd:anyURI a xsd:anyURI .
 
-:flooding_potential a laderr:Capability,
-        laderr:Disposition,
-        laderr:LaderrConstruct ;
-    rdfs:label "Flooding Potential" ;
-    laderr:description "The river's potential to overflow and flood surrounding areas." ;
-    laderr:exploits :weak_levees ;
+:RT4 a laderr:Disposition,
+        laderr:LaderrConstruct,
+        laderr:Resilience ;
+    rdfs:label "RT4" ;
+    laderr:preserves :housing ;
+    laderr:preservesAgainst :flooding_potential ;
+    laderr:preservesDespite :weak_levees ;
     laderr:state laderr:enabled .
 
 :levee_reinforcement a laderr:Capability,
@@ -60,7 +61,8 @@
     rdfs:label "Levee Reinforcement" ;
     laderr:description "A capability that strengthens Riverford’s levees to prevent flood risks." ;
     laderr:disables :weak_levees ;
-    laderr:state laderr:enabled .
+    laderr:state laderr:enabled ;
+    laderr:sustains :RT4 .
 
 :water_control a laderr:Capability,
         laderr:Disposition,
@@ -70,6 +72,14 @@
     laderr:disables :outdated_pumps,
         :weak_levees ;
     laderr:state laderr:disabled .
+
+:flooding_potential a laderr:Capability,
+        laderr:Disposition,
+        laderr:LaderrConstruct ;
+    rdfs:label "Flooding Potential" ;
+    laderr:description "The river's potential to overflow and flood surrounding areas." ;
+    laderr:exploits :weak_levees ;
+    laderr:state laderr:enabled .
 
 :outdated_pumps a laderr:Disposition,
         laderr:LaderrConstruct,
@@ -91,6 +101,7 @@
         laderr:LaderrConstruct ;
     rdfs:label "riverford" ;
     laderr:capabilities :housing ;
+    laderr:resiliences :RT4 ;
     laderr:vulnerabilities :outdated_pumps,
         :weak_levees .
 
