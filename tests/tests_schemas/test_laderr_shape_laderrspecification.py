@@ -1,12 +1,12 @@
 import pytest
-from icecream import ic
-from rdflib import Graph, Namespace, URIRef, Literal, RDF, XSD
 from pyshacl import validate
+from rdflib import Graph, Namespace, URIRef, Literal, RDF, XSD
 
 from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
 from tests.utils import find_file_by_partial_name
 
 LADERR = Namespace("https://w3id.org/laderr#")
+
 
 @pytest.fixture(scope="module")
 def shape_graph():
@@ -14,6 +14,7 @@ def shape_graph():
     shape = find_file_by_partial_name(SHACL_FILES_PATH, "laderr-shape-laderrspecification")
     g.parse(shape, format="turtle")
     return g
+
 
 @pytest.fixture
 def base_instance():
@@ -35,6 +36,7 @@ def base_instance():
     g.bind("laderr", LADERR)
     return g, spec
 
+
 @pytest.mark.parametrize("property_uri, value, datatype, should_pass", [
     (LADERR.title, Literal("My Spec Title", datatype=XSD.string), XSD.string, True),
     (LADERR.title, Literal(123), XSD.string, False),
@@ -49,8 +51,10 @@ def base_instance():
 def test_datatype_constraints(shape_graph, base_instance, property_uri, value, datatype, should_pass):
     g, spec = base_instance
     g.set((spec, property_uri, value))  # Replace tested property
-    conforms, results_graph, results_text = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")
+    conforms, results_graph, results_text = validate(g, shacl_graph=shape_graph, data_graph_format="turtle",
+                                                     shacl_graph_format="turtle")
     assert conforms is should_pass
+
 
 @pytest.mark.parametrize("property_uri, values, should_pass", [
     (LADERR.title, ["One Title"], True),
@@ -77,7 +81,6 @@ def test_cardinality_constraints(shape_graph, base_instance, property_uri, value
     assert conforms is should_pass
 
 
-
 def test_missing_required_properties(shape_graph, base_instance):
     """ Test that missing mandatory properties cause violations. """
     g, spec = base_instance
@@ -85,6 +88,7 @@ def test_missing_required_properties(shape_graph, base_instance):
     g.add((spec, LADERR.title, Literal("Minimal Spec")))
     conforms, _, _ = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")
     assert not conforms  # Should fail due to missing required properties.
+
 
 @pytest.mark.parametrize("scenario_value, should_pass", [
     (LADERR.operational, True),
@@ -106,7 +110,6 @@ def test_scenario_value_restriction(shape_graph, base_instance, scenario_value, 
     assert conforms is should_pass
 
 
-
 def test_scenario_cardinality(shape_graph, base_instance):
     """Test that exactly one scenario is required."""
     g, spec = base_instance
@@ -114,6 +117,7 @@ def test_scenario_cardinality(shape_graph, base_instance):
     g.add((spec, LADERR.scenario, LADERR.incident))
     conforms, _, _ = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")
     assert not conforms  # Multiple scenarios are not allowed.
+
 
 @pytest.mark.parametrize("construct_count, should_pass", [
     (1, True),
@@ -127,6 +131,7 @@ def test_constructs_min_count(shape_graph, base_instance, construct_count, shoul
         g.add((spec, LADERR.constructs, construct))
     conforms, _, _ = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")
     assert conforms is should_pass
+
 
 @pytest.mark.parametrize("construct_count, should_pass", [
     (1, True),
@@ -148,5 +153,3 @@ def test_constructs_min_count(shape_graph, base_instance, construct_count, shoul
     conforms, _, _ = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")
 
     assert conforms is should_pass
-
-

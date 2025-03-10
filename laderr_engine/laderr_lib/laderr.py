@@ -7,6 +7,7 @@ from laderr_engine.laderr_lib.services.specification import SpecificationHandler
 from laderr_engine.laderr_lib.services.validation import ValidationHandler
 from laderr_engine.laderr_lib.services.visualization import GraphCreator
 
+
 class Laderr:
     """
     A utility class for providing methods to operate on RDF data and SHACL validation.

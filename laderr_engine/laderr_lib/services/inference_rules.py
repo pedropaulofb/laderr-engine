@@ -1,12 +1,12 @@
 import random
 import string
 
-from icecream import ic
 from loguru import logger
 from rdflib import Graph, URIRef, RDF, RDFS, Literal
 
 from laderr_engine.laderr_lib.constants import LADERR_NS, VERBOSE
 from laderr_engine.laderr_lib.services.graph import GraphHandler
+
 
 class InferenceRules:
     """

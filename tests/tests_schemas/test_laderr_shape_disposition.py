@@ -1,12 +1,12 @@
 import pytest
-from icecream import ic
-from rdflib import Graph, Namespace, URIRef, Literal, RDF, OWL, RDFS
 from pyshacl import validate
+from rdflib import Graph, Namespace, URIRef, Literal, RDF, OWL, RDFS
 
 from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
 from tests.utils import find_file_by_partial_name
 
 LADERR = Namespace("https://w3id.org/laderr#")
+
 
 @pytest.fixture(scope="module")
 def shape_graph():
@@ -14,6 +14,7 @@ def shape_graph():
     shape = find_file_by_partial_name(SHACL_FILES_PATH, "laderr-shape-disposition")
     g.parse(shape, format="turtle")
     return g
+
 
 @pytest.fixture
 def base_disposition():
@@ -52,6 +53,7 @@ def test_disposition_state_value(shape_graph, base_disposition, state_value, sho
     conforms, _, _ = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")
     assert conforms is should_pass
 
+
 # 2️⃣ - State Cardinality (Exactly One Required)
 @pytest.mark.parametrize("states, should_pass", [
     ([LADERR.enabled], True),
@@ -70,6 +72,7 @@ def test_disposition_state_cardinality(shape_graph, base_disposition, states, sh
 
     conforms, _, _ = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")
     assert conforms is should_pass
+
 
 # 3️⃣ - Closed Shape (Detect unexpected properties)
 @pytest.mark.parametrize("extra_property, should_pass", [

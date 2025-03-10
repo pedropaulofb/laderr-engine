@@ -1,11 +1,12 @@
 import pytest
-from rdflib import Graph, Namespace, URIRef
+from rdflib import Graph, Namespace
 
 from tests.utils import EXAMPLE
 
 LADERR = Namespace("https://w3id.org/laderr#")
 
 from laderr_engine.laderr_lib.services.inference_rules import InferenceRules  # Adjust if needed
+
 
 @pytest.fixture
 def laderr_graph_with_disabling_capability():
@@ -26,6 +27,7 @@ def laderr_graph_with_disabling_capability():
 
     return g, entity1, entity2
 
+
 def test_execute_rule_protects(laderr_graph_with_disabling_capability):
     g, entity1, entity2 = laderr_graph_with_disabling_capability
 
@@ -35,6 +37,7 @@ def test_execute_rule_protects(laderr_graph_with_disabling_capability):
     # Assert that the protects relationship was inferred
     assert (entity1, LADERR.protects, entity2) in g, \
         "Expected protects relationship was not inferred."
+
 
 def test_no_disables_no_protects_inferred():
     g = Graph()
@@ -70,4 +73,3 @@ def test_protects_already_exists():
 
     assert len(list(g.triples((entity1, LADERR.protects, entity2)))) == 1, \
         "protects relationship should not be duplicated."
-

@@ -1,5 +1,5 @@
 import pytest
-from rdflib import Graph, Namespace, URIRef, RDF
+from rdflib import Graph, Namespace, RDF
 
 from laderr_engine.laderr_lib.services.inference_rules import InferenceRules  # Adjust if needed
 from tests.utils import EXAMPLE
@@ -54,7 +54,8 @@ def test_failed_to_damage_inferred(laderr_graph_with_valid_failed_to_damage_case
 
 
 @pytest.mark.parametrize("missing_relation", ["exploits", "exposes"])
-def test_failed_to_damage_not_inferred_without_necessary_relation(laderr_graph_with_valid_failed_to_damage_case, missing_relation):
+def test_failed_to_damage_not_inferred_without_necessary_relation(laderr_graph_with_valid_failed_to_damage_case,
+                                                                  missing_relation):
     """
     Tests that failedToDamage is NOT inferred when a required relationship is missing.
     """
@@ -72,7 +73,8 @@ def test_failed_to_damage_not_inferred_without_necessary_relation(laderr_graph_w
 
 
 @pytest.mark.parametrize("invalid_state", ["vulnerability_enabled", "capability_disabled"])
-def test_failed_to_damage_not_inferred_with_invalid_states(laderr_graph_with_valid_failed_to_damage_case, invalid_state):
+def test_failed_to_damage_not_inferred_with_invalid_states(laderr_graph_with_valid_failed_to_damage_case,
+                                                           invalid_state):
     """
     Tests that failedToDamage is NOT inferred when vulnerability is not disabled
     or the exploiting capability is not enabled.
@@ -106,7 +108,8 @@ def test_failed_to_damage_not_inferred_if_already_exists(laderr_graph_with_valid
 
 
 @pytest.mark.parametrize("missing_capability", ["capability1", "capability2"])
-def test_failed_to_damage_not_inferred_with_missing_capabilities(laderr_graph_with_valid_failed_to_damage_case, missing_capability):
+def test_failed_to_damage_not_inferred_with_missing_capabilities(laderr_graph_with_valid_failed_to_damage_case,
+                                                                 missing_capability):
     """
     Tests that failedToDamage is NOT inferred if one of the required capabilities is missing.
     """

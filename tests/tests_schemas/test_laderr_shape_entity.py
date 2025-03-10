@@ -1,7 +1,6 @@
 import pytest
-from icecream import ic
-from rdflib import Graph, Namespace, URIRef, RDF
 from pyshacl import validate
+from rdflib import Graph, Namespace, URIRef, RDF
 
 from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
 from tests.utils import find_file_by_partial_name
@@ -9,12 +8,14 @@ from tests.utils import find_file_by_partial_name
 # Namespaces
 LADERR = Namespace("https://w3id.org/laderr#")
 
+
 @pytest.fixture(scope="module")
 def shape_graph():
     g = Graph()
     shape = find_file_by_partial_name(SHACL_FILES_PATH, "laderr-shape-entity")
     g.parse(shape, format="turtle")
     return g
+
 
 @pytest.fixture
 def base_entity():
@@ -34,8 +35,8 @@ def base_entity():
 
 @pytest.mark.parametrize("capability_count, should_pass", [
     (0, False),  # No capability linked - Warning (SHACL may not fail, but we want to enforce it fails in testing)
-    (1, True),   # One capability - Valid
-    (3, True),   # Multiple capabilities - Still valid
+    (1, True),  # One capability - Valid
+    (3, True),  # Multiple capabilities - Still valid
 ])
 def test_entity_capabilities(shape_graph, base_entity, capability_count, should_pass):
     g, entity, _ = base_entity

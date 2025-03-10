@@ -1,7 +1,6 @@
 import pytest
-from icecream import ic
-from rdflib import Graph, Namespace, URIRef, RDF
 from pyshacl import validate
+from rdflib import Graph, Namespace, URIRef, RDF
 
 from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
 from tests.utils import find_file_by_partial_name
@@ -9,12 +8,14 @@ from tests.utils import find_file_by_partial_name
 # Namespaces
 LADERR = Namespace("https://w3id.org/laderr#")
 
+
 @pytest.fixture(scope="module")
 def shape_graph():
     g = Graph()
     shape = find_file_by_partial_name(SHACL_FILES_PATH, "laderr-shape-control")
     g.parse(shape, format="turtle")
     return g
+
 
 @pytest.fixture
 def base_control():
@@ -40,8 +41,8 @@ def base_control():
     (0, 0, False),  # Missing both relationships (violates both rules)
     (1, 0, False),  # Has `inhibits`, missing `protects`
     (0, 1, False),  # Has `protects`, missing `inhibits`
-    (1, 1, True),   # Fully valid - has both relationships
-    (3, 2, True),   # Multiple threats and assets - still valid
+    (1, 1, True),  # Fully valid - has both relationships
+    (3, 2, True),  # Multiple threats and assets - still valid
 ])
 def test_control_relationships(shape_graph, base_control, inhibits_count, protects_count, should_pass):
     g, control, _, _ = base_control

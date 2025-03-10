@@ -5,14 +5,12 @@ This module provides functionalities for loading RDF schemas and saving RDF grap
 """
 import os
 
-from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL
 from rdflib.exceptions import ParserError
 
-from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS, VERBOSE
+from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
 from laderr_engine.laderr_lib.services.specification import SpecificationHandler
-from laderr_engine.laderr_lib.services.validation import ValidationHandler
 
 
 class GraphHandler:

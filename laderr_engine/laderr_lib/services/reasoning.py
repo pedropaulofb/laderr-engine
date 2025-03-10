@@ -1,13 +1,11 @@
 import hashlib
 
-from icecream import ic
 from owlrl import DeductiveClosure, RDFS_Semantics
 from rdflib import Graph
 
 from laderr_engine.laderr_lib.constants import LADERR_NS
 from laderr_engine.laderr_lib.services.graph import GraphHandler
 from laderr_engine.laderr_lib.services.inference_rules import InferenceRules
-from laderr_engine.laderr_lib.services.validation import ValidationHandler
 
 
 class ReasoningHandler:

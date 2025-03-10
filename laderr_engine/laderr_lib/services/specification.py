@@ -158,11 +158,21 @@ class SpecificationHandler:
         for p, o in laderr_graph.predicate_objects(specification_uri):
             key = p.split("#")[-1] if str(p).startswith(str(LADERR_NS)) else None
             if key and key in metadata_keys:
-                value = o.toPython() if isinstance(o, Literal) else str(o)
+
+                if isinstance(o, Literal):
+                    if o.datatype and o.datatype == RDF.XMLLiteral:
+                        value = o.toPython().toxml()  # Convert XML to a string
+                    else:
+                        value = o.toPython()
+                else:
+                    value = str(o).split("#")[-1]  # Extract entity ID for URIs
+
                 if isinstance(value, datetime):
                     value = value.strftime("%Y-%m-%dT%H:%M:%SZ")
+
                 if key == "scenario":
                     value = value.split("#")[-1]  # Convert full URI to short form
+
                 if key in metadata:
                     if not isinstance(metadata[key], list):
                         metadata[key] = [metadata[key]]

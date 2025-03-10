@@ -1,5 +1,4 @@
 import pytest
-from icecream import ic
 from owlrl import DeductiveClosure, RDFS_Semantics
 from rdflib import Graph, Namespace, URIRef, RDF
 
@@ -87,6 +86,7 @@ def test_execute_rule_disabled_state_various_states(type1: URIRef, type2: URIRef
     assert not (disposition2, LADERR.state, LADERR.enabled) in g, \
         f"Incorrect state of disposition1 ({state_d2}) should not be in the graph."
 
+
 def test_execute_rule_with_missing_states():
     """
     Ensures the rule properly infers states even if they were missing.
@@ -108,6 +108,7 @@ def test_execute_rule_with_missing_states():
     assert (disposition2, LADERR.state, LADERR.disabled) in g, \
         "Disposition2 should be inferred as disabled."
 
+
 @pytest.fixture
 def empty_laderr_graph():
     """
@@ -117,6 +118,7 @@ def empty_laderr_graph():
     :rtype: Graph
     """
     return Graph()
+
 
 def test_execute_rule_disabled_state_no_dispositions(empty_laderr_graph):
     """

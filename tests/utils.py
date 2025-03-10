@@ -5,6 +5,7 @@ from rdflib import Namespace
 
 EXAMPLE = Namespace("https://example.org/")
 
+
 def find_file_by_partial_name(folder_path: str, partial_name: str) -> str:
     """
     Search for a file in the given folder that contains the specified partial name.

@@ -1,5 +1,5 @@
 import pytest
-from rdflib import Graph, Namespace, URIRef, RDF
+from rdflib import Graph, Namespace, RDF
 
 from tests.utils import EXAMPLE
 
@@ -137,6 +137,7 @@ def test_scenario_resilient_not_inferred_if_not_incident(laderr_graph_with_incid
     assert (spec, LADERR.scenario, LADERR.operational) in g, \
         "Scenario should remain OPERATIONAL if it was not INCIDENT."
 
+
 def test_scenario_remains_incident_when_mixed_vulnerability_states(laderr_graph_with_incident_scenario):
     """
     Tests that the scenario remains INCIDENT when at least one vulnerability is enabled and NOT exploited,
@@ -152,6 +153,7 @@ def test_scenario_remains_incident_when_mixed_vulnerability_states(laderr_graph_
 
     assert (spec, LADERR.scenario, LADERR.incident) in g, \
         "Scenario should remain INCIDENT when at least one vulnerability is enabled and not exploited."
+
 
 def test_scenario_resilient_ignores_non_entities(laderr_graph_with_incident_scenario):
     """
@@ -170,4 +172,3 @@ def test_scenario_resilient_ignores_non_entities(laderr_graph_with_incident_scen
 
     assert (spec, LADERR.scenario, LADERR.incident) in g, \
         "Scenario should not become RESILIENT if a non-entity construct has an enabled vulnerability."
-

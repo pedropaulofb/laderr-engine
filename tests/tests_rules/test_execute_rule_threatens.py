@@ -1,11 +1,12 @@
 import pytest
-from rdflib import Graph, Namespace, URIRef
+from rdflib import Graph, Namespace
 
 from tests.utils import EXAMPLE
 
 LADERR = Namespace("https://w3id.org/laderr#")
 
 from laderr_engine.laderr_lib.services.inference_rules import InferenceRules  # Adjust if necessary
+
 
 @pytest.fixture
 def laderr_graph_with_exploiting_capability():
@@ -28,6 +29,7 @@ def laderr_graph_with_exploiting_capability():
 
     return g, entity1, entity2
 
+
 def test_execute_rule_threatens(laderr_graph_with_exploiting_capability):
     g, entity1, entity2 = laderr_graph_with_exploiting_capability
 
@@ -37,6 +39,7 @@ def test_execute_rule_threatens(laderr_graph_with_exploiting_capability):
     # Assert that the threatens relationship was inferred
     assert (entity1, LADERR.threatens, entity2) in g, \
         "Expected threatens relationship was not inferred."
+
 
 def test_no_exploits_no_threatens_inferred():
     g = Graph()
@@ -51,6 +54,7 @@ def test_no_exploits_no_threatens_inferred():
 
     assert (entity1, LADERR.threatens, entity2) not in g, \
         "No exploits defined, so no threatens should be inferred."
+
 
 def test_threatens_already_exists():
     g = Graph()

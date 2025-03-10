@@ -1,6 +1,5 @@
 import pytest
-from icecream import ic
-from rdflib import Graph, Namespace, URIRef, Literal, RDF
+from rdflib import Graph, Namespace, RDF
 
 from tests.utils import EXAMPLE
 
@@ -52,7 +51,8 @@ def test_succeeded_to_damage_inferred(laderr_graph_with_valid_succeeded_to_damag
     InferenceRules.execute_rule_succeeded_to_damage(g)
 
     assert (
-           entity2, LADERR.succeededToDamage, entity1) in g, "Expected succeededToDamage relationship was not inferred."
+               entity2, LADERR.succeededToDamage,
+               entity1) in g, "Expected succeededToDamage relationship was not inferred."
 
     assert (spec, LADERR.scenario, LADERR.not_resilient) in g, "Expected scenario to change to NOT_RESILIENT."
 
@@ -74,7 +74,8 @@ def test_succeeded_to_damage_not_inferred_if_already_exists(laderr_graph_with_va
 
 
 @pytest.mark.parametrize("disabled_state", ["capability", "vulnerability", "both"])
-def test_succeeded_to_damage_not_inferred_when_any_state_is_disabled(laderr_graph_with_valid_succeeded_to_damage_case, disabled_state):
+def test_succeeded_to_damage_not_inferred_when_any_state_is_disabled(laderr_graph_with_valid_succeeded_to_damage_case,
+                                                                     disabled_state):
     """
     Tests that succeededToDamage is NOT inferred when any required state is disabled.
     """
@@ -95,7 +96,6 @@ def test_succeeded_to_damage_not_inferred_when_any_state_is_disabled(laderr_grap
         f"succeededToDamage should not be inferred when '{disabled_state}' is disabled."
 
 
-
 def test_succeeded_to_damage_not_inferred_without_specification(laderr_graph_with_valid_succeeded_to_damage_case):
     """
     Tests that succeededToDamage is NOT inferred when no LaderrSpecification is present.
@@ -109,7 +109,6 @@ def test_succeeded_to_damage_not_inferred_without_specification(laderr_graph_wit
 
     assert (entity2, LADERR.succeededToDamage, entity1) not in g, \
         "succeededToDamage should not be inferred without a LaderrSpecification."
-
 
 
 def test_succeeded_to_damage_not_inferred_with_non_incident_scenario(laderr_graph_with_valid_succeeded_to_damage_case):
@@ -132,7 +131,6 @@ def test_succeeded_to_damage_not_inferred_with_non_incident_scenario(laderr_grap
         # If succeededToDamage was missing, scenario should remain OPERATIONAL
         assert (spec, LADERR.scenario, LADERR.operational) in g, \
             "Scenario should remain OPERATIONAL if succeededToDamage was missing."
-
 
 
 @pytest.mark.parametrize("missing_relation", ["exploits", "exposes"])

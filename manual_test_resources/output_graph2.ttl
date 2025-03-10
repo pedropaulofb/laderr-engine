@@ -40,16 +40,16 @@
 
 "https://teste.teste#"^^xsd:anyURI a xsd:anyURI .
 
-:RPB a laderr:LaderrConstruct,
+:R7G a laderr:LaderrConstruct,
         laderr:Resilience ;
-    rdfs:label "RPB" ;
+    rdfs:label "R7G" ;
     laderr:preserves :housing ;
     laderr:preservesAgainst :flooding_potential ;
     laderr:preservesDespite :weak_levees .
 
-:RRZ a laderr:LaderrConstruct,
+:RLK a laderr:LaderrConstruct,
         laderr:Resilience ;
-    rdfs:label "RRZ" ;
+    rdfs:label "RLK" ;
     laderr:preserves :housing ;
     laderr:preservesAgainst :flooding_potential ;
     laderr:preservesDespite :weak_levees .
@@ -61,7 +61,7 @@
     laderr:description "A capability that strengthens Riverford’s levees to prevent flood risks." ;
     laderr:disables :weak_levees ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RPB .
+    laderr:sustains :RLK .
 
 :water_control a laderr:Capability,
         laderr:Disposition,
@@ -71,7 +71,7 @@
     laderr:disables :outdated_pumps,
         :weak_levees ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RRZ .
+    laderr:sustains :R7G .
 
 :outdated_pumps a laderr:Disposition,
         laderr:LaderrConstruct,
@@ -102,8 +102,8 @@
         laderr:LaderrConstruct ;
     rdfs:label "riverford" ;
     laderr:capabilities :housing ;
-    laderr:resiliences :RPB,
-        :RRZ ;
+    laderr:resiliences :R7G,
+        :RLK ;
     laderr:vulnerabilities :outdated_pumps,
         :weak_levees .
 

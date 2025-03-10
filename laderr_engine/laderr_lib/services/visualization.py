@@ -6,7 +6,6 @@ LaDeRR RDF models, extracts entities and relationships, applies predefined style
 """
 
 import graphviz
-from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF
 
@@ -264,7 +263,7 @@ class GraphCreator:
             "sustains": "orange",
             "failedToDamage": "green",
             "succeededToDamage": "red",
-            "disables":"darkred",
+            "disables": "darkred",
         }
 
         diamond_source_edges = {"capabilities", "vulnerabilities", "resiliences"}

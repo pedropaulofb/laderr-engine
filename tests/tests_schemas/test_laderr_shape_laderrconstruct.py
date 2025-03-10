@@ -1,13 +1,13 @@
 import pytest
-from icecream import ic
-from rdflib import Graph, Namespace, URIRef, Literal, RDF, XSD, RDFS
 from pyshacl import validate
+from rdflib import Graph, Namespace, URIRef, Literal, RDF, XSD, RDFS
 
 from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
 from tests.utils import find_file_by_partial_name
 
 LADERR = Namespace("https://w3id.org/laderr#")
 OWL = Namespace("http://www.w3.org/2002/07/owl#")
+
 
 @pytest.fixture(scope="module")
 def shape_graph():
@@ -32,6 +32,7 @@ def base_construct():
 
     return g, construct
 
+
 # 1️⃣ - Datatype Tests (description and label)
 @pytest.mark.parametrize("property_uri, value, datatype, should_pass", [
     (LADERR.description, Literal("This is a description", datatype=XSD.string), XSD.string, True),
@@ -49,7 +50,8 @@ def test_construct_property_datatypes(shape_graph, base_construct, property_uri,
     # Set the test value
     g.add((construct, property_uri, value))
 
-    conforms, _, results_text = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")
+    conforms, _, results_text = validate(g, shacl_graph=shape_graph, data_graph_format="turtle",
+                                         shacl_graph_format="turtle")
     assert conforms is should_pass
 
 

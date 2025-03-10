@@ -1,7 +1,6 @@
 import pytest
-from icecream import ic
-from rdflib import Graph, Namespace, URIRef, RDF
 from pyshacl import validate
+from rdflib import Graph, Namespace, URIRef, RDF
 
 from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
 from tests.utils import find_file_by_partial_name
@@ -9,12 +8,14 @@ from tests.utils import find_file_by_partial_name
 # Namespaces
 LADERR = Namespace("https://w3id.org/laderr#")
 
+
 @pytest.fixture(scope="module")
 def shape_graph():
     g = Graph()
     shape = find_file_by_partial_name(SHACL_FILES_PATH, "laderr-shape-capability")
     g.parse(shape, format="turtle")
     return g
+
 
 @pytest.fixture
 def base_capability():
@@ -31,10 +32,11 @@ def base_capability():
     g.bind("laderr", LADERR)
     return g, capability, entity
 
+
 @pytest.mark.parametrize("entity_count, should_pass", [
     (1, True),  # Exactly one entity is correct
-    (0, False), # No entity is incorrect
-    (2, False), # More than one entity is incorrect
+    (0, False),  # No entity is incorrect
+    (2, False),  # More than one entity is incorrect
 ])
 def test_capability_entity_link(shape_graph, base_capability, entity_count, should_pass):
     g, capability, initial_entity = base_capability
@@ -48,5 +50,6 @@ def test_capability_entity_link(shape_graph, base_capability, entity_count, shou
         g.add((entity, RDF.type, LADERR.Entity))
         g.add((entity, LADERR.capabilities, capability))
 
-    conforms, _, results_text = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")
+    conforms, _, results_text = validate(g, shacl_graph=shape_graph, data_graph_format="turtle",
+                                         shacl_graph_format="turtle")
     assert conforms is should_pass

@@ -1,5 +1,5 @@
 import pytest
-from rdflib import Graph, Namespace, URIRef, RDF
+from rdflib import Graph, Namespace, RDF
 
 from tests.utils import EXAMPLE
 
@@ -63,9 +63,9 @@ def test_execute_rule_inhibits(laderr_graph_with_inhibiting_capability):
 
 
 @pytest.mark.parametrize("add_disables, add_exploits", [(False, False),  # No disables, No exploits
-    (False, True),  # No disables, Yes exploits
-    (True, False),  # Yes disables, No exploits
-])
+                                                        (False, True),  # No disables, Yes exploits
+                                                        (True, False),  # Yes disables, No exploits
+                                                        ])
 def test_no_inhibits_inferred_when_conditions_not_met(add_disables, add_exploits):
     """
     Tests that no inhibition is inferred when conditions are not fully met.

@@ -12,11 +12,10 @@ exploits = "weak_levees"
 label = "Flooding Potential"
 state = "enabled"
 
-[Capability.water_control]
-description = "Regulates water levels, mitigating flood risks."
-disables = ["outdated_pumps", "weak_levees"]
-label = "Water Flow Control"
-state = "disabled"
+[Capability.housing]
+description = "The housing infrastructure of Riverford, which needs flood protection."
+label = "Housing Infrastructure"
+state = "enabled"
 
 [Capability.levee_reinforcement]
 description = "A capability that strengthens Riverford’s levees to prevent flood risks."
@@ -24,10 +23,11 @@ disables = "weak_levees"
 label = "Levee Reinforcement"
 state = "enabled"
 
-[Capability.housing]
-description = "The housing infrastructure of Riverford, which needs flood protection."
-label = "Housing Infrastructure"
-state = "enabled"
+[Capability.water_control]
+description = "Regulates water levels, mitigating flood risks."
+disables = ["outdated_pumps", "weak_levees"]
+label = "Water Flow Control"
+state = "disabled"
 
 [Vulnerability.weak_levees]
 description = "A vulnerability in Riverford’s levees that can be exploited by the river’s flooding potential."

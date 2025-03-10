@@ -9,7 +9,7 @@ version = "1.1"
 [Asset.riverford]
 capabilities = "housing"
 label = "riverford"
-resiliences = ["RPB", "RRZ"]
+resiliences = ["R7G", "RLK"]
 vulnerabilities = ["outdated_pumps", "weak_levees"]
 
 [Capability.flooding_potential]
@@ -18,24 +18,24 @@ exploits = "weak_levees"
 label = "Flooding Potential"
 state = "enabled"
 
-[Capability.water_control]
-description = "Regulates water levels, mitigating flood risks."
-disables = ["outdated_pumps", "weak_levees"]
-label = "Water Flow Control"
+[Capability.housing]
+description = "The housing infrastructure of Riverford, which needs flood protection."
+label = "Housing Infrastructure"
 state = "enabled"
-sustains = "RRZ"
 
 [Capability.levee_reinforcement]
 description = "A capability that strengthens Riverford’s levees to prevent flood risks."
 disables = "weak_levees"
 label = "Levee Reinforcement"
 state = "enabled"
-sustains = "RPB"
+sustains = "RLK"
 
-[Capability.housing]
-description = "The housing infrastructure of Riverford, which needs flood protection."
-label = "Housing Infrastructure"
+[Capability.water_control]
+description = "Regulates water levels, mitigating flood risks."
+disables = ["outdated_pumps", "weak_levees"]
+label = "Water Flow Control"
 state = "enabled"
+sustains = "R7G"
 
 [Control.greenridge_dam]
 capabilities = "water_control"
@@ -49,14 +49,14 @@ inhibits = "silverstream"
 label = "Levee Reinforcement Team"
 protects = "riverford"
 
-[Resilience.RPB]
-label = "RPB"
+[Resilience.RLK]
+label = "RLK"
 preserves = "housing"
 preservesAgainst = "flooding_potential"
 preservesDespite = "weak_levees"
 
-[Resilience.RRZ]
-label = "RRZ"
+[Resilience.R7G]
+label = "R7G"
 preserves = "housing"
 preservesAgainst = "flooding_potential"
 preservesDespite = "weak_levees"

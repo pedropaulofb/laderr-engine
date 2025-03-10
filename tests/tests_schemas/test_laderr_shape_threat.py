@@ -1,7 +1,6 @@
 import pytest
-from icecream import ic
-from rdflib import Graph, Namespace, URIRef, RDF
 from pyshacl import validate
+from rdflib import Graph, Namespace, URIRef, RDF
 
 from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
 from tests.utils import find_file_by_partial_name
@@ -9,12 +8,14 @@ from tests.utils import find_file_by_partial_name
 # Namespaces
 LADERR = Namespace("https://w3id.org/laderr#")
 
+
 @pytest.fixture(scope="module")
 def shape_graph():
     g = Graph()
     shape = find_file_by_partial_name(SHACL_FILES_PATH, "laderr-shape-threat")
     g.parse(shape, format="turtle")
     return g
+
 
 @pytest.fixture
 def base_threat():
@@ -30,6 +31,7 @@ def base_threat():
 
     g.bind("laderr", LADERR)
     return g, threat, asset
+
 
 @pytest.mark.parametrize("remove_threatens, should_pass", [
     (False, True),  # Valid case - threat has 'threatens' relationship
