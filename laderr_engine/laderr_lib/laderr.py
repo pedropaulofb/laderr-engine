@@ -2,20 +2,20 @@
 LaDeRR Library Module
 
 This module provides a collection of static methods to operate on RDF data,
-perform SHACL validation, apply reasoning, and generate visualizations for
-LaDeRR (Linked Data Resilience and Risk) specifications.
+perform optional SHACL validation, apply reasoning, and generate visualizations
+for LaDeRR (Language for Describing Risk and Resilience) specifications.
 
-It includes functionality to:
-- Load a LaDeRR specification into an RDF graph.
-- Validate RDF graphs using SHACL constraints.
-- Apply reasoning to enrich RDF data.
-- Save processed graphs and specifications.
-- Generate visualizations from specifications and graphs.
+### Core Functionalities:
+- Convert a LaDeRR specification into an RDF graph.
+- Validate RDF graphs using SHACL constraints (optional, logs errors and proceeds).
+- Apply reasoning to enrich RDF data (optional).
+- Save processed graphs and specifications to files.
+- Generate graphical representations of LaDeRR models.
 
-All methods are implemented as static methods within the `Laderr` class,
-ensuring they can be used without instantiation.
+All methods are **static** within the `Laderr` class, allowing direct access
+without instantiation.
 
-Dependencies:
+### Dependencies:
 - `rdflib` for RDF graph processing.
 - `loguru` for structured logging.
 - `laderr_engine.laderr_lib.services.*` for handling graphs, validation, reasoning,
@@ -36,18 +36,16 @@ class Laderr:
     """
     LaDeRR Processing Utility Class
 
-    This class provides static methods for handling LaDeRR specifications,
+    This class provides **static methods** for handling LaDeRR specifications,
     including RDF graph creation, validation, inference execution, specification
     serialization, and visualization generation.
 
-    It is designed as a **utility class** and should not be instantiated.
-
-    Key functionalities:
-    - Load and convert LaDeRR specifications into RDF graphs.
-    - Perform SHACL validation before and after reasoning.
-    - Execute inference to enrich RDF data with logical deductions.
-    - Save RDF graphs and processed specifications to files.
-    - Generate graphical visualizations of LaDeRR models.
+    ### Key Functionalities:
+    - Convert LaDeRR specifications into RDF graphs.
+    - Perform optional SHACL validation before and after inference.
+    - Apply reasoning to enrich RDF data with additional relationships.
+    - Save RDF graphs and processed specifications to structured files.
+    - Generate graphical representations of LaDeRR models.
 
     **Usage Example:**
     ```python
@@ -55,8 +53,9 @@ class Laderr:
     Laderr.save_spec_from_graph(graph, "output_spec.toml", verbose=True)
     ```
 
-    Note: All methods are static, ensuring the class acts as a **namespace** for
-    related functionalities without requiring instantiation.
+    **Note:**
+    - This class **cannot be instantiated**.
+    - All methods should be called **directly on the class**.
     """
 
     def __init__(self):
@@ -80,7 +79,6 @@ class Laderr:
         """
         raise TypeError(f"{self.__class__.__name__} is a utility class and cannot be instantiated.")
 
-
     @staticmethod
     def load_spec_to_graph(
             input_spec_path: str,
@@ -90,17 +88,28 @@ class Laderr:
             exec_inferences: bool = True
     ) -> Graph:
         """
-        Loads a LaDeRR specification file and converts it into an RDF graph.
+        Loads a LaDeRR specification file, validates it (if enabled), applies reasoning
+        (if enabled), and converts it into an RDF graph.
+
+        **Process Overview:**
+        1. Loads the LaDeRR specification from the given file.
+        2. Performs **optional validation** before applying reasoning.
+        3. Applies **optional reasoning** to enrich the graph.
+        4. Performs **optional validation** after reasoning.
+        5. Logs messages and returns the processed RDF graph.
+
+        **Note:**
+        - If validation fails, errors are **logged**, but execution proceeds.
 
         :param input_spec_path: Path to the LaDeRR specification file.
         :type input_spec_path: str
-        :param verbose: If True, logs success messages upon completion.
+        :param verbose: Whether to log success messages upon completion.
         :type verbose: bool
-        :param validate: If True, validates the graph before reasoning.
+        :param validate: Whether to validate the graph before applying reasoning.
         :type validate: bool
-        :param validate_post: If True, validates the graph after reasoning.
+        :param validate_post: Whether to validate the graph after applying reasoning.
         :type validate_post: bool
-        :param exec_inferences: If True, applies reasoning to the graph.
+        :param exec_inferences: Whether to apply reasoning to enrich the RDF graph.
         :type exec_inferences: bool
         :return: A single RDF graph containing the parsed and processed LaDeRR specification.
         :rtype: Graph
@@ -123,17 +132,23 @@ class Laderr:
         """
         Validates an RDF graph using SHACL constraints.
 
-        This method checks whether the provided RDF graph conforms to the SHACL schema rules
-        defined for LaDeRR specifications.
+        This method checks whether the provided RDF graph conforms to
+        SHACL schema rules defined for LaDeRR specifications.
+
+        **Validation Process:**
+        - The method applies SHACL validation rules to the given RDF graph.
+        - If validation **fails**, errors are **logged**, but execution proceeds.
+
+        **Return Values:**
+        - **conforms (bool):** `True` if the graph conforms to SHACL constraints, `False` otherwise.
+        - **report_text (str):** Detailed validation results as a string.
+        - **report_graph (Graph):** RDF graph representing the SHACL validation report.
 
         :param laderr_graph: The RDF graph to validate.
         :type laderr_graph: Graph
-        :param verbose: If True, logs validation results.
+        :param verbose: Whether to log validation results.
         :type verbose: bool
-        :return: A tuple containing:
-            - A boolean indicating whether the graph conforms to SHACL constraints.
-            - A string containing detailed validation results.
-            - A graph representing the SHACL validation report.
+        :return: A tuple containing (conforms, report_text, report_graph).
         :rtype: tuple[bool, str, Graph]
         """
         conforms, report_text, report_graph = ValidationHandler.validate_laderr_graph(laderr_graph)
@@ -253,20 +268,30 @@ class Laderr:
             verbose: bool = False
     ) -> None:
         """
-        Loads a LaDeRR specification file, validates it (if enabled), applies inference (if enabled),
-        performs post-validation (if enabled), and saves the resulting specification.
+        Loads a LaDeRR specification file, validates it (if enabled), applies reasoning
+        (if enabled), performs post-validation (if enabled), and saves the resulting specification.
+
+        **Process Order:**
+        1. **Load** the specification as an RDF graph.
+        2. **Validate** before inference (if enabled).
+        3. **Apply reasoning** to enrich the graph (if enabled).
+        4. **Validate** after inference (if enabled).
+        5. **Save** the processed specification.
+
+        **Note:**
+        - Validation failures are **logged**, but execution proceeds.
 
         :param input_spec_path: Path to the input LaDeRR specification file.
         :type input_spec_path: str
         :param output_file_path: Path where the processed specification should be saved.
         :type output_file_path: str
-        :param validate: If True, performs SHACL validation before inference.
+        :param validate: Whether to validate before inference.
         :type validate: bool
-        :param validate_post: If True, performs SHACL validation after inference.
+        :param validate_post: Whether to validate after inference.
         :type validate_post: bool
-        :param exec_inferences: If True, applies reasoning to enrich the graph.
+        :param exec_inferences: Whether to apply reasoning.
         :type exec_inferences: bool
-        :param verbose: If True, logs messages about the process.
+        :param verbose: Whether to log messages.
         :type verbose: bool
         """
         # Load the specification as an RDF graph
