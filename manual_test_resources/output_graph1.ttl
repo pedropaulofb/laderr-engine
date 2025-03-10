@@ -5,7 +5,7 @@
 
 :LaderrSpecification a laderr:LaderrSpecification ;
     laderr:baseURI "https://teste.teste#"^^xsd:anyURI ;
-    laderr:composedOf :flooding_potential,
+    laderr:constructs :flooding_potential,
         :greenridge_dam,
         :housing,
         :levee_reinforcement,

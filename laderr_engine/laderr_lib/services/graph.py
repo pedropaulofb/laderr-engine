@@ -311,15 +311,24 @@ class GraphHandler:
         :param graph: The RDFLib graph
         :return: The base prefix as a string.
         """
+        default_base = "https://example.org/"
+        ns1_prefix = None
+
+        # First, iterate once and collect potential base URIs
         for prefix, namespace in graph.namespaces():
-            if prefix == "":  # The base namespace should always bound to an empty prefix ""
-                return str(namespace)
-            elif prefix == "ns1":
-                logger.warning("Base URL associated with empty prefix not found. Retrieving prefix ns1 (RDFLib's default).")
-                return str(namespace)
-            else:
-                logger.warning("Base URL associated with empty prefix or ns1 not found. Using default: https://example.org/.")
-                return "https://example.org/"
+            if prefix == "":
+                return str(namespace)  # Immediately return the correct base prefix
+            if prefix == "ns1":
+                ns1_prefix = str(namespace)  # Store "ns1" for later fallback
+
+        # If no empty prefix found, fallback to "ns1" if available
+        if ns1_prefix:
+            logger.warning("Base URL associated with empty prefix not found. Retrieving prefix ns1 (RDFLib's default).")
+            return ns1_prefix
+
+        # Final fallback
+        logger.warning("Base URL associated with empty prefix or ns1 not found. Using default: https://example.org/.")
+        return default_base
 
     @staticmethod
     def clean_graph(graph: Graph, base_url: str) -> Graph:

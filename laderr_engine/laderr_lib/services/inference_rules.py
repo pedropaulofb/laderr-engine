@@ -171,7 +171,7 @@ class InferenceRules:
             capabilities(o2, c2) ∧ capabilities(o3, c3) ∧
             disables(c2, v1) ∧ exposes(v1, c1) ∧ exploits(c3, v1)
         ) → ∃! r (
-            Resilience(r) ∧ state(r) = ENABLED ∧
+            Resilience(r) ∧
             resiliences(o1, r) ∧ preserves(r, c1) ∧
             preservesAgainst(r, c3) ∧ preservesDespite(r, v1) ∧
             sustains(c2, r)
@@ -226,8 +226,7 @@ class InferenceRules:
                                 (resilience_uri, LADERR_NS.preservesAgainst, c3),
                                 (resilience_uri, LADERR_NS.preservesDespite, v1),
                                 (c2, LADERR_NS.sustains, resilience_uri),
-                                (resilience_uri, RDFS.label, Literal(resilience_id)),
-                                (resilience_uri, LADERR_NS.state, enabled)
+                                (resilience_uri, RDFS.label, Literal(resilience_id))
                             })
 
         # Apply inferred triples

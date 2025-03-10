@@ -5,7 +5,7 @@
 
 :LaderrSpecification a laderr:LaderrSpecification ;
     laderr:baseURI "https://teste.teste#"^^xsd:anyURI ;
-    laderr:composedOf :flooding_potential,
+    laderr:constructs :flooding_potential,
         :greenridge_dam,
         :housing,
         :levee_reinforcement,
@@ -27,6 +27,7 @@
         laderr:LaderrConstruct ;
     rdfs:label "Greenridge Dam" ;
     laderr:capabilities :water_control ;
+    laderr:inhibits :silverstream ;
     laderr:protects :riverford .
 
 :reinforcement_team a laderr:Control,
@@ -34,7 +35,51 @@
         laderr:LaderrConstruct ;
     rdfs:label "Levee Reinforcement Team" ;
     laderr:capabilities :levee_reinforcement ;
+    laderr:inhibits :silverstream ;
     laderr:protects :riverford .
+
+"https://teste.teste#"^^xsd:anyURI a xsd:anyURI .
+
+:RPB a laderr:LaderrConstruct,
+        laderr:Resilience ;
+    rdfs:label "RPB" ;
+    laderr:preserves :housing ;
+    laderr:preservesAgainst :flooding_potential ;
+    laderr:preservesDespite :weak_levees .
+
+:RRZ a laderr:LaderrConstruct,
+        laderr:Resilience ;
+    rdfs:label "RRZ" ;
+    laderr:preserves :housing ;
+    laderr:preservesAgainst :flooding_potential ;
+    laderr:preservesDespite :weak_levees .
+
+:levee_reinforcement a laderr:Capability,
+        laderr:Disposition,
+        laderr:LaderrConstruct ;
+    rdfs:label "Levee Reinforcement" ;
+    laderr:description "A capability that strengthens Riverford’s levees to prevent flood risks." ;
+    laderr:disables :weak_levees ;
+    laderr:state laderr:enabled ;
+    laderr:sustains :RPB .
+
+:water_control a laderr:Capability,
+        laderr:Disposition,
+        laderr:LaderrConstruct ;
+    rdfs:label "Water Flow Control" ;
+    laderr:description "Regulates water levels, mitigating flood risks." ;
+    laderr:disables :outdated_pumps,
+        :weak_levees ;
+    laderr:state laderr:enabled ;
+    laderr:sustains :RRZ .
+
+:outdated_pumps a laderr:Disposition,
+        laderr:LaderrConstruct,
+        laderr:Vulnerability ;
+    rdfs:label "Outdated Pumps" ;
+    laderr:description "A vulnerability where outdated pumps cannot efficiently handle floodwaters." ;
+    laderr:exposes :housing ;
+    laderr:state laderr:disabled .
 
 :silverstream a laderr:Entity,
         laderr:LaderrConstruct,
@@ -44,35 +89,6 @@
     laderr:failedToDamage :riverford ;
     laderr:threatens :riverford .
 
-"https://teste.teste#"^^xsd:anyURI a xsd:anyURI .
-
-:RT4 a laderr:Disposition,
-        laderr:LaderrConstruct,
-        laderr:Resilience ;
-    rdfs:label "RT4" ;
-    laderr:preserves :housing ;
-    laderr:preservesAgainst :flooding_potential ;
-    laderr:preservesDespite :weak_levees ;
-    laderr:state laderr:enabled .
-
-:levee_reinforcement a laderr:Capability,
-        laderr:Disposition,
-        laderr:LaderrConstruct ;
-    rdfs:label "Levee Reinforcement" ;
-    laderr:description "A capability that strengthens Riverford’s levees to prevent flood risks." ;
-    laderr:disables :weak_levees ;
-    laderr:state laderr:enabled ;
-    laderr:sustains :RT4 .
-
-:water_control a laderr:Capability,
-        laderr:Disposition,
-        laderr:LaderrConstruct ;
-    rdfs:label "Water Flow Control" ;
-    laderr:description "Regulates water levels, mitigating flood risks." ;
-    laderr:disables :outdated_pumps,
-        :weak_levees ;
-    laderr:state laderr:disabled .
-
 :flooding_potential a laderr:Capability,
         laderr:Disposition,
         laderr:LaderrConstruct ;
@@ -81,13 +97,15 @@
     laderr:exploits :weak_levees ;
     laderr:state laderr:enabled .
 
-:outdated_pumps a laderr:Disposition,
-        laderr:LaderrConstruct,
-        laderr:Vulnerability ;
-    rdfs:label "Outdated Pumps" ;
-    laderr:description "A vulnerability where outdated pumps cannot efficiently handle floodwaters." ;
-    laderr:exposes :housing ;
-    laderr:state laderr:enabled .
+:riverford a laderr:Asset,
+        laderr:Entity,
+        laderr:LaderrConstruct ;
+    rdfs:label "riverford" ;
+    laderr:capabilities :housing ;
+    laderr:resiliences :RPB,
+        :RRZ ;
+    laderr:vulnerabilities :outdated_pumps,
+        :weak_levees .
 
 :housing a laderr:Capability,
         laderr:Disposition,
@@ -95,15 +113,6 @@
     rdfs:label "Housing Infrastructure" ;
     laderr:description "The housing infrastructure of Riverford, which needs flood protection." ;
     laderr:state laderr:enabled .
-
-:riverford a laderr:Asset,
-        laderr:Entity,
-        laderr:LaderrConstruct ;
-    rdfs:label "riverford" ;
-    laderr:capabilities :housing ;
-    laderr:resiliences :RT4 ;
-    laderr:vulnerabilities :outdated_pumps,
-        :weak_levees .
 
 :weak_levees a laderr:Disposition,
         laderr:LaderrConstruct,

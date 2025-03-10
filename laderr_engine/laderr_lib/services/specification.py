@@ -7,6 +7,7 @@ This module provides functionality to:
 - Apply default values where necessary to ensure the specification is complete.
 - Convert a LaDeRR specification (represented as an RDF graph) into TOML and write it to disk.
 """
+import re
 import tomllib
 from collections import defaultdict
 from datetime import datetime
@@ -14,7 +15,7 @@ from urllib.parse import urlparse
 
 import tomli_w  # Used only for writing TOML, not reading
 from loguru import logger
-from rdflib import Graph, RDF, Literal, URIRef
+from rdflib import Graph, RDF, Literal, URIRef, RDFS
 
 from laderr_engine.laderr_lib.constants import LADERR_NS, VERBOSE
 
@@ -69,8 +70,6 @@ class SpecificationHandler:
         except tomllib.TOMLDecodeError as e:
             logger.error(f"Error: Syntactical error. Failed to parse LaDeRR/TOML file. {e}")
             raise e
-
-    from urllib.parse import urlparse  # <-- Add this import at the top of your module
 
     @staticmethod
     def _apply_defaults(spec_metadata: dict[str, object], spec_data: dict[str, object]) -> None:
@@ -130,121 +129,116 @@ class SpecificationHandler:
                                 f"For {class_type} with id '{properties['id']}', added default 'state' = 'enabled'"
                             )
 
-    # TODO: To be re-evaluated and tested.
     @staticmethod
     def write_specification(laderr_graph: Graph, output_file_path: str) -> None:
         """
         Serializes a LaDeRR specification (RDF graph) into TOML format and writes it to a file.
 
-        This method extracts:
-        - Metadata attributes (title, version, createdBy, etc.) from the `LaderrSpecification` individual.
-        - Structured constructs (entities, capabilities, vulnerabilities, etc.), grouped by type.
-
-        The extracted content is written into TOML format, with:
-        - Alphabetical sorting of metadata fields.
-        - Consistent sorting of attributes within each construct.
-
-        :param laderr_graph: RDF graph containing the LaDeRR specification.
+        :param laderr_graph: The RDFLib graph representing the LaDeRR specification.
         :type laderr_graph: Graph
         :param output_file_path: Path to write the output TOML file.
         :type output_file_path: str
-        :raises Exception: If writing the file fails for any reason.
         """
-        # Extract metadata from the graph
+        data = {}
+
+        # Extract the LaderrSpecification instance
+        specification_uri = None
+        for s, p, o in laderr_graph.triples((None, RDF.type, LADERR_NS.LaderrSpecification)):
+            specification_uri = s
+            break
+
+        if specification_uri is None:
+            raise ValueError("No LaderrSpecification instance found in the RDF graph.")
+
+        # Extract metadata properties
         metadata = {}
-        specification_uri = URIRef(f"{laderr_graph.value(predicate=RDF.type, object=LADERR_NS.LaderrSpecification)}")
+        metadata_keys = {"title", "description", "version", "createdBy", "createdOn", "modifiedOn", "baseURI",
+                         "scenario"}
 
-        for predicate, obj in laderr_graph.predicate_objects(subject=specification_uri):
-            prop_name = predicate.split("#")[-1]  # Extract property name
-            if isinstance(obj, Literal):
-                value = obj.toPython()
-
-                # Ensure date-time is formatted in ISO 8601 (2025-01-17T12:00:00Z)
+        for p, o in laderr_graph.predicate_objects(specification_uri):
+            key = p.split("#")[-1] if str(p).startswith(str(LADERR_NS)) else None
+            if key and key in metadata_keys:
+                value = o.toPython() if isinstance(o, Literal) else str(o)
                 if isinstance(value, datetime):
                     value = value.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-                # Remove duplicates: Store values as sets (auto-removes duplicates)
-                if prop_name in metadata:
-                    if not isinstance(metadata[prop_name], set):
-                        metadata[prop_name] = {metadata[prop_name]}  # Convert single value to set
-                    metadata[prop_name].add(value)
+                if key == "scenario":
+                    value = value.split("#")[-1]  # Convert full URI to short form
+                if key in metadata:
+                    if not isinstance(metadata[key], list):
+                        metadata[key] = [metadata[key]]
+                    metadata[key].append(value)
                 else:
-                    metadata[prop_name] = {value} if isinstance(value, (int, float)) else value
+                    metadata[key] = value
 
-        # Convert sets back to lists (TOML does not support sets)
+        # Ensure lists are properly formatted
         for key in metadata:
-            if isinstance(metadata[key], set):
-                values = sorted(list(metadata[key]))  # Sort values alphabetically
+            if isinstance(metadata[key], list):
+                values = sorted(metadata[key])
                 metadata[key] = values[0] if len(values) == 1 else values
+
         # Sort metadata for consistency
-        sorted_metadata = dict(sorted(metadata.items()))  # Sort attributes alphabetically
+        data.update(dict(sorted(metadata.items())))
 
-        # Extract instances and store attributes
-        instances = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))
-        for subject in laderr_graph.subjects(predicate=RDF.type):
-            if subject == specification_uri:
-                continue  # Skip main specification entry
+        # Define specific class mappings
+        specific_classes = {"Asset", "Threat", "Control", "Resilience", "Capability", "Vulnerability"}
 
-            instance_type = str(laderr_graph.value(subject=subject, predicate=RDF.type)).split("#")[-1]
-            instance_id = str(subject).split("#")[-1]
+        # Extract structured constructs (Entities, Capabilities, Vulnerabilities, etc.)
+        constructs = defaultdict(lambda: defaultdict(dict))
+        for s, p, o in laderr_graph.triples((None, RDF.type, None)):
+            class_type = str(o).split("#")[-1] if str(o).startswith(str(LADERR_NS)) else None
+            if class_type and class_type in specific_classes:
+                instance_id = str(s).split("#")[-1]
+                constructs[class_type][instance_id] = {}
 
-            for predicate, obj in laderr_graph.predicate_objects(subject=subject):
-                prop_name = predicate.split("#")[-1]
+        # Extract properties for each construct
+        for class_type, instances in constructs.items():
+            for instance_id in instances.keys():
+                instance_uri = URIRef(f"{metadata['baseURI']}{instance_id}")
+                for p, o in laderr_graph.predicate_objects(instance_uri):
+                    key = p.split("#")[-1] if str(p).startswith(str(LADERR_NS)) else None
+                    if key is None and p == RDFS.label:
+                        key = "label"  # Map rdfs:label to label field
 
-                if isinstance(obj, Literal):
-                    value = obj.toPython()
+                    if key and key not in {"type"}:  # Ignore rdf:type
+                        if isinstance(o, Literal):
+                            value = o.toPython()
+                        else:
+                            value = str(o).split("#")[-1]  # Extract entity ID for URIs
 
-                    # Ensure date-time values maintain correct format
-                    if isinstance(value, datetime):
-                        value = value.strftime("%Y-%m-%dT%H:%M:%SZ")
+                        if isinstance(value, str) and key in {"label", "description"}:
+                            value = value.strip()  # Avoid leading/trailing spaces
 
-                else:
-                    value = str(obj).split("#")[-1]  # Extract entity ID for URIs
+                        if key in instances[instance_id]:
+                            if not isinstance(instances[instance_id][key], list):
+                                instances[instance_id][key] = [instances[instance_id][key]]
+                            instances[instance_id][key].append(value)
+                        else:
+                            instances[instance_id][key] = value
 
-                # Store unique values using sets
-                instances[instance_type][instance_id][prop_name].add(value)
+        # Ensure lists are properly formatted
+        for class_type in constructs:
+            for instance_id in constructs[class_type]:
+                for key in constructs[class_type][instance_id]:
+                    values = constructs[class_type][instance_id][key]
+                    if isinstance(values, list):
+                        values = sorted(set(values))  # Ensure unique sorted values
+                        constructs[class_type][instance_id][key] = values[0] if len(values) == 1 else values
 
-        # Convert sets back to lists, but keep single values as plain strings
-        for instance_type in instances:
-            for instance_id in instances[instance_type]:
-                for key in instances[instance_type][instance_id]:
-                    values = sorted(list(instances[instance_type][instance_id][key]))  # ✅ Sort values alphabetically
-                    instances[instance_type][instance_id][key] = values[0] if len(values) == 1 else values
+        # Sort constructs and attributes alphabetically
+        for class_type in constructs:
+            for instance_id in constructs[class_type]:
+                constructs[class_type][instance_id] = dict(sorted(constructs[class_type][instance_id].items()))
 
-        # Remove redundant "type" field
-        for instance_type in instances:
-            for instance_id in instances[instance_type]:
-                if "type" in instances[instance_type][instance_id]:
-                    del instances[instance_type][instance_id]["type"]
+        data.update(dict(sorted(constructs.items())))
 
-        # Sort attributes inside each section alphabetically ✅
-        for instance_type in instances:
-            for instance_id in instances[instance_type]:
-                instances[instance_type][instance_id] = dict(sorted(instances[instance_type][instance_id].items()))
+        # Write to TOML file
+        with open(output_file_path, "w", encoding="utf-8") as toml_file:
+            toml_string = tomli_w.dumps(data)
 
-        # Construct final TOML structure
-        toml_structure = {**sorted_metadata,
-                          **{instance_type: dict(instance_data) for instance_type, instance_data in instances.items()}}
+            # Format lists inline
+            toml_string = toml_string.replace("[\n    ", "[").replace(",\n    ", ", ").replace("\n]", "]")
+            toml_string = re.sub(r",(\s*)]", "]", toml_string)  # Remove last comma before closing bracket
 
-        # Open file in text mode & write string instead of bytes
-        try:
-            with open(output_file_path, "w", encoding="utf-8") as file:
-                toml_string = tomli_w.dumps(toml_structure)  # Generate TOML string
+            toml_file.write(toml_string)
 
-                # Ensure lists are formatted inline correctly
-                toml_string = toml_string.replace("[\n    ", "[")  # Remove leading spaces after opening bracket
-                toml_string = toml_string.replace(",\n    ", ", ")  # Remove newlines between list items
-                toml_string = toml_string.replace("\n]", "]")  # Ensure closing bracket is on the same line
-
-                # Ensure **NO trailing commas** before closing brackets
-                import re
-                toml_string = re.sub(r",(\s*)]", "]", toml_string)  # Remove last comma before closing bracket
-
-                file.write(toml_string)  # Write processed TOML string
-
-            logger.success(f"Specification serialized successfully to '{output_file_path}'.")
-        except Exception as e:
-            logger.error(f"Failed to serialize specification to TOML: {e}")
-            raise
-
-# TODO: Specification of Resilience is not being handled.
+        logger.success(f"LaDeRR specification successfully written to {output_file_path}")

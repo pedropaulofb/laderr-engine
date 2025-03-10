@@ -1,8 +1,12 @@
 from graphviz import Graph
+from icecream import ic
 from rdflib import RDF
 
 from laderr_engine.laderr_lib.constants import LADERR_NS
 from laderr_engine.laderr_lib.laderr import Laderr
+from laderr_engine.laderr_lib.services.graph import GraphHandler
+from laderr_engine.laderr_lib.services.specification import SpecificationHandler
+from laderr_engine.laderr_lib.services.validation import ValidationHandler
 from laderr_engine.laderr_lib.services.visualization import GraphCreator
 
 def replace_scenario(graph: Graph, new_scenario: str):
@@ -20,17 +24,22 @@ def replace_scenario(graph: Graph, new_scenario: str):
 
 if __name__ == "__main__":
     # Load spec_metadata_dict and data from the specification
-    laderr_file = "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\example.toml"
+    laderr_file = "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\in_spec.toml"
 
     laderr_graph = Laderr.load_spec_to_laderr_graph(laderr_file)
 
     GraphCreator.create_graph_visualization(laderr_graph,
                                             "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_graph1.png")
 
+
     Laderr.save_laderr_graph(laderr_graph,
                              "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_graph1.ttl")
 
+    SpecificationHandler.write_specification(laderr_graph, "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\out_spec1.toml")
+
     laderr_graph = Laderr.exec_inferences_ladder_graph(laderr_graph)
+
+    ValidationHandler.validate_laderr_graph(laderr_graph)
 
     Laderr.save_laderr_graph(laderr_graph,
                              "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_graph2.ttl")
@@ -40,6 +49,5 @@ if __name__ == "__main__":
     GraphCreator.create_graph_visualization(laderr_graph,
                                             "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\output_graph2.png")
 
-# TODO: Do I first execute assign the default values or execute SHACL? If former, then no need for some properties.
 
-
+    SpecificationHandler.write_specification(laderr_graph, "C:\\Users\\FavatoBarcelosPP\\Dev\\laderr_engine\\manual_test_resources\\out_spec2.toml")
