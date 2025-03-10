@@ -4,7 +4,7 @@ from owlrl import DeductiveClosure, RDFS_Semantics
 from rdflib import Graph, Namespace, URIRef, RDF
 
 from laderr_engine.laderr_lib.services.graph import GraphHandler
-from tests.aux import EXAMPLE
+from tests.utils import EXAMPLE
 
 LADERR = Namespace("https://w3id.org/laderr#")
 

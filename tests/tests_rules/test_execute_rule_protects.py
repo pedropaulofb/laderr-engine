@@ -1,7 +1,7 @@
 import pytest
 from rdflib import Graph, Namespace, URIRef
 
-from tests.aux import EXAMPLE
+from tests.utils import EXAMPLE
 
 LADERR = Namespace("https://w3id.org/laderr#")
 

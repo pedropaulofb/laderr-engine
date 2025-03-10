@@ -4,7 +4,7 @@ from rdflib import Graph, Namespace, URIRef, RDF, RDFS
 
 from laderr_engine.laderr_lib.services.graph import GraphHandler
 from laderr_engine.laderr_lib.services.inference_rules import InferenceRules  # Adjust if needed
-from tests.aux import EXAMPLE
+from tests.utils import EXAMPLE
 
 LADERR = Namespace("https://w3id.org/laderr#")
 
