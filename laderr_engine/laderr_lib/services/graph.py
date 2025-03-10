@@ -302,13 +302,24 @@ class GraphHandler:
         """
         Retrieves the base prefix (default namespace) of the RDF graph.
 
+        The method searches for a base namespace bound to an empty prefix ("").
+        If not found, it checks for the "ns1" prefix (RDFLib's default for unnamed namespaces).
+        If neither is found, it falls back to "https://example.org/" as a default base URI.
+
+        Warnings are logged when the expected prefixes are missing.
+
         :param graph: The RDFLib graph
-        :return: The base prefix as a string, or None if not found
+        :return: The base prefix as a string.
         """
         for prefix, namespace in graph.namespaces():
-            if prefix == "":  # The base namespace is always bound to an empty prefix ""
+            if prefix == "":  # The base namespace should always bound to an empty prefix ""
                 return str(namespace)
-        logger.warning("Base prefix not found")
+            elif prefix == "ns1":
+                logger.warning("Base URL associated with empty prefix not found. Retrieving prefix ns1 (RDFLib's default).")
+                return str(namespace)
+            else:
+                logger.warning("Base URL associated with empty prefix or ns1 not found. Using default: https://example.org/.")
+                return "https://example.org/"
 
     @staticmethod
     def clean_graph(graph: Graph, base_url: str) -> Graph:

@@ -1,6 +1,7 @@
 import random
 import string
 
+from icecream import ic
 from loguru import logger
 from rdflib import Graph, URIRef, RDF, RDFS, Literal
 
@@ -158,69 +159,78 @@ class InferenceRules:
             VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:threatens {triple[2]}")
 
     @staticmethod
-    def execute_rule_resilience(laderr_graph):
-        if (None, LADERR_NS.capabilities, None) not in laderr_graph or \
-                (None, LADERR_NS.vulnerabilities, None) not in laderr_graph or \
-                (None, LADERR_NS.disables, None) not in laderr_graph or \
-                (None, LADERR_NS.exploits, None) not in laderr_graph or \
-                (None, LADERR_NS.exposes, None) not in laderr_graph:
-            return
+    def execute_rule_resilience(laderr_graph: Graph):
+        """
+        Infers resilience when the following conditions hold:
 
-        new_triples = set()
+        ∀ o1, c1, v1, o2, c2, o3, c3 (
+            Entity(o1) ∧ Entity(o2) ∧ Entity(o3) ∧
+            Capability(c1) ∧ Capability(c2) ∧ Capability(c3) ∧
+            Vulnerability(v1) ∧
+            capabilities(o1, c1) ∧ vulnerabilities(o1, v1) ∧
+            capabilities(o2, c2) ∧ capabilities(o3, c3) ∧
+            disables(c2, v1) ∧ exposes(v1, c1) ∧ exploits(c3, v1)
+        ) → ∃! r (
+            Resilience(r) ∧ state(r) = ENABLED ∧
+            resiliences(o1, r) ∧ preserves(r, c1) ∧
+            preservesAgainst(r, c3) ∧ preservesDespite(r, v1) ∧
+            sustains(c2, r)
+        )
+        """
+
+        if (None, RDF.type, LADERR_NS.Entity) not in laderr_graph:
+            return  # Skip if no entities are defined
 
         enabled = LADERR_NS.enabled
+        new_triples = set()
 
-        # Iterate over all combinations of entities and capabilities
         for o1, c1 in laderr_graph.subject_objects(LADERR_NS.capabilities):
-            for o2, c2 in laderr_graph.subject_objects(LADERR_NS.capabilities):
-                for o3, c3 in laderr_graph.subject_objects(LADERR_NS.capabilities):
-                    for o1_vuln, v1 in laderr_graph.subject_objects(LADERR_NS.vulnerabilities):
-                        # Check entities align
-                        if o1 != o1_vuln:
-                            continue
+            for o1_vuln, v1 in laderr_graph.subject_objects(LADERR_NS.vulnerabilities):
+                if o1 != o1_vuln:
+                    continue  # Ensure vulnerability belongs to the same entity
 
-                        # Check capabilities belong to distinct entities
+                for o2, c2 in laderr_graph.subject_objects(LADERR_NS.capabilities):
+                    for o3, c3 in laderr_graph.subject_objects(LADERR_NS.capabilities):
+
+                        # Ensure capabilities belong to distinct entities
                         if o1 in {o2, o3}:
                             continue
 
-                        # Capability c2 must have state ENABLED
-                        if (c2, LADERR_NS.state, enabled) not in laderr_graph:
+                        # Ensure required relationships hold
+                        if not ((c2, LADERR_NS.disables, v1) in laderr_graph and
+                                (v1, LADERR_NS.exposes, c1) in laderr_graph and
+                                (c3, LADERR_NS.exploits, v1) in laderr_graph):
                             continue
 
-                        # Check the required property relationships
-                        if not ((c2, LADERR_NS.disables, v1) in laderr_graph and (
-                                v1, LADERR_NS.exposes, c1) in laderr_graph and (
-                                c3, LADERR_NS.exploits, v1) in laderr_graph):
-                            continue
-
-                        # Check if Resilience already exists
+                        # Check if resilience already exists
                         existing_resilience = None
                         for r in laderr_graph.subjects(RDF.type, LADERR_NS.Resilience):
-                            if ((o1, LADERR_NS.resiliences, r) in laderr_graph and (
-                                    r, LADERR_NS.preserves, c1) in laderr_graph and (
-                                    r, LADERR_NS.preservesAgainst, c3) in laderr_graph and (
-                                    r, LADERR_NS.preservesDespite, v1) in laderr_graph and (
-                                    c2, LADERR_NS.sustains, r) in laderr_graph):
+                            if ((o1, LADERR_NS.resiliences, r) in laderr_graph and
+                                    (r, LADERR_NS.preserves, c1) in laderr_graph and
+                                    (r, LADERR_NS.preservesAgainst, c3) in laderr_graph and
+                                    (r, LADERR_NS.preservesDespite, v1) in laderr_graph and
+                                    (c2, LADERR_NS.sustains, r) in laderr_graph):
                                 existing_resilience = r
                                 break
 
                         if existing_resilience is None:
-                            # Create new Resilience individual
+                            # Create a unique Resilience instance
                             resilience_id = "R" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=2))
                             base_uri = GraphHandler.get_base_prefix(laderr_graph)
                             resilience_uri = URIRef(f"{base_uri}{resilience_id}")
 
-                            # Add triples for new Resilience
-                            new_triples.update({(resilience_uri, RDF.type, LADERR_NS.Resilience),
-                                                (o1, LADERR_NS.resiliences, resilience_uri),
-                                                (resilience_uri, LADERR_NS.preserves, c1),
-                                                (resilience_uri, LADERR_NS.preservesAgainst, c3),
-                                                (resilience_uri, LADERR_NS.preservesDespite, v1),
-                                                (c2, LADERR_NS.sustains, resilience_uri),
-                                                (resilience_uri, RDFS.label, Literal(resilience_id)),
-                                                (resilience_uri, LADERR_NS.state, enabled)
-                                                })
+                            new_triples.update({
+                                (resilience_uri, RDF.type, LADERR_NS.Resilience),
+                                (o1, LADERR_NS.resiliences, resilience_uri),
+                                (resilience_uri, LADERR_NS.preserves, c1),
+                                (resilience_uri, LADERR_NS.preservesAgainst, c3),
+                                (resilience_uri, LADERR_NS.preservesDespite, v1),
+                                (c2, LADERR_NS.sustains, resilience_uri),
+                                (resilience_uri, RDFS.label, Literal(resilience_id)),
+                                (resilience_uri, LADERR_NS.state, enabled)
+                            })
 
+        # Apply inferred triples
         for triple in new_triples:
             laderr_graph.add(triple)
             VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
