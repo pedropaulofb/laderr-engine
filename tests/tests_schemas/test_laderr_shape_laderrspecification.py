@@ -31,7 +31,7 @@ def base_instance():
 
     construct = URIRef("https://example.org/construct/0")
     g.add((construct, RDF.type, LADERR.LaderrConstruct))
-    g.add((spec, LADERR.composedOf, construct))
+    g.add((spec, LADERR.constructs, construct))
     g.bind("laderr", LADERR)
     return g, spec
 
@@ -119,12 +119,12 @@ def test_scenario_cardinality(shape_graph, base_instance):
     (1, True),
     (0, False)
 ])
-def test_composedOf_min_count(shape_graph, base_instance, construct_count, should_pass):
+def test_constructs_min_count(shape_graph, base_instance, construct_count, should_pass):
     g, spec = base_instance
     for i in range(construct_count):
         construct = URIRef(f"https://example.org/construct/{i}")
         g.add((construct, RDF.type, LADERR.LaderrConstruct))
-        g.add((spec, LADERR.composedOf, construct))
+        g.add((spec, LADERR.constructs, construct))
     conforms, _, _ = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")
     assert conforms is should_pass
 
@@ -132,17 +132,17 @@ def test_composedOf_min_count(shape_graph, base_instance, construct_count, shoul
     (1, True),
     (0, False)
 ])
-def test_composedOf_min_count(shape_graph, base_instance, construct_count, should_pass):
+def test_constructs_min_count(shape_graph, base_instance, construct_count, should_pass):
     g, spec = base_instance
 
-    # Clear out all existing 'composedOf' triples to start fresh
-    g.remove((spec, LADERR.composedOf, None))
+    # Clear out all existing 'constructs' triples to start fresh
+    g.remove((spec, LADERR.constructs, None))
 
     # Now add the desired number of constructs
     for i in range(construct_count):
         construct = URIRef(f"https://example.org/construct/{i}")
         g.add((construct, RDF.type, LADERR.LaderrConstruct))
-        g.add((spec, LADERR.composedOf, construct))
+        g.add((spec, LADERR.constructs, construct))
 
     # Validate
     conforms, _, _ = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")

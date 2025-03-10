@@ -239,18 +239,33 @@ class InferenceRules:
     def execute_rule_succeeded_to_damage(laderr_graph: Graph):
         """
         Applies the 'succeededToDamage' inference rule based on the updated definition:
-        If two entities belong to the same LaderrSpecification, and an incident scenario applies,
-        and one entity's capability exploits the other entity's vulnerability, exposing a capability,
-        then the second entity succeeded to damage the first, and the scenario changes to NOT_RESILIENT.
-        """
-        # For each LaderrSpecification
-        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
-            # Check if scenario(ls) = INCIDENT
-            if (ls, LADERR_NS.scenario, LADERR_NS.incident) not in laderr_graph:
-                continue
 
-            # Get all entities composed in this specification
-            entities = set(laderr_graph.objects(ls, LADERR_NS.composedOf))
+        If two entities belong to the same LaderrSpecification, and:
+        - An incident scenario applies, or
+        - The succeededToDamage relation has not yet been inferred,
+
+        And:
+        - One entity's capability (c2) exploits the other entity's vulnerability (v1),
+        - The vulnerability (v1) exposes a capability (c1),
+        - Both c2 and v1 are in the ENABLED state,
+
+        Then:
+        - The second entity (o2) succeeded to damage the first (o1).
+        - The scenario (ls) is set to NOT_RESILIENT.
+
+        :param laderr_graph: RDFLib graph containing LaDeRR data.
+        :type laderr_graph: Graph
+        """
+        new_triples = set()
+
+        # Iterate over all LaderrSpecifications
+        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
+
+            # Check if scenario(ls) = INCIDENT
+            is_incident = (ls, LADERR_NS.scenario, LADERR_NS.incident) in laderr_graph
+
+            # Get all entities that are part of this specification
+            entities = set(laderr_graph.objects(ls, LADERR_NS.constructs))
 
             # Check all pairs of distinct entities (o1, o2)
             for o1 in entities:
@@ -258,8 +273,11 @@ class InferenceRules:
                     if o1 == o2:
                         continue  # Skip self-pairing
 
-                    # Search for a valid c1, v1, c2 matching the logic
-                    found_valid_combination = False
+                    succeeded_to_damage_exists = (o2, LADERR_NS.succeededToDamage, o1) in laderr_graph
+
+                    # If neither incident scenario is present nor succeededToDamage exists, skip this pair
+                    if not is_incident and succeeded_to_damage_exists:
+                        continue
 
                     for c1 in laderr_graph.objects(o1, LADERR_NS.capabilities):
                         for v1 in laderr_graph.objects(o1, LADERR_NS.vulnerabilities):
@@ -270,27 +288,19 @@ class InferenceRules:
                                         (v1, LADERR_NS.state, LADERR_NS.enabled) in laderr_graph and
                                         (c2, LADERR_NS.state, LADERR_NS.enabled) in laderr_graph
                                 ):
-                                    continue
+                                    continue  # Skip if conditions are not met
 
-                                # All conditions met — success to damage
-                                found_valid_combination = True
-                                break
+                                # All conditions met, infer succeededToDamage if not already present
+                                if not succeeded_to_damage_exists:
+                                    new_triples.add((o2, LADERR_NS.succeededToDamage, o1))
 
-                            if found_valid_combination:
-                                break
+                                # Ensure scenario is set to NOT_RESILIENT
+                                new_triples.add((ls, LADERR_NS.scenario, LADERR_NS.not_resilient))
 
-                        if found_valid_combination:
-                            break
-
-                    if found_valid_combination:
-                        # If succeededToDamage does not already exist, infer it
-                        if (o2, LADERR_NS.succeededToDamage, o1) not in laderr_graph:
-                            laderr_graph.add((o2, LADERR_NS.succeededToDamage, o1))
-                            VERBOSE and logger.info(f"Inferred: {o2} laderr:succeededToDamage {o1}")
-
-                        # Update scenario to NOT_RESILIENT (this is new)
-                        laderr_graph.set((ls, LADERR_NS.scenario, LADERR_NS.not_resilient))
-                        VERBOSE and logger.info(f"Updated scenario of {ls} to NOT_RESILIENT")
+        # Apply inferred triples to the graph
+        for triple in new_triples:
+            laderr_graph.add(triple)
+            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
     def execute_rule_failed_to_damage(laderr_graph: Graph):
@@ -366,7 +376,7 @@ class InferenceRules:
 
             # Check all entities within this specification
             scenario_should_be_resilient = False
-            for o in laderr_graph.objects(ls, LADERR_NS.composedOf):
+            for o in laderr_graph.objects(ls, LADERR_NS.constructs):
                 # Check all vulnerabilities of this entity
                 for v in laderr_graph.objects(o, LADERR_NS.vulnerabilities):
                     # If any vulnerability is DISABLED, condition is met

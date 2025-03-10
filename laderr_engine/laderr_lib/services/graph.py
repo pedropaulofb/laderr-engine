@@ -183,7 +183,7 @@ class GraphHandler:
 
                 # Ensure instance URI is correctly formed
                 instance_uri = URIRef(f"{data_ns}{instance_id}")
-                graph.add((specification_uri, LADERR_NS.composedOf, instance_uri))
+                graph.add((specification_uri, LADERR_NS.constructs, instance_uri))
 
         return graph
 
