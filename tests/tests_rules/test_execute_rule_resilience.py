@@ -86,61 +86,6 @@ def test_resilience_inferred(laderr_graph_with_valid_resilience_case):
     assert (resilience, LADERR.state, LADERR.enabled) in g
 
 
-@pytest.mark.parametrize("missing_relation", ["disables",  # Missing disables relation
-    "exposes",  # Missing exposes relation
-    "exploits"  # Missing exploits relation
-])
-def test_resilience_not_inferred_with_missing_relationships(missing_relation):
-    """
-    Tests that no resilience instance is inferred if a critical relationship is missing.
-    """
-    g = Graph()
-    g.bind("", "https://example.org/")
-
-    entity1 = URIRef("https://example.org/entity1")
-    entity2 = URIRef("https://example.org/entity2")
-    entity3 = URIRef("https://example.org/entity3")
-
-    capability1 = URIRef("https://example.org/capability1")
-    capability2 = URIRef("https://example.org/capability2")
-    capability3 = URIRef("https://example.org/capability3")
-
-    vulnerability1 = URIRef("https://example.org/vulnerability1")
-
-    # Assign types
-    g.add((entity1, RDF.type, LADERR.Entity))
-    g.add((entity2, RDF.type, LADERR.Entity))
-    g.add((entity3, RDF.type, LADERR.Entity))
-    g.add((capability1, RDF.type, LADERR.Capability))
-    g.add((capability2, RDF.type, LADERR.Capability))
-    g.add((capability3, RDF.type, LADERR.Capability))
-    g.add((vulnerability1, RDF.type, LADERR.Vulnerability))
-
-    # Link capabilities to entities
-    g.add((entity1, LADERR.capabilities, capability1))
-    g.add((entity2, LADERR.capabilities, capability2))
-    g.add((entity3, LADERR.capabilities, capability3))
-
-    # Link vulnerability to entity1
-    g.add((entity1, LADERR.vulnerabilities, vulnerability1))
-
-    if missing_relation != "disables":
-        g.add((capability2, LADERR.disables, vulnerability1))
-
-    if missing_relation != "exposes":
-        g.add((vulnerability1, LADERR.exposes, capability1))
-
-    if missing_relation != "exploits":
-        g.add((capability3, LADERR.exploits, vulnerability1))
-
-    g.add((capability2, LADERR.state, LADERR.enabled))
-
-    InferenceRules.execute_rule_resilience(g)
-
-    resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
-    assert len(resilience_instances) == 0, f"No Resilience should be inferred when '{missing_relation}' is missing."
-
-
 def test_resilience_inferred_without_enabled_capability2(laderr_graph_with_valid_resilience_case):
     """
     Tests that resilience is inferred even if the disabling capability is initially disabled.
@@ -148,9 +93,6 @@ def test_resilience_inferred_without_enabled_capability2(laderr_graph_with_valid
     is always set to enabled.
     """
     g, entity1, capability1, capability2, capability3, vulnerability1 = laderr_graph_with_valid_resilience_case
-
-    ic(GraphHandler.get_base_prefix(g))
-    ic(g.serialize())
 
     # Explicitly set capability2 to disabled before running the rules
     g.remove((capability2, LADERR.state, LADERR.enabled))
@@ -204,3 +146,116 @@ def test_resilience_not_inferred_with_same_entity_capabilities():
     resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
     assert len(
         resilience_instances) == 0, "No Resilience should be inferred if all capabilities belong to the same entity."
+
+
+import pytest
+from rdflib import Graph, Namespace, URIRef, RDF, RDFS
+from laderr_engine.laderr_lib.services.inference_rules import InferenceRules  # Adjust if needed
+
+LADERR = Namespace("https://w3id.org/laderr#")
+
+
+@pytest.mark.parametrize("missing_relation", ["disables", "exposes", "exploits"])
+def test_resilience_not_inferred_with_missing_relationships(laderr_graph_with_valid_resilience_case, missing_relation):
+    """
+    Tests that resilience is NOT inferred when a required relationship is missing.
+    This ensures that each component (disables, exposes, exploits) is necessary.
+    """
+    g, entity1, capability1, capability2, capability3, vulnerability1 = laderr_graph_with_valid_resilience_case
+
+    if missing_relation == "disables":
+        g.remove((capability2, LADERR.disables, vulnerability1))
+    elif missing_relation == "exposes":
+        g.remove((vulnerability1, LADERR.exposes, capability1))
+    elif missing_relation == "exploits":
+        g.remove((capability3, LADERR.exploits, vulnerability1))
+
+    InferenceRules.execute_rule_resilience(g)
+
+    resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
+    assert len(resilience_instances) == 0, f"Resilience should NOT be inferred when '{missing_relation}' is missing."
+
+
+@pytest.mark.parametrize("missing_capability, entity", [
+    ("capability1", "entity1"),  # Missing preserved capability
+    ("capability2", "entity2"),  # Missing disabling capability
+    ("capability3", "entity3")   # Missing exploiting capability
+])
+def test_resilience_not_inferred_with_missing_capabilities(laderr_graph_with_valid_resilience_case, missing_capability, entity):
+    """
+    Tests that resilience is NOT inferred when a required capability is missing.
+    This ensures that each capability (preserved, disabling, exploiting) is necessary.
+    """
+    g, entity1, capability1, capability2, capability3, vulnerability1 = laderr_graph_with_valid_resilience_case
+
+    entity_uri = URIRef(f"https://example.org/{entity}")
+    capability_uri = URIRef(f"https://example.org/{missing_capability}")
+
+    g.remove((entity_uri, LADERR.capabilities, capability_uri))  # Remove from the correct entity
+
+    # Also remove related relationships
+    if missing_capability == "capability1":
+        g.remove((vulnerability1, LADERR.exposes, capability1))
+    elif missing_capability == "capability2":
+        g.remove((capability2, LADERR.disables, vulnerability1))
+    elif missing_capability == "capability3":
+        g.remove((capability3, LADERR.exploits, vulnerability1))
+
+    InferenceRules.execute_rule_resilience(g)
+
+    resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
+    assert len(resilience_instances) == 0, f"Resilience should NOT be inferred when '{missing_capability}' is missing."
+
+
+def test_resilience_inferred_with_multiple_vulnerabilities(laderr_graph_with_valid_resilience_case):
+    """
+    Tests that resilience is only inferred when at least one vulnerability meets the required conditions.
+    """
+    g, entity1, capability1, capability2, capability3, vulnerability1 = laderr_graph_with_valid_resilience_case
+
+    # Add a second vulnerability (should not interfere with the first)
+    vulnerability2 = URIRef("https://example.org/vulnerability2")
+    g.add((entity1, LADERR.vulnerabilities, vulnerability2))
+    g.add((capability2, LADERR.disables, vulnerability2))  # This one is also disabled
+    g.add((capability3, LADERR.exploits, vulnerability2))
+
+    InferenceRules.execute_rule_resilience(g)
+
+    resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
+    assert len(resilience_instances) == 1, "Resilience should still be inferred when there are multiple vulnerabilities."
+
+def test_resilience_inferred_with_multiple_disabling_capabilities(laderr_graph_with_valid_resilience_case):
+    """
+    Tests that resilience is inferred when multiple capabilities disable the same vulnerability.
+    """
+    g, entity1, capability1, capability2, capability3, vulnerability1 = laderr_graph_with_valid_resilience_case
+
+    # Add a second disabling capability
+    capability4 = URIRef("https://example.org/capability4")
+    entity4 = URIRef("https://example.org/entity4")
+    g.add((entity4, LADERR.capabilities, capability4))
+    g.add((capability4, LADERR.disables, vulnerability1))
+    g.add((capability4, LADERR.state, LADERR.enabled))  # Also enabled
+
+    InferenceRules.execute_rule_resilience(g)
+
+    resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
+    assert len(resilience_instances) == 2, "Resilience should still be inferred even if multiple capabilities disable the same vulnerability."
+
+
+def test_resilience_not_inferred_when_other_vulnerability_is_not_disabled(laderr_graph_with_valid_resilience_case):
+    """
+    Tests that resilience is NOT inferred when an entity has multiple vulnerabilities,
+    but only one of them is disabled.
+    """
+    g, entity1, capability1, capability2, capability3, vulnerability1 = laderr_graph_with_valid_resilience_case
+
+    # Add a second vulnerability that is NOT disabled
+    vulnerability2 = URIRef("https://example.org/vulnerability2")
+    g.add((entity1, LADERR.vulnerabilities, vulnerability2))
+    g.add((capability3, LADERR.exploits, vulnerability2))  # Exploited but NOT disabled
+
+    InferenceRules.execute_rule_resilience(g)
+
+    resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
+    assert len(resilience_instances) == 1, "Resilience should NOT be inferred for the second vulnerability, but the first should still hold."
