@@ -1,7 +1,6 @@
 import random
 import string
 
-from icecream import ic
 from loguru import logger
 from rdflib import Graph, URIRef, RDF, RDFS, Literal
 
@@ -16,48 +15,48 @@ class InferenceRules:
     @staticmethod
     def execute_rule_disabled_state(laderr_graph: Graph):
         """
-        Applies the 'disabled state' inference rule:
-        If a disposition (c1) has state ENABLED and disables another disposition (c2) that is also ENABLED,
-        then c2's state is updated to DISABLED. This ensures the old state (ENABLED) is removed before adding DISABLED.
+        Enforces the rule: If a disposition (d1) disables another disposition (d2), then:
+        - d1 is set to ENABLED.
+        - d2 is set to DISABLED.
+        - Any previous contradicting states are removed.
 
         :param laderr_graph: RDFLib graph containing LaDeRR data.
         :type laderr_graph: Graph
         """
+
+        if (None, RDF.type, LADERR_NS.Disposition) not in laderr_graph:
+            return
+
         new_triples = set()
         removed_triples = set()
 
         enabled = LADERR_NS.enabled
         disabled = LADERR_NS.disabled
 
-        if (None, RDF.type, LADERR_NS.Disposition) not in laderr_graph:
-            return
+        # Iterate over all entities that may disable others
+        for d1 in laderr_graph.subjects(RDF.type, LADERR_NS.Disposition):
+            for d2 in laderr_graph.objects(d1, LADERR_NS.disables):
+                if (d2, RDF.type, LADERR_NS.Disposition) not in laderr_graph and \
+                        (d2, RDF.type, LADERR_NS.Capability) not in laderr_graph and \
+                        (d2, RDF.type, LADERR_NS.Vulnerability) not in laderr_graph:
+                    continue  # Skip if d2 is not a relevant entity
 
-        # Iterate over all dispositions
-        for c1 in laderr_graph.subjects(RDF.type, LADERR_NS.Disposition):
-            if (c1, LADERR_NS.state, enabled) not in laderr_graph:
-                continue
+                # Remove previous conflicting states
+                removed_triples.add((d1, LADERR_NS.state, disabled))  # Remove old disabled state of d1
+                removed_triples.add((d2, LADERR_NS.state, enabled))  # Remove old enabled state of d2
 
-            # Check which dispositions are disabled by this enabled disposition
-            for c2 in laderr_graph.objects(c1, LADERR_NS.disables):
-                if (c2, RDF.type, LADERR_NS.Disposition) not in laderr_graph:
-                    continue
+                # Set correct states
+                if (d1, LADERR_NS.state, enabled) not in laderr_graph:
+                    new_triples.add((d1, LADERR_NS.state, enabled))
+                if (d2, LADERR_NS.state, disabled) not in laderr_graph:
+                    new_triples.add((d2, LADERR_NS.state, disabled))
 
-                # Check if c2 is currently ENABLED (only then should it be set to DISABLED)
-                if (c2, LADERR_NS.state, enabled) not in laderr_graph:
-                    continue
-
-                # Remove the current enabled state
-                removed_triples.add((c2, LADERR_NS.state, enabled))
-
-                # Infer that c2 must have state DISABLED
-                new_triples.add((c2, LADERR_NS.state, disabled))
-
-        # Apply removals first (removing 'enabled')
+        # Apply removals first
         for triple in removed_triples:
             laderr_graph.remove(triple)
             VERBOSE and logger.info(f"Removed: {triple[0]} laderr:state {triple[2]}")
 
-        # Apply additions (setting 'disabled')
+        # Apply new inferences
         for triple in new_triples:
             laderr_graph.add(triple)
             VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:state {triple[2]}")
@@ -88,22 +87,48 @@ class InferenceRules:
     @staticmethod
     def execute_rule_inhibits(laderr_graph: Graph):
         """
-        Applies the 'inhibits' inference rule:
-        If a capability disables another capability,
-        and the inhibits relationship does not already exist between their respective entities,
-        infer that the second entity inhibits the first entity.
-        """
-        if (None, LADERR_NS.capabilities, None) not in laderr_graph or \
-                (None, LADERR_NS.disables, None) not in laderr_graph:
-            return
+        Applies the updated 'inhibits' inference rule:
 
+        If there exist entities (o2, o3) such that:
+        - o2 has capability c2, and o3 has capability c3
+        - A vulnerability v1 exists
+        - c2 disables v1
+        - c3 exploits v1
+        - o2 does not already inhibit o3
+
+        Then infer: o2 inhibits o3.
+
+        :param laderr_graph: RDFLib graph containing LaDeRR data.
+        :type laderr_graph: Graph
+        """
         new_triples = set()
 
-        for o1, d1 in laderr_graph.subject_objects(LADERR_NS.capabilities):
-            for o2, d2 in laderr_graph.subject_objects(LADERR_NS.capabilities):
-                if (d2, LADERR_NS.disables, d1) in laderr_graph and (o2, LADERR_NS.inhibits, o1) not in laderr_graph:
-                    new_triples.add((o2, LADERR_NS.inhibits, o1))
+        # Iterate over all entities that have capabilities
+        for o2 in laderr_graph.subjects(RDF.type, LADERR_NS.Entity):
+            for c2 in laderr_graph.objects(o2, LADERR_NS.capabilities):
+                if (c2, RDF.type, LADERR_NS.Capability) not in laderr_graph:
+                    continue
 
+                # Find vulnerabilities that c2 disables
+                for v1 in laderr_graph.objects(c2, LADERR_NS.disables):
+                    if (v1, RDF.type, LADERR_NS.Vulnerability) not in laderr_graph:
+                        continue
+
+                    # Find entities (o3) that have capabilities (c3) exploiting v1
+                    for o3 in laderr_graph.subjects(RDF.type, LADERR_NS.Entity):
+                        if o2 == o3:
+                            continue  # Avoid self-inhibition
+
+                        for c3 in laderr_graph.objects(o3, LADERR_NS.capabilities):
+                            if (c3, RDF.type, LADERR_NS.Capability) not in laderr_graph:
+                                continue
+
+                            if (c3, LADERR_NS.exploits, v1) in laderr_graph:
+                                # Ensure inhibition is not already present
+                                if (o2, LADERR_NS.inhibits, o3) not in laderr_graph:
+                                    new_triples.add((o2, LADERR_NS.inhibits, o3))
+
+        # Apply the inferred triples
         for triple in new_triples:
             laderr_graph.add(triple)
             VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:inhibits {triple[2]}")

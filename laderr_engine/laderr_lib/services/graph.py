@@ -24,8 +24,8 @@ class GraphHandler:
     - Serialize and save RDF graphs to a file in a specified format.
     """
 
-    @classmethod
-    def load_laderr_schema(cls) -> Graph:
+    @staticmethod
+    def load_laderr_schema() -> Graph:
         """
         Loads an RDF schema file into an RDFLib laderr_graph.
 
