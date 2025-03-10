@@ -350,55 +350,41 @@ class InferenceRules:
     @staticmethod
     def execute_rule_scenario_resilient(laderr_graph: Graph):
         """
-        Applies the 'scenario = RESILIENT' inference rule:
-        If a LaDeRR Specification (ls) contains an entity (o) with a vulnerability (v) that is DISABLED,
-        and the current scenario of the specification is INCIDENT,
-        then the scenario of the specification is set to RESILIENT, replacing the previous scenario.
+        Applies the 'scenarioResilient' inference rule.
 
-        This method ensures that the schema rule allowing only one scenario is respected:
-        - The existing `scenario` relation to INCIDENT will be removed before adding the new relation to RESILIENT.
+        If a LaderrSpecification is in an INCIDENT scenario, and all vulnerabilities in its constructs
+        are either DISABLED or have at least one exploiting capability, then the scenario is updated to RESILIENT.
 
         :param laderr_graph: RDFLib graph containing LaDeRR data.
         :type laderr_graph: Graph
         """
-        new_triples = set()
-        removed_triples = set()
-
-        disabled = LADERR_NS.disabled
-        incident = LADERR_NS.incident
-        resilient = LADERR_NS.resilient
-
-        # For each LaderrSpecification
         for ls in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
-            # Check if current scenario is INCIDENT
-            if (ls, LADERR_NS.scenario, incident) not in laderr_graph:
-                continue
+            # Check if scenario(ls) = INCIDENT
+            if (ls, LADERR_NS.scenario, LADERR_NS.incident) not in laderr_graph:
+                continue  # Skip if not an incident
 
-            # Check all entities within this specification
-            scenario_should_be_resilient = False
-            for o in laderr_graph.objects(ls, LADERR_NS.constructs):
-                # Check all vulnerabilities of this entity
-                for v in laderr_graph.objects(o, LADERR_NS.vulnerabilities):
-                    # If any vulnerability is DISABLED, condition is met
-                    if (v, LADERR_NS.state, disabled) in laderr_graph:
-                        scenario_should_be_resilient = True
-                        break
+            all_vulnerabilities_handled = True  # Assume scenario is resilient unless proven otherwise
 
-                if scenario_should_be_resilient:
-                    break
+            # Iterate over all entities in this specification
+            for o1 in laderr_graph.objects(ls, LADERR_NS.constructs):
+                for v1 in laderr_graph.objects(o1, LADERR_NS.vulnerabilities):
 
-            if scenario_should_be_resilient:
-                # Remove current (incident) scenario
-                removed_triples.add((ls, LADERR_NS.scenario, incident))
+                    # If the vulnerability is disabled, it's fine
+                    if (v1, LADERR_NS.state, LADERR_NS.disabled) in laderr_graph:
+                        continue
 
-                # Set new scenario to RESILIENT
-                new_triples.add((ls, LADERR_NS.scenario, resilient))
+                    # Check if at least one capability exploits v1
+                    has_exploiting_capability = any(
+                        laderr_graph.subjects(LADERR_NS.exploits, v1)
+                    )
 
-        # Apply changes
-        for triple in removed_triples:
-            laderr_graph.remove(triple)
-            VERBOSE and logger.info(f"Removed: {triple[0]} laderr:scenario {triple[2]}")
+                    if not has_exploiting_capability:
+                        all_vulnerabilities_handled = False
+                        break  # Exit inner loop
 
-        for triple in new_triples:
-            laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:scenario {triple[2]}")
+                if not all_vulnerabilities_handled:
+                    break  # Exit outer loop
+
+            # If all vulnerabilities are handled, update scenario to RESILIENT
+            if all_vulnerabilities_handled:
+                laderr_graph.set((ls, LADERR_NS.scenario, LADERR_NS.resilient))

@@ -2,6 +2,8 @@ import pytest
 from icecream import ic
 from rdflib import Graph, Namespace, URIRef, Literal, RDF
 
+from tests.aux import EXAMPLE
+
 LADERR = Namespace("https://w3id.org/laderr#")
 
 from laderr_engine.laderr_lib.services.inference_rules import InferenceRules  # Adjust if needed
@@ -11,14 +13,14 @@ from laderr_engine.laderr_lib.services.inference_rules import InferenceRules  # 
 def laderr_graph_with_valid_succeeded_to_damage_case():
     g = Graph()
 
-    spec = URIRef("https://example.org/specification")
-    entity1 = URIRef("https://example.org/entity1")
-    entity2 = URIRef("https://example.org/entity2")
+    spec = EXAMPLE.specification
+    entity1 = EXAMPLE.entity1
+    entity2 = EXAMPLE.entity2
 
-    capability1 = URIRef("https://example.org/capability1")
-    capability2 = URIRef("https://example.org/capability2")
+    capability1 = EXAMPLE.capability1
+    capability2 = EXAMPLE.capability2
 
-    vulnerability1 = URIRef("https://example.org/vulnerability1")
+    vulnerability1 = EXAMPLE.vulnerability1
 
     # Specification setup
     g.add((spec, RDF.type, LADERR.LaderrSpecification))
@@ -79,12 +81,12 @@ def test_succeeded_to_damage_not_inferred_when_any_state_is_disabled(laderr_grap
     g, spec, entity1, entity2 = laderr_graph_with_valid_succeeded_to_damage_case
 
     if disabled_state == "capability":
-        g.set((URIRef("https://example.org/capability2"), LADERR.state, LADERR.disabled))
+        g.set((EXAMPLE.capability2, LADERR.state, LADERR.disabled))
     elif disabled_state == "vulnerability":
-        g.set((URIRef("https://example.org/vulnerability1"), LADERR.state, LADERR.disabled))
+        g.set((EXAMPLE.vulnerability1, LADERR.state, LADERR.disabled))
     elif disabled_state == "both":
-        g.set((URIRef("https://example.org/capability2"), LADERR.state, LADERR.disabled))
-        g.set((URIRef("https://example.org/vulnerability1"), LADERR.state, LADERR.disabled))
+        g.set((EXAMPLE.capability2, LADERR.state, LADERR.disabled))
+        g.set((EXAMPLE.vulnerability1, LADERR.state, LADERR.disabled))
 
     # Run inference
     InferenceRules.execute_rule_succeeded_to_damage(g)
@@ -143,10 +145,10 @@ def test_succeeded_to_damage_not_inferred_without_necessary_relation(laderr_grap
 
     if missing_relation == "exploits":
         g.remove(
-            (URIRef("https://example.org/capability2"), LADERR.exploits, URIRef("https://example.org/vulnerability1")))
+            (EXAMPLE.capability2, LADERR.exploits, EXAMPLE.vulnerability1))
     elif missing_relation == "exposes":
         g.remove(
-            (URIRef("https://example.org/vulnerability1"), LADERR.exposes, URIRef("https://example.org/capability1")))
+            (EXAMPLE.vulnerability1, LADERR.exposes, EXAMPLE.capability1))
 
     InferenceRules.execute_rule_succeeded_to_damage(g)
 

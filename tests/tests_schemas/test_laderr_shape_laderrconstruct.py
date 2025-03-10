@@ -4,7 +4,7 @@ from rdflib import Graph, Namespace, URIRef, Literal, RDF, XSD, RDFS
 from pyshacl import validate
 
 from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
-from tests.aux_functions import find_file_by_partial_name
+from tests.aux import find_file_by_partial_name
 
 LADERR = Namespace("https://w3id.org/laderr#")
 OWL = Namespace("http://www.w3.org/2002/07/owl#")

@@ -4,6 +4,7 @@ from rdflib import Graph, Namespace, URIRef, RDF, RDFS
 
 from laderr_engine.laderr_lib.services.graph import GraphHandler
 from laderr_engine.laderr_lib.services.inference_rules import InferenceRules  # Adjust if needed
+from tests.aux import EXAMPLE
 
 LADERR = Namespace("https://w3id.org/laderr#")
 
@@ -16,17 +17,17 @@ def laderr_graph_with_valid_resilience_case():
     g = Graph()
 
     # Entities
-    entity1 = URIRef("https://example.org/entity1")
-    entity2 = URIRef("https://example.org/entity2")
-    entity3 = URIRef("https://example.org/entity3")
+    entity1 = EXAMPLE.entity1
+    entity2 = EXAMPLE.entity2
+    entity3 = EXAMPLE.entity3
 
     # Capabilities
-    capability1 = URIRef("https://example.org/capability1")  # belongs to entity1
-    capability2 = URIRef("https://example.org/capability2")  # belongs to entity2 (disabling capability)
-    capability3 = URIRef("https://example.org/capability3")  # belongs to entity3 (exploiting capability)
+    capability1 = EXAMPLE.capability1  # belongs to entity1
+    capability2 = EXAMPLE.capability2  # belongs to entity2 (disabling capability)
+    capability3 = EXAMPLE.capability3  # belongs to entity3 (exploiting capability)
 
     # Vulnerability
-    vulnerability1 = URIRef("https://example.org/vulnerability1")
+    vulnerability1 = EXAMPLE.vulnerability1
 
     # Assign types
     g.add((entity1, RDF.type, LADERR.Entity))
@@ -115,13 +116,13 @@ def test_resilience_not_inferred_with_same_entity_capabilities():
     """
     g = Graph()
 
-    entity1 = URIRef("https://example.org/entity1")
+    entity1 = EXAMPLE.entity1
 
-    capability1 = URIRef("https://example.org/capability1")
-    capability2 = URIRef("https://example.org/capability2")
-    capability3 = URIRef("https://example.org/capability3")
+    capability1 = EXAMPLE.capability1
+    capability2 = EXAMPLE.capability2
+    capability3 = EXAMPLE.capability3
 
-    vulnerability1 = URIRef("https://example.org/vulnerability1")
+    vulnerability1 = EXAMPLE.vulnerability1
 
     g.add((entity1, RDF.type, LADERR.Entity))
     g.add((capability1, RDF.type, LADERR.Capability))
@@ -214,7 +215,7 @@ def test_resilience_inferred_with_multiple_vulnerabilities(laderr_graph_with_val
     g, entity1, capability1, capability2, capability3, vulnerability1 = laderr_graph_with_valid_resilience_case
 
     # Add a second vulnerability (should not interfere with the first)
-    vulnerability2 = URIRef("https://example.org/vulnerability2")
+    vulnerability2 = EXAMPLE.vulnerability2
     g.add((entity1, LADERR.vulnerabilities, vulnerability2))
     g.add((capability2, LADERR.disables, vulnerability2))  # This one is also disabled
     g.add((capability3, LADERR.exploits, vulnerability2))
@@ -231,8 +232,8 @@ def test_resilience_inferred_with_multiple_disabling_capabilities(laderr_graph_w
     g, entity1, capability1, capability2, capability3, vulnerability1 = laderr_graph_with_valid_resilience_case
 
     # Add a second disabling capability
-    capability4 = URIRef("https://example.org/capability4")
-    entity4 = URIRef("https://example.org/entity4")
+    capability4 = EXAMPLE.capability4
+    entity4 = EXAMPLE.entity4
     g.add((entity4, LADERR.capabilities, capability4))
     g.add((capability4, LADERR.disables, vulnerability1))
     g.add((capability4, LADERR.state, LADERR.enabled))  # Also enabled
@@ -251,7 +252,7 @@ def test_resilience_not_inferred_when_other_vulnerability_is_not_disabled(laderr
     g, entity1, capability1, capability2, capability3, vulnerability1 = laderr_graph_with_valid_resilience_case
 
     # Add a second vulnerability that is NOT disabled
-    vulnerability2 = URIRef("https://example.org/vulnerability2")
+    vulnerability2 = EXAMPLE.vulnerability2
     g.add((entity1, LADERR.vulnerabilities, vulnerability2))
     g.add((capability3, LADERR.exploits, vulnerability2))  # Exploited but NOT disabled
 

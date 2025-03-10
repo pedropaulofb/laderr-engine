@@ -1,6 +1,8 @@
 import pytest
 from rdflib import Graph, Namespace, URIRef
 
+from tests.aux import EXAMPLE
+
 LADERR = Namespace("https://w3id.org/laderr#")
 
 from laderr_engine.laderr_lib.services.inference_rules import InferenceRules  # Adjust if necessary
@@ -10,12 +12,12 @@ def laderr_graph_with_exploiting_capability():
     g = Graph()
 
     # Entities
-    entity1 = URIRef("https://example.org/entity1")
-    entity2 = URIRef("https://example.org/entity2")
+    entity1 = EXAMPLE.entity1
+    entity2 = EXAMPLE.entity2
 
     # Capability and Vulnerability
-    capability = URIRef("https://example.org/capability1")
-    vulnerability = URIRef("https://example.org/vulnerability1")
+    capability = EXAMPLE.capability1
+    vulnerability = EXAMPLE.vulnerability1
 
     # Link capabilities and vulnerabilities to entities
     g.add((entity1, LADERR.capabilities, capability))
@@ -38,12 +40,12 @@ def test_execute_rule_threatens(laderr_graph_with_exploiting_capability):
 
 def test_no_exploits_no_threatens_inferred():
     g = Graph()
-    entity1 = URIRef("https://example.org/entity1")
-    entity2 = URIRef("https://example.org/entity2")
+    entity1 = EXAMPLE.entity1
+    entity2 = EXAMPLE.entity2
 
     # Capabilities and vulnerabilities, but no "exploits" relation
-    g.add((entity1, LADERR.capabilities, URIRef("https://example.org/capability1")))
-    g.add((entity2, LADERR.vulnerabilities, URIRef("https://example.org/vulnerability1")))
+    g.add((entity1, LADERR.capabilities, EXAMPLE.capability1))
+    g.add((entity2, LADERR.vulnerabilities, EXAMPLE.vulnerability1))
 
     InferenceRules.execute_rule_threatens(g)
 
@@ -52,11 +54,11 @@ def test_no_exploits_no_threatens_inferred():
 
 def test_threatens_already_exists():
     g = Graph()
-    entity1 = URIRef("https://example.org/entity1")
-    entity2 = URIRef("https://example.org/entity2")
+    entity1 = EXAMPLE.entity1
+    entity2 = EXAMPLE.entity2
 
-    capability = URIRef("https://example.org/capability1")
-    vulnerability = URIRef("https://example.org/vulnerability1")
+    capability = EXAMPLE.capability1
+    vulnerability = EXAMPLE.vulnerability1
 
     g.add((entity1, LADERR.capabilities, capability))
     g.add((entity2, LADERR.vulnerabilities, vulnerability))

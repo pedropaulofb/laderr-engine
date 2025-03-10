@@ -1,6 +1,8 @@
 import pytest
 from rdflib import Graph, Namespace, URIRef, RDF
 
+from tests.aux import EXAMPLE
+
 LADERR = Namespace("https://w3id.org/laderr#")
 
 from laderr_engine.laderr_lib.services.inference_rules import InferenceRules  # Adjust if needed
@@ -19,15 +21,15 @@ def laderr_graph_with_inhibiting_capability():
     g = Graph()
 
     # Entities
-    entity1 = URIRef("https://example.org/entity1")
-    entity2 = URIRef("https://example.org/entity2")
+    entity1 = EXAMPLE.entity1
+    entity2 = EXAMPLE.entity2
 
     # Capabilities
-    capability1 = URIRef("https://example.org/capability1")
-    capability2 = URIRef("https://example.org/capability2")
+    capability1 = EXAMPLE.capability1
+    capability2 = EXAMPLE.capability2
 
     # Vulnerability
-    vulnerability1 = URIRef("https://example.org/vulnerability1")
+    vulnerability1 = EXAMPLE.vulnerability1
 
     # Assign types
     g.add((entity1, RDF.type, LADERR.Entity))
@@ -75,11 +77,11 @@ def test_no_inhibits_inferred_when_conditions_not_met(add_disables, add_exploits
 
     g = Graph()
 
-    entity1 = URIRef("https://example.org/entity1")
-    entity2 = URIRef("https://example.org/entity2")
-    capability1 = URIRef("https://example.org/capability1")
-    capability2 = URIRef("https://example.org/capability2")
-    vulnerability1 = URIRef("https://example.org/vulnerability1")
+    entity1 = EXAMPLE.entity1
+    entity2 = EXAMPLE.entity2
+    capability1 = EXAMPLE.capability1
+    capability2 = EXAMPLE.capability2
+    vulnerability1 = EXAMPLE.vulnerability1
 
     # Assign types
     g.add((entity1, RDF.type, LADERR.Entity))
@@ -112,11 +114,11 @@ def test_inhibits_already_exists():
     """
     g = Graph()
 
-    entity1 = URIRef("https://example.org/entity1")
-    entity2 = URIRef("https://example.org/entity2")
-    capability1 = URIRef("https://example.org/capability1")
-    capability2 = URIRef("https://example.org/capability2")
-    vulnerability1 = URIRef("https://example.org/vulnerability1")
+    entity1 = EXAMPLE.entity1
+    entity2 = EXAMPLE.entity2
+    capability1 = EXAMPLE.capability1
+    capability2 = EXAMPLE.capability2
+    vulnerability1 = EXAMPLE.vulnerability1
 
     # Assign types
     g.add((entity1, RDF.type, LADERR.Entity))
@@ -149,9 +151,9 @@ def test_self_inhibition_not_inferred():
     """
     g = Graph()
 
-    entity1 = URIRef("https://example.org/entity1")
-    capability1 = URIRef("https://example.org/capability1")
-    vulnerability1 = URIRef("https://example.org/vulnerability1")
+    entity1 = EXAMPLE.entity1
+    capability1 = EXAMPLE.capability1
+    vulnerability1 = EXAMPLE.vulnerability1
 
     # Assign types
     g.add((entity1, RDF.type, LADERR.Entity))

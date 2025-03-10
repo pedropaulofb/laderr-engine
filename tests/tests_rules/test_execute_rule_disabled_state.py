@@ -4,6 +4,7 @@ from owlrl import DeductiveClosure, RDFS_Semantics
 from rdflib import Graph, Namespace, URIRef, RDF
 
 from laderr_engine.laderr_lib.services.graph import GraphHandler
+from tests.aux import EXAMPLE
 
 LADERR = Namespace("https://w3id.org/laderr#")
 
@@ -20,8 +21,8 @@ def laderr_graph_with_disabling_relation():
     """
     g = Graph()
 
-    disposition1 = URIRef("https://example.org/disposition1")
-    disposition2 = URIRef("https://example.org/disposition2")
+    disposition1 = EXAMPLE.disposition1
+    disposition2 = EXAMPLE.disposition2
 
     g.add((disposition1, RDF.type, LADERR.Disposition))
     g.add((disposition2, RDF.type, LADERR.Disposition))
@@ -58,8 +59,8 @@ def test_execute_rule_disabled_state_various_states(type1: URIRef, type2: URIRef
     """
     g = GraphHandler.load_laderr_schema()
 
-    disposition1 = URIRef("https://example.org/disposition1")
-    disposition2 = URIRef("https://example.org/disposition2")
+    disposition1 = EXAMPLE.disposition1
+    disposition2 = EXAMPLE.disposition2
 
     g.add((disposition1, RDF.type, type1))
     g.add((disposition2, RDF.type, type2))
@@ -91,8 +92,8 @@ def test_execute_rule_with_missing_states():
     Ensures the rule properly infers states even if they were missing.
     """
     g = Graph()
-    disposition1 = URIRef("https://example.org/disposition1")
-    disposition2 = URIRef("https://example.org/disposition2")
+    disposition1 = EXAMPLE.disposition1
+    disposition2 = EXAMPLE.disposition2
 
     g.add((disposition1, RDF.type, LADERR.Disposition))
     g.add((disposition2, RDF.type, LADERR.Disposition))
