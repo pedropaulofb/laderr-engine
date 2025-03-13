@@ -16,7 +16,7 @@ def main():
     parser.add_argument("-g0", "--save-graph-pre", action="store_true", help="Save the graph before processing.")
     parser.add_argument("-i", "--save-visualization", action="store_true", help="Save the processed visualization.")
     parser.add_argument("-i0", "--save-visualization-pre", action="store_true", help="Save the visualization before processing.")
-    parser.add_argument("-s", "--silent", action="store_false", help="Disable verbose logging (default: verbose enabled).")
+    parser.add_argument("-s", "--silent", action="store_false", help="Disable verbose logging.")
 
     args = parser.parse_args()
 
@@ -30,7 +30,7 @@ def main():
         save_graph_post=args.save_graph,
         save_visualization_pre=args.save_visualization_pre,
         save_visualization_post=args.save_visualization,
-        verbose=args.silent  # Now correctly handling silent mode
+        verbose=args.silent
     )
 
 if __name__ == "__main__":

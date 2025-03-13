@@ -114,7 +114,7 @@ class Laderr:
     @staticmethod
     def process_specification(
             input_spec_path: str,
-            output_file_path: str,
+            output_file_base: str = None,
             validate_pre: bool = True,
             validate_post: bool = True,
             exec_inferences: bool = True,
@@ -122,15 +122,16 @@ class Laderr:
             save_graph_post: bool = True,
             save_visualization_pre: bool = True,
             save_visualization_post: bool = True,
+            save_spec: bool = True,
             verbose: bool = True
             # TODO: Set save_graph_pre, save_graph_post, save_visualization_pre, and verbose with default False
     ) -> None:
         """
         Loads, processes, and optionally validates and enriches a LaDeRR specification,
-        then saves the resulting specification and optionally its graph representation and visualization.
+        then saves the resulting specification (if enabled) and optionally its graph representation and visualization.
 
         :param input_spec_path: Path to the input LaDeRR specification file.
-        :param output_file_path: Path where the processed specification should be saved.
+        :param output_file_base: Base name for the output files (without extension). Required if any save option is enabled.
         :param validate_pre: Whether to validate before reasoning.
         :param validate_post: Whether to validate after reasoning.
         :param exec_inferences: Whether to apply reasoning.
@@ -138,20 +139,26 @@ class Laderr:
         :param save_graph_post: Whether to save the processed graph.
         :param save_visualization_pre: Whether to save the visualization before processing.
         :param save_visualization_post: Whether to save the visualization after processing.
+        :param save_spec: Whether to save the final processed specification.
         :param verbose: Whether to log messages.
         """
-        output_base = os.path.splitext(output_file_path)[0]
+
+        # Check if saving is requested but no output base is provided
+        if not output_file_base and (
+                save_graph_pre or save_graph_post or save_visualization_pre or save_visualization_post or save_spec):
+            raise ValueError("output_file_base argument must be provided when saving any output.")
+
         laderr_graph = GraphHandler.create_laderr_graph(input_spec_path)
 
         if save_graph_pre:
-            GraphHandler.save_graph(laderr_graph, f"{output_base}_pre.ttl")
+            GraphHandler.save_graph(laderr_graph, f"{output_file_base}_pre.ttl")
             if verbose:
-                logger.success(f"Pre-processed graph saved to {output_base}_pre.ttl")
+                logger.success(f"Pre-processed graph saved to {output_file_base}_pre.ttl")
 
         if save_visualization_pre:
-            GraphCreator.create_graph_visualization(laderr_graph, f"{output_base}_pre.png")
+            GraphCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_pre.png")
             if verbose:
-                logger.success(f"Pre-processed visualization saved to {output_base}_pre.png")
+                logger.success(f"Pre-processed visualization saved to {output_file_base}_pre.png")
 
         if validate_pre:
             Laderr.validate_graph(laderr_graph, verbose)
@@ -161,16 +168,16 @@ class Laderr:
             Laderr.validate_graph(laderr_graph, verbose)
 
         if save_graph_post:
-            GraphHandler.save_graph(laderr_graph, f"{output_base}.ttl")
+            GraphHandler.save_graph(laderr_graph, f"{output_file_base}.ttl")
             if verbose:
-                logger.success(f"Processed graph saved to {output_base}.ttl")
+                logger.success(f"Processed graph saved to {output_file_base}.ttl")
 
         if save_visualization_post:
-            GraphCreator.create_graph_visualization(laderr_graph, f"{output_base}.png")
+            GraphCreator.create_graph_visualization(laderr_graph, f"{output_file_base}.png")
             if verbose:
-                logger.success(f"Processed visualization saved to {output_base}.png")
+                logger.success(f"Processed visualization saved to {output_file_base}.png")
 
-        SpecificationHandler.write_specification(laderr_graph, output_file_path)
-        if verbose:
-            logger.success(f"Processed specification successfully saved to: {output_file_path}")
-
+        if save_spec:
+            SpecificationHandler.write_specification(laderr_graph, f"{output_file_base}.toml")
+            if verbose:
+                logger.success(f"Processed specification successfully saved to: {output_file_base}.toml")
