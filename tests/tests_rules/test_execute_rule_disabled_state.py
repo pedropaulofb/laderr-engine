@@ -56,7 +56,7 @@ def test_execute_rule_disabled_state_various_states(type1: URIRef, type2: URIRef
     :param state_d1: Initial state of disposition1.
     :param state_d2: Initial state of disposition2.
     """
-    g = GraphHandler.load_laderr_schema()
+    g = GraphHandler._load_laderr_schema()
 
     disposition1 = EXAMPLE.disposition1
     disposition2 = EXAMPLE.disposition2

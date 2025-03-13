@@ -23,7 +23,7 @@ class GraphHandler:
     """
 
     @staticmethod
-    def load_laderr_schema() -> Graph:
+    def _load_laderr_schema() -> Graph:
         """
         Loads an RDF schema file into an RDFLib laderr_graph.
 
@@ -146,8 +146,8 @@ class GraphHandler:
                     graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{value}")))
 
     @staticmethod
-    def convert_data_to_graph(spec_metadata: dict[str, object],
-                              spec_data: dict[str, dict[str, dict[str, object]]]) -> Graph:
+    def _convert_data_to_graph(spec_metadata: dict[str, object],
+                               spec_data: dict[str, dict[str, dict[str, object]]]) -> Graph:
         """
         Converts the 'data' section of a LaDeRR specification into an RDF laderr_graph.
 
@@ -186,7 +186,7 @@ class GraphHandler:
         return graph
 
     @staticmethod
-    def convert_metadata_to_graph(metadata: dict[str, object]) -> tuple[Graph, Namespace]:
+    def _convert_metadata_to_graph(metadata: dict[str, object]) -> tuple[Graph, Namespace]:
         """
         Converts LaDeRR specification metadata into an RDF laderr_graph.
 
@@ -201,11 +201,9 @@ class GraphHandler:
         :raises ValueError: If the provided metadata contains invalid formats or unsupported data types.
         """
         # Define expected datatypes for spec_metadata_dict keys
-        expected_datatypes = {
-            "title": XSD.string, "description": XSD.string, "version": XSD.string,
-            "createdBy": XSD.string, "createdOn": XSD.dateTime, "modifiedOn": XSD.dateTime,
-            "baseURI": XSD.anyURI
-        }
+        expected_datatypes = {"title": XSD.string, "description": XSD.string, "version": XSD.string,
+                              "createdBy": XSD.string, "createdOn": XSD.dateTime, "modifiedOn": XSD.dateTime,
+                              "baseURI": XSD.anyURI}
 
         # Validate base URI and bind namespaces
         base_uri = metadata["baseURI"]  # baseURI has been validated during specification reading
@@ -237,12 +235,8 @@ class GraphHandler:
                 graph.add((specification, property_uri, Literal(value, datatype=datatype)))
 
         # Process `scenario` separately as an individual reference
-        scenario_mapping = {
-            "operational": LADERR_NS.operational,
-            "incident": LADERR_NS.incident,
-            "resilient": LADERR_NS.resilient,
-            "not_resilient": LADERR_NS.not_resilient
-        }
+        scenario_mapping = {"operational": LADERR_NS.operational, "incident": LADERR_NS.incident,
+                            "resilient": LADERR_NS.resilient, "not_resilient": LADERR_NS.not_resilient}
 
         scenario_value = metadata.get("scenario")
         if scenario_value in scenario_mapping:
@@ -257,7 +251,7 @@ class GraphHandler:
 
         combined_graph = Graph()
 
-        schema_graph = GraphHandler.load_laderr_schema()
+        schema_graph = GraphHandler._load_laderr_schema()
 
         combined_graph += schema_graph
         combined_graph += laderr_graph
@@ -277,8 +271,8 @@ class GraphHandler:
         :rtype: Graph
         """
         spec_metadata, spec_data = SpecificationHandler.read_specification(laderr_file_path)
-        laderr_metadata_graph, base_uri = GraphHandler.convert_metadata_to_graph(spec_metadata)
-        laderr_data_graph = GraphHandler.convert_data_to_graph(spec_metadata, spec_data)
+        laderr_metadata_graph, base_uri = GraphHandler._convert_metadata_to_graph(spec_metadata)
+        laderr_data_graph = GraphHandler._convert_data_to_graph(spec_metadata, spec_data)
 
         # Create a new laderr_graph to store the combined information
         laderr_graph = Graph()
@@ -348,14 +342,13 @@ class GraphHandler:
         :return: A cleaned RDF graph containing only relevant triples.
         :rtype: Graph
         """
-        triples_to_remove = {
-            (s, p, o) for s, p, o in graph
-            if (not str(s).startswith(base_url))  # Remove triples where subject is not in base_url
-               or isinstance(s, BNode) or isinstance(p, BNode) or isinstance(o,
-                                                                             BNode)  # Remove triples with blank nodes
-               or (p == RDF.type and o == RDFS.Resource)  # Remove "X a rdfs:Resource"
-               or (p == OWL.topObjectProperty)  # Remove "X owl:topObjectProperty Y"
-        }
+        triples_to_remove = {(s, p, o) for s, p, o in graph if
+                             (not str(s).startswith(base_url))  # Remove triples where subject is not in base_url
+                             or isinstance(s, BNode) or isinstance(p, BNode) or isinstance(o,
+                                                                                           BNode)  # Remove triples with blank nodes
+                             or (p == RDF.type and o == RDFS.Resource)  # Remove "X a rdfs:Resource"
+                             or (p == OWL.topObjectProperty)  # Remove "X owl:topObjectProperty Y"
+                             }
 
         for triple in triples_to_remove:
             graph.remove(triple)

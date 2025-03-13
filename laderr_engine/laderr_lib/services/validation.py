@@ -42,7 +42,7 @@ class ValidationHandler:
 
         combined_graph = GraphHandler.create_combined_graph(laderr_graph)
 
-        shacl_graph = ValidationHandler.load_shacl_schemas(SHACL_FILES_PATH)
+        shacl_graph = ValidationHandler._load_shacl_schemas(SHACL_FILES_PATH)
 
         conforms, report_graph, report_text = validate(data_graph=combined_graph, shacl_graph=shacl_graph,
                                                        inference="both", allow_infos=True, allow_warnings=True)
@@ -52,7 +52,7 @@ class ValidationHandler:
         return conforms, report_graph, report_text
 
     @staticmethod
-    def load_shacl_schemas(shacl_files_path: str) -> Graph:
+    def _load_shacl_schemas(shacl_files_path: str) -> Graph:
         """
         Loads SHACL schema files from a directory and merges them into a single RDFLib graph.
 

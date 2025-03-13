@@ -16,7 +16,7 @@ class ReasoningHandler:
     """
 
     @staticmethod
-    def calculate_hash(graph: Graph) -> str:
+    def _calculate_hash(graph: Graph) -> str:
         """
         Computes a hash of the RDF graph's triples.
 
@@ -53,7 +53,7 @@ class ReasoningHandler:
         graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
 
         while hash_before != hash_after:
-            hash_before = ReasoningHandler.calculate_hash(graph)
+            hash_before = ReasoningHandler._calculate_hash(graph)
 
             DeductiveClosure(RDFS_Semantics).expand(graph)
             InferenceRules.execute_rule_disabled_state(graph)
@@ -65,6 +65,6 @@ class ReasoningHandler:
             InferenceRules.execute_rule_failed_to_damage(graph)
             InferenceRules.execute_rule_scenario_resilient(graph)
 
-            hash_after = ReasoningHandler.calculate_hash(graph)
+            hash_after = ReasoningHandler._calculate_hash(graph)
 
         return GraphHandler.clean_graph(graph, base_prefix)
