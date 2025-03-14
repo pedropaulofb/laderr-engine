@@ -1,6 +1,6 @@
 # LaDeRR-Lib: A Python Library for Manipulating LaDeRR Concepts
 
-<p align="center"><img src="https://raw.githubusercontent.com/pedropaulofb/laderr-lib/main/resources/laderr-lib-logo.png" width="500"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/pedropaulofb/laderr-lib/main/resources/laderr-engine-logo.png" width="500"></p>
 
 **LaDeRR-Lib** is a Python library designed to manipulate and interact with concepts defined in the [**Language for Describing Risk and Resilience (LaDeRR)**](https://w3id.org/laderr/git).
 
