@@ -23,7 +23,7 @@ class ValidationHandler:
     """
 
     @staticmethod
-    def validate_laderr_graph(laderr_graph: Graph) -> tuple[bool, str, Graph]:
+    def validate_laderr_graph(laderr_graph: Graph) -> tuple[bool, Graph, str]:
         """
         Validates an RDF graph using SHACL constraints.
 
@@ -34,9 +34,9 @@ class ValidationHandler:
         :type laderr_graph: Graph
         :return: A tuple containing:
             - A boolean indicating whether the graph conforms to SHACL constraints.
-            - A string containing detailed validation results.
             - A graph representing the SHACL validation report.
-        :rtype: tuple[bool, str, Graph]
+            - A string containing detailed validation results.
+        :rtype: tuple[bool, Graph, str]
         """
         from laderr_engine.laderr_lib.services.graph import GraphHandler
 
@@ -46,8 +46,6 @@ class ValidationHandler:
 
         conforms, report_graph, report_text = validate(data_graph=combined_graph, shacl_graph=shacl_graph,
                                                        inference="both", allow_infos=True, allow_warnings=True)
-
-        ValidationHandler._report_validation_result(conforms, report_text)
 
         return conforms, report_graph, report_text
 
@@ -95,22 +93,3 @@ class ValidationHandler:
 
         return merged_graph
 
-    @staticmethod
-    def _report_validation_result(conforms: bool, report_text: str) -> None:
-        """
-        (Internal) Reports the results of SHACL validation to the user.
-
-        This method logs whether the RDF laderr_graph conforms to SHACL constraints and provides a detailed validation report.
-
-        :param conforms: Boolean indicating whether the RDF laderr_graph conforms to the SHACL schema.
-        :type conforms: bool
-        :param report_text: Text representation of the SHACL validation report.
-        :type report_text: str
-        """
-        if conforms:
-            logger.success("The input LaDeRR specification is VALID.")
-        else:
-            logger.error("The input LaDeRR specification is INVALID.")
-
-        # Print the full textual validation report
-        VERBOSE and logger.info(f"Full Validation Report: {report_text}")
