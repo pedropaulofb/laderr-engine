@@ -15,7 +15,6 @@ All methods are **static** within the `Laderr` class, allowing direct access wit
 """
 from loguru import logger
 from rdflib import Graph
-import os
 
 from laderr_engine.laderr_lib.services.graph import GraphHandler
 from laderr_engine.laderr_lib.services.reasoning import ReasoningHandler
