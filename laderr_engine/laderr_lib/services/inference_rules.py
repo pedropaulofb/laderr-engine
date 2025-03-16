@@ -260,14 +260,8 @@ class InferenceRules:
         removed_triples = set()
 
         for ls in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
-
-            # Remove any previous scenario value before setting the new one
-            for scenario in laderr_graph.objects(ls, LADERR_NS.scenario):
-                removed_triples.add((ls, LADERR_NS.scenario, scenario))
-                VERBOSE and logger.info(f"Removed previous scenario: {scenario}")
-
-            # Get all entities that are part of this specification
             entities = set(laderr_graph.objects(ls, LADERR_NS.constructs))
+            scenario_change_needed = False  # Flag to check if scenario must be updated
 
             # Check all pairs of distinct entities (o1, o2)
             for o1 in entities:
@@ -293,14 +287,24 @@ class InferenceRules:
                                     new_triples.add((o2, LADERR_NS.succeededToDamage, o1))
                                     VERBOSE and logger.info(f"Inferred: {o2} laderr:succeededToDamage {o1}")
 
-                                # Set scenario to NOT_RESILIENT (after removing previous value)
-                                new_triples.add((ls, LADERR_NS.scenario, LADERR_NS.not_resilient))
-                                VERBOSE and logger.info(f"Updated scenario to: laderr:not_resilient")
+                                # Indicate that the scenario must be updated
+                                scenario_change_needed = True
 
-        # Remove previous scenario and apply new scenario value
+            # Remove previous scenario only if we are actually updating it
+            if scenario_change_needed:
+                for scenario in laderr_graph.objects(ls, LADERR_NS.scenario):
+                    removed_triples.add((ls, LADERR_NS.scenario, scenario))
+                    VERBOSE and logger.info(f"Removed previous scenario: {scenario}")
+
+                # Set scenario to NOT_RESILIENT
+                new_triples.add((ls, LADERR_NS.scenario, LADERR_NS.not_resilient))
+                VERBOSE and logger.info(f"Updated scenario to: laderr:not_resilient")
+
+        # Apply removals first
         for triple in removed_triples:
             laderr_graph.remove(triple)
 
+        # Apply new inferences
         for triple in new_triples:
             laderr_graph.add(triple)
             VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
