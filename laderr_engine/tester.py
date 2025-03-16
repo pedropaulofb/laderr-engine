@@ -1,4 +1,6 @@
 from laderr_engine.laderr_lib import Laderr
 
-Laderr.process_specification("examples/example_doc_01_in.toml",
-                             "examples/example_doc_01_out")
+test_num = "03"
+
+Laderr.process_specification(f"examples/example_doc_{test_num}_in.toml",
+                             f"examples/example_doc_{test_num}/example_doc_{test_num}_out")

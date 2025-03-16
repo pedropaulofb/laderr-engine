@@ -93,8 +93,8 @@ def test_missing_required_properties(shape_graph, base_instance):
 @pytest.mark.parametrize("scenario_value, should_pass", [
     (LADERR.operational, True),
     (LADERR.incident, True),
-    (LADERR.resilient, False),  # Not in allowed set
-    (LADERR.not_resilient, False),
+    (LADERR.resilient, True),
+    (LADERR.not_resilient, True),
 ])
 def test_scenario_value_restriction(shape_graph, base_instance, scenario_value, should_pass):
     g, spec = base_instance

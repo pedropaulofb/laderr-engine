@@ -15,7 +15,6 @@ All methods are **static** within the `Laderr` class, allowing direct access wit
 """
 from typing import Optional
 
-from icecream import ic
 from loguru import logger
 from rdflib import Graph, Namespace
 
@@ -145,7 +144,7 @@ class Laderr:
         :return: The RDF graph with reasoning applied.
         :rtype: Graph
         """
-        ReasoningHandler.execute(laderr_graph)
+        laderr_graph = ReasoningHandler.execute(laderr_graph)
         if verbose:
             logger.success("Reasoning successfully applied to the graph.")
         return laderr_graph

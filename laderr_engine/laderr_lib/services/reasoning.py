@@ -54,7 +54,6 @@ class ReasoningHandler:
 
         while hash_before != hash_after:
             hash_before = ReasoningHandler._calculate_hash(graph)
-
             DeductiveClosure(RDFS_Semantics).expand(graph)
             InferenceRules.execute_rule_disabled_state(graph)
             InferenceRules.execute_rule_protects(graph)

@@ -60,7 +60,7 @@ class InferenceRules:
         # Apply new inferences
         for triple in new_triples:
             laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:state {triple[2]}")
+            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
     def execute_rule_protects(laderr_graph: Graph):
@@ -83,7 +83,7 @@ class InferenceRules:
 
         for triple in new_triples:
             laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:protects {triple[2]}")
+            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
     def execute_rule_inhibits(laderr_graph: Graph):
@@ -132,7 +132,7 @@ class InferenceRules:
         # Apply the inferred triples
         for triple in new_triples:
             laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:inhibits {triple[2]}")
+            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
     def execute_rule_threatens(laderr_graph: Graph):
@@ -156,7 +156,7 @@ class InferenceRules:
 
         for triple in new_triples:
             laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:threatens {triple[2]}")
+            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
     def execute_rule_resilience(laderr_graph: Graph):
@@ -237,7 +237,7 @@ class InferenceRules:
     @staticmethod
     def execute_rule_succeeded_to_damage(laderr_graph: Graph):
         """
-        Applies the 'succeededToDamage' inference rule based on the updated definition:
+        Applies the 'succeededToDamage' inference rule based on the updated definition.
 
         If two entities belong to the same LaderrSpecification, and:
         - An incident scenario applies, or
@@ -250,18 +250,20 @@ class InferenceRules:
 
         Then:
         - The second entity (o2) succeeded to damage the first (o1).
-        - The scenario (ls) is set to NOT_RESILIENT.
+        - The scenario (ls) is set to NOT_RESILIENT, replacing any previous scenario value.
 
         :param laderr_graph: RDFLib graph containing LaDeRR data.
         :type laderr_graph: Graph
         """
         new_triples = set()
+        removed_triples = set()
 
-        # Iterate over all LaderrSpecifications
         for ls in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
 
-            # Check if scenario(ls) = INCIDENT
-            is_incident = (ls, LADERR_NS.scenario, LADERR_NS.incident) in laderr_graph
+            # Remove any previous scenario value before setting the new one
+            for scenario in laderr_graph.objects(ls, LADERR_NS.scenario):
+                removed_triples.add((ls, LADERR_NS.scenario, scenario))
+                VERBOSE and logger.info(f"Removed previous scenario: {scenario}")
 
             # Get all entities that are part of this specification
             entities = set(laderr_graph.objects(ls, LADERR_NS.constructs))
@@ -274,10 +276,6 @@ class InferenceRules:
 
                     succeeded_to_damage_exists = (o2, LADERR_NS.succeededToDamage, o1) in laderr_graph
 
-                    # If neither incident scenario is present nor succeededToDamage exists, skip this pair
-                    if not is_incident and succeeded_to_damage_exists:
-                        continue
-
                     for c1 in laderr_graph.objects(o1, LADERR_NS.capabilities):
                         for v1 in laderr_graph.objects(o1, LADERR_NS.vulnerabilities):
                             for c2 in laderr_graph.objects(o2, LADERR_NS.capabilities):
@@ -289,14 +287,19 @@ class InferenceRules:
                                 ):
                                     continue  # Skip if conditions are not met
 
-                                # All conditions met, infer succeededToDamage if not already present
+                                # If conditions are met, infer succeededToDamage
                                 if not succeeded_to_damage_exists:
                                     new_triples.add((o2, LADERR_NS.succeededToDamage, o1))
+                                    VERBOSE and logger.info(f"Inferred: {o2} laderr:succeededToDamage {o1}")
 
-                                # Ensure scenario is set to NOT_RESILIENT
+                                # Set scenario to NOT_RESILIENT (after removing previous value)
                                 new_triples.add((ls, LADERR_NS.scenario, LADERR_NS.not_resilient))
+                                VERBOSE and logger.info(f"Updated scenario to: laderr:not_resilient")
 
-        # Apply inferred triples to the graph
+        # Remove previous scenario and apply new scenario value
+        for triple in removed_triples:
+            laderr_graph.remove(triple)
+
         for triple in new_triples:
             laderr_graph.add(triple)
             VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
@@ -344,7 +347,7 @@ class InferenceRules:
 
         for triple in new_triples:
             laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} laderr:failedToDamage {triple[2]}")
+            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
     def execute_rule_scenario_resilient(laderr_graph: Graph):
@@ -352,7 +355,8 @@ class InferenceRules:
         Applies the 'scenarioResilient' inference rule.
 
         If a LaderrSpecification is in an INCIDENT scenario, and all vulnerabilities in its constructs
-        are either DISABLED or have at least one exploiting capability, then the scenario is updated to RESILIENT.
+        are either DISABLED or have at least one exploiting capability, then the scenario is updated to RESILIENT,
+        replacing any previous scenario value.
 
         :param laderr_graph: RDFLib graph containing LaDeRR data.
         :type laderr_graph: Graph
@@ -363,6 +367,8 @@ class InferenceRules:
                 continue  # Skip if not an incident
 
             all_vulnerabilities_handled = True  # Assume scenario is resilient unless proven otherwise
+            removed_triples = set()
+            new_triples = set()
 
             # Iterate over all entities in this specification
             for o1 in laderr_graph.objects(ls, LADERR_NS.constructs):
@@ -386,4 +392,19 @@ class InferenceRules:
 
             # If all vulnerabilities are handled, update scenario to RESILIENT
             if all_vulnerabilities_handled:
-                laderr_graph.set((ls, LADERR_NS.scenario, LADERR_NS.resilient))
+                # Remove previous scenario values before setting the new one
+                for scenario in laderr_graph.objects(ls, LADERR_NS.scenario):
+                    removed_triples.add((ls, LADERR_NS.scenario, scenario))
+                    VERBOSE and logger.info(f"Removed previous scenario: {scenario}")
+
+                # Set the new scenario
+                new_triples.add((ls, LADERR_NS.scenario, LADERR_NS.resilient))
+                VERBOSE and logger.info(f"Updated scenario to: laderr:resilient")
+
+            # Remove old scenario and apply the new scenario value
+            for triple in removed_triples:
+                laderr_graph.remove(triple)
+
+            for triple in new_triples:
+                laderr_graph.add(triple)
+                VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
