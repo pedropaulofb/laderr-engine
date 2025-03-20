@@ -7,7 +7,7 @@ LaDeRR RDF models, extracts entities and relationships, applies predefined style
 
 import graphviz
 from loguru import logger
-from rdflib import Graph, RDF
+from rdflib import Graph, RDF, BNode
 
 from laderr_engine.laderr_lib.constants import LADERR_NS
 
@@ -147,9 +147,9 @@ class GraphCreator:
                 style = {"shape": "ellipse", "color": "black", "style": "filled"}
 
             if instance_id not in added_nodes:
-                if not instance_id:
-                    logger.warning("An unnamed instance was received for plotting.")
-                    instance_id = "UNNAMED"
+                if not instance_id:  # Removes namespace declaration and baseURI metadata
+                    continue
+
                 dot.node(instance_id, shape=style["shape"], color=style["color"], style=style["style"],
                          penwidth=style.get("penwidth", "1"), fillcolor=style.get("fillcolor", "white"),
                          gradientangle=style.get("gradientangle", ""), fixedsize="true", width="0.6", height="0.6",
