@@ -250,11 +250,11 @@ class Laderr:
             if verbose:
                 logger.success(f"Pre-processed visualization saved to {output_file_base}_pre")
 
-        exit(1)
-
         if validate_pre:
             validation_report_pre = f"{output_file_base}_validation_report_pre.txt" if save_validation_report_pre else None
             Laderr.validate_graph(laderr_graph, verbose, stage="pre", report_file=validation_report_pre)
+
+        exit(1)
 
         if exec_inferences:
             laderr_graph = Laderr.run_reasoning_on_graph(laderr_graph, verbose)

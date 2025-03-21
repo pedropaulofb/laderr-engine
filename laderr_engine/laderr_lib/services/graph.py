@@ -120,7 +120,7 @@ class GraphHandler:
             if prop == "id":
                 continue  # 'id' is already used as the instance URI
 
-            prop_uri = LADERR_NS[prop]
+            prop_uri = RDFS.label if prop == "label" else LADERR_NS[prop]
 
             if isinstance(value, list):
                 for item in value:
@@ -159,12 +159,13 @@ class GraphHandler:
 
             for key, value in scenario_content.items():
                 if key in {"label", "situation", "status"}:
-                    predicate = LADERR_NS[key]
-                    if key in {"situation", "status"}:
+                    if key == "label":
+                        predicate = RDFS.label
+                        graph.add((scenario_uri, predicate, Literal(value)))
+                    else:
+                        predicate = LADERR_NS[key]
                         object_uri = LADERR_NS[value]
                         graph.add((scenario_uri, predicate, object_uri))
-                    else:
-                        graph.add((scenario_uri, predicate, Literal(value)))
                     continue
 
                 if not isinstance(value, dict):
