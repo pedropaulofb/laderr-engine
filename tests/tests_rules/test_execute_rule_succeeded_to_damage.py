@@ -22,7 +22,7 @@ def laderr_graph_with_valid_succeeded_to_damage_case():
     vulnerability1 = EXAMPLE.vulnerability1
 
     # Specification setup
-    g.add((spec, RDF.type, LADERR.LaderrSpecification))
+    g.add((spec, RDF.type, LADERR.Specification))
     g.add((spec, LADERR.scenario, LADERR.incident))
     g.add((spec, LADERR.constructs, entity1))
     g.add((spec, LADERR.constructs, entity2))
@@ -98,17 +98,17 @@ def test_succeeded_to_damage_not_inferred_when_any_state_is_disabled(laderr_grap
 
 def test_succeeded_to_damage_not_inferred_without_specification(laderr_graph_with_valid_succeeded_to_damage_case):
     """
-    Tests that succeededToDamage is NOT inferred when no LaderrSpecification is present.
+    Tests that succeededToDamage is NOT inferred when no Specification is present.
     """
     g, spec, entity1, entity2 = laderr_graph_with_valid_succeeded_to_damage_case
 
-    # Remove the LaderrSpecification
-    g.remove((spec, RDF.type, LADERR.LaderrSpecification))
+    # Remove the Specification
+    g.remove((spec, RDF.type, LADERR.Specification))
 
     InferenceRules.execute_rule_succeeded_to_damage(g)
 
     assert (entity2, LADERR.succeededToDamage, entity1) not in g, \
-        "succeededToDamage should not be inferred without a LaderrSpecification."
+        "succeededToDamage should not be inferred without a Specification."
 
 
 def test_succeeded_to_damage_not_inferred_with_non_incident_scenario(laderr_graph_with_valid_succeeded_to_damage_case):

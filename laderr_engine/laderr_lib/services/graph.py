@@ -6,7 +6,7 @@ This module provides functionalities for loading RDF schemas and saving RDF grap
 import os
 
 from loguru import logger
-from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL
+from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL, DCTERMS
 from rdflib.exceptions import ParserError
 
 from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
@@ -95,9 +95,10 @@ class GraphHandler:
         graph.bind("", data_ns)  # Bind default namespace
         graph.bind("laderr", LADERR_NS)  # Bind LaDeRR namespace
 
-        # Create the central LaderrSpecification instance
-        specification_uri = data_ns.LaderrSpecification
-        graph.add((specification_uri, RDF.type, LADERR_NS.LaderrSpecification))
+        # Create the central Specification instance
+        specification_uri = data_ns.Specification
+        graph.add((specification_uri, RDF.type, LADERR_NS.Specification))
+        graph.add((specification_uri, DCTERMS.conformsTo, URIRef("https://w3id.org/laderr")))
 
         return graph, data_ns, specification_uri
 
@@ -192,7 +193,7 @@ class GraphHandler:
 
         This method extracts metadata attributes and represents them as RDF triples, ensuring proper data types
         (e.g., `xsd:string`, `xsd:dateTime`). The `baseURI` is used to establish the namespace, and all metadata
-        properties are assigned to the `LaderrSpecification` instance.
+        properties are assigned to the `Specification` instance.
 
         :param metadata: Dictionary containing metadata attributes such as title, version, and authorship.
         :type metadata: dict[str, object]
@@ -214,9 +215,9 @@ class GraphHandler:
         graph.bind("", data_ns)  # Bind the `:` namespace
         graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
 
-        # Create or identify LaderrSpecification instance
-        specification = data_ns.LaderrSpecification
-        graph.add((specification, RDF.type, LADERR_NS.LaderrSpecification))
+        # Create or identify Specification instance
+        specification = data_ns.Specification
+        graph.add((specification, RDF.type, LADERR_NS.Specification))
 
         # Add metadata properties, excluding `scenario`
         for key, value in metadata.items():

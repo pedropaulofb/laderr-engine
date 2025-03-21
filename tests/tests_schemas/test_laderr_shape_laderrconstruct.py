@@ -21,7 +21,7 @@ def shape_graph():
 def base_construct():
     g = Graph()
     construct = URIRef("https://example.org/construct/0")
-    g.add((construct, RDF.type, LADERR.LaderrConstruct))
+    g.add((construct, RDF.type, LADERR.ScenarioComponent))
 
     # Adding ignored properties (necessary to prevent errors due to 'sh:closed true')
     g.add((construct, OWL.sameAs, construct))  # Optional ignored property

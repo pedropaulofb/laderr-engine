@@ -11,7 +11,7 @@ LADERR = Namespace("https://w3id.org/laderr#")
 @pytest.fixture(scope="module")
 def shape_graph():
     g = Graph()
-    shape = find_file_by_partial_name(SHACL_FILES_PATH, "laderr-shape-laderrspecification")
+    shape = find_file_by_partial_name(SHACL_FILES_PATH, "laderr-shape-specification")
     g.parse(shape, format="turtle")
     return g
 
@@ -20,7 +20,7 @@ def shape_graph():
 def base_instance():
     g = Graph()
     spec = URIRef("https://example.org/my-spec")
-    g.add((spec, RDF.type, LADERR.LaderrSpecification))  # This is MANDATORY!
+    g.add((spec, RDF.type, LADERR.Specification))  # This is MANDATORY!
 
     g.add((spec, LADERR.title, Literal("My Spec Title", datatype=XSD.string)))
     g.add((spec, LADERR.version, Literal("1.0", datatype=XSD.string)))
@@ -31,7 +31,7 @@ def base_instance():
     g.add((LADERR.operational, RDF.type, LADERR.ScenarioType))
 
     construct = URIRef("https://example.org/construct/0")
-    g.add((construct, RDF.type, LADERR.LaderrConstruct))
+    g.add((construct, RDF.type, LADERR.ScenarioComponent))
     g.add((spec, LADERR.constructs, construct))
     g.bind("laderr", LADERR)
     return g, spec
@@ -127,7 +127,7 @@ def test_constructs_min_count(shape_graph, base_instance, construct_count, shoul
     g, spec = base_instance
     for i in range(construct_count):
         construct = URIRef(f"https://example.org/construct/{i}")
-        g.add((construct, RDF.type, LADERR.LaderrConstruct))
+        g.add((construct, RDF.type, LADERR.ScenarioComponent))
         g.add((spec, LADERR.constructs, construct))
     conforms, _, _ = validate(g, shacl_graph=shape_graph, data_graph_format="turtle", shacl_graph_format="turtle")
     assert conforms is should_pass
@@ -146,7 +146,7 @@ def test_constructs_min_count(shape_graph, base_instance, construct_count, shoul
     # Now add the desired number of constructs
     for i in range(construct_count):
         construct = URIRef(f"https://example.org/construct/{i}")
-        g.add((construct, RDF.type, LADERR.LaderrConstruct))
+        g.add((construct, RDF.type, LADERR.ScenarioComponent))
         g.add((spec, LADERR.constructs, construct))
 
     # Validate

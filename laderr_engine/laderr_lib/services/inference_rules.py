@@ -240,7 +240,7 @@ class InferenceRules:
         """
         Applies the 'succeededToDamage' inference rule based on the updated definition.
 
-        If two entities belong to the same LaderrSpecification, and:
+        If two entities belong to the same Specification, and:
         - An incident scenario applies, or
         - The succeededToDamage relation has not yet been inferred,
 
@@ -259,7 +259,7 @@ class InferenceRules:
         new_triples = set()
         removed_triples = set()
 
-        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
+        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.Specification):
             entities = set(laderr_graph.objects(ls, LADERR_NS.constructs))
             scenario_change_needed = False  # Flag to check if scenario must be updated
 
@@ -359,14 +359,14 @@ class InferenceRules:
         """
         Applies the 'scenarioResilient' inference rule.
 
-        If a LaderrSpecification is in an INCIDENT scenario, and all vulnerabilities in its constructs
+        If a Specification is in an INCIDENT scenario, and all vulnerabilities in its constructs
         are either DISABLED or have at least one exploiting capability, then the scenario is updated to RESILIENT,
         replacing any previous scenario value.
 
         :param laderr_graph: RDFLib graph containing LaDeRR data.
         :type laderr_graph: Graph
         """
-        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
+        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.Specification):
             # Check if scenario(ls) = INCIDENT
             if (ls, LADERR_NS.scenario, LADERR_NS.incident) not in laderr_graph:
                 continue  # Skip if not an incident

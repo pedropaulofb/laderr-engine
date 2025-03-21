@@ -141,14 +141,14 @@ class SpecificationHandler:
         """
         data = {}
 
-        # Extract the LaderrSpecification instance
+        # Extract the Specification instance
         specification_uri = None
-        for s, p, o in laderr_graph.triples((None, RDF.type, LADERR_NS.LaderrSpecification)):
+        for s, p, o in laderr_graph.triples((None, RDF.type, LADERR_NS.Specification)):
             specification_uri = s
             break
 
         if specification_uri is None:
-            raise ValueError("No LaderrSpecification instance found in the RDF graph.")
+            raise ValueError("No Specification instance found in the RDF graph.")
 
         # Extract metadata properties
         metadata = {}

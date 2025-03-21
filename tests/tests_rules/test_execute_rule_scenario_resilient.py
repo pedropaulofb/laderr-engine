@@ -11,7 +11,7 @@ from laderr_engine.laderr_lib.services.inference_rules import InferenceRules  # 
 @pytest.fixture
 def laderr_graph_with_incident_scenario():
     """
-    Creates an RDF graph with a LaderrSpecification in an INCIDENT scenario
+    Creates an RDF graph with a Specification in an INCIDENT scenario
     and constructs containing entities with vulnerabilities.
     """
     g = Graph()
@@ -27,7 +27,7 @@ def laderr_graph_with_incident_scenario():
     vulnerability2 = EXAMPLE.vulnerability2
 
     # Specification setup
-    g.add((spec, RDF.type, LADERR.LaderrSpecification))
+    g.add((spec, RDF.type, LADERR.Specification))
     g.add((spec, LADERR.scenario, LADERR.incident))
     g.add((spec, LADERR.constructs, entity1))
     g.add((spec, LADERR.constructs, entity2))

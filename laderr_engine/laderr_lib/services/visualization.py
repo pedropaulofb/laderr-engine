@@ -36,7 +36,7 @@ class GraphCreator:
 
         # Get the scenario type explicitly
         scenario_type = ""
-        for specification in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
+        for specification in laderr_graph.subjects(RDF.type, LADERR_NS.Specification):
             scenario = laderr_graph.value(specification, LADERR_NS.scenario)
             if scenario:
                 scenario_type = str(scenario).split("#")[-1].upper()
@@ -82,7 +82,7 @@ class GraphCreator:
     @staticmethod
     def _get_scenario_bgcolor(laderr_graph: Graph) -> str:
         """
-        Determines the background color of the visualization based on the LaderrSpecification scenario.
+        Determines the background color of the visualization based on the Specification scenario.
 
         :param laderr_graph: RDFLib graph containing LaDeRR data.
         :type laderr_graph: Graph
@@ -96,7 +96,7 @@ class GraphCreator:
             'not_resilient': '#FDE8E8'  # very light red
         }
 
-        for specification in laderr_graph.subjects(RDF.type, LADERR_NS.LaderrSpecification):
+        for specification in laderr_graph.subjects(RDF.type, LADERR_NS.Specification):
             scenario = laderr_graph.value(specification, LADERR_NS.scenario)
             if scenario:
                 scenario_type = str(scenario).split("#")[-1].lower()
@@ -132,7 +132,7 @@ class GraphCreator:
                               laderr_graph.objects(subject=subject, predicate=RDF.type)]
             instance_id = str(subject).split("#")[-1]
 
-            if "LaderrSpecification" in instance_types:
+            if "Specification" in instance_types:
                 continue
 
             is_disabled = (subject, LADERR_NS.state, disabled_state) in laderr_graph
