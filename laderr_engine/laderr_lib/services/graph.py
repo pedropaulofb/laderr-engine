@@ -5,6 +5,7 @@ This module provides functionalities for loading RDF schemas and saving RDF grap
 """
 import os
 
+from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL, DCTERMS
 from rdflib.exceptions import ParserError
@@ -41,6 +42,7 @@ class GraphHandler:
         try:
             # Parse the file into the laderr_graph
             graph.parse(LADERR_SCHEMA_PATH)
+            logger.info(f"Loaded LaDeRR schema from '{LADERR_SCHEMA_PATH}'.")
         except (ParserError, ValueError) as e:
             raise ValueError(
                 f"Failed to parse the RDF file '{LADERR_SCHEMA_PATH}'. Ensure it is a valid RDF file.") from e
@@ -89,7 +91,7 @@ class GraphHandler:
         :return: A tuple containing the RDF graph, data namespace, and specification URI.
         :rtype: tuple[Graph, Namespace, Namespace]
         """
-        base_uri = spec_metadata["baseURI"]  # baseURI has been validated during specification reading
+        base_uri = spec_metadata.get("baseURI", "https://laderr.laderr#")
         data_ns = Namespace(base_uri)
         graph = Graph()
         graph.bind("", data_ns)  # Bind default namespace
@@ -104,146 +106,116 @@ class GraphHandler:
 
     @staticmethod
     def _process_instance(graph: Graph, data_ns: Namespace, class_type: str, instance_id: str,
-                          properties: dict[str, object]) -> None:
+                          properties: dict) -> None:
         """
-        Processes a single instance and adds it to the RDF graph without duplicating default states.
-
-        This method converts an instance's properties into RDF triples, including handling labels,
-        lists, and special mappings such as 'state'.
-
-        :param graph: The RDF graph being constructed.
-        :param data_ns: The namespace to use for instance URIs.
-        :param class_type: The class type of the instance.
-        :param instance_id: The unique identifier for the instance.
-        :param properties: Dictionary of properties for the instance.
-        :raises ValueError: If the properties structure is invalid.
+        Adds an instance and its properties to the RDF graph.
         """
-        instance_uri = URIRef(f"{data_ns}{instance_id}")
+        instance_uri = data_ns[instance_id]
         graph.add((instance_uri, RDF.type, LADERR_NS[class_type]))
 
         for prop, value in properties.items():
             if prop == "id":
-                continue  # Skip 'id', already used as URI
+                continue  # 'id' is already used as the instance URI
 
-            if prop == "label":
-                graph.add((instance_uri, RDFS.label, Literal(value)))
+            prop_uri = LADERR_NS[prop]
 
-            elif prop == "state":
-                state_uri = LADERR_NS.enabled if value.lower() == "enabled" else LADERR_NS.disabled
-                graph.add((instance_uri, LADERR_NS.state, state_uri))
-
-            elif prop in {"label", "description"}:
-                if isinstance(value, list):
-                    for item in value:
-                        graph.add((instance_uri, LADERR_NS[prop], Literal(item)))
-                else:
-                    graph.add((instance_uri, LADERR_NS[prop], Literal(value)))
-
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        # Handle nested dictionaries if necessary
+                        nested_instance_id = item.get("id", BNode())
+                        GraphHandler._process_instance(graph, data_ns, prop, nested_instance_id, item)
+                        graph.add((instance_uri, prop_uri, data_ns[nested_instance_id]))
+                    else:
+                        graph.add((instance_uri, prop_uri, Literal(item)))
             else:
-                if isinstance(value, list):
-                    for item in value:
-                        graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{item}")))
+                if isinstance(value, dict):
+                    # Handle nested dictionary
+                    nested_instance_id = value.get("id", BNode())
+                    GraphHandler._process_instance(graph, data_ns, prop, nested_instance_id, value)
+                    graph.add((instance_uri, prop_uri, data_ns[nested_instance_id]))
                 else:
-                    graph.add((instance_uri, LADERR_NS[prop], URIRef(f"{data_ns}{value}")))
+                    graph.add((instance_uri, prop_uri, Literal(value)))
 
     @staticmethod
-    def _convert_data_to_graph(spec_metadata: dict[str, object],
-                               spec_data: dict[str, dict[str, dict[str, object]]]) -> Graph:
+    def _convert_data_to_graph(spec_metadata: dict, spec_data: dict) -> Graph:
         """
-        Converts the 'data' section of a LaDeRR specification into an RDF laderr_graph.
-
-        This method initializes an RDF laderr_graph, iterates through the specification data,
-        and processes each class type and its instances into RDF triples.
-
-        :param spec_metadata: Dictionary containing metadata information, including base URI.
-        :type spec_metadata: dict[str, object]
-        :param spec_data: Nested dictionary representing the data structure of the specification.
-                          It maps class types to instances, each containing their properties.
-        :type spec_data: dict[str, dict[str, dict[str, object]]]
-        :return: An RDFLib laderr_graph containing all data instances and their relationships.
-        :rtype: Graph
-        :raises ValueError: If the structure of spec_data does not conform to expected nested dictionaries.
+        Converts the specification data into an RDFLib Graph.
         """
         graph, data_ns, specification_uri = GraphHandler._initialize_graph_with_namespaces(spec_metadata)
 
         for class_type, instances in spec_data.items():
-            if not isinstance(instances, dict):
-                raise ValueError(f"Invalid structure for {class_type}. Expected a dictionary of instances.")
-
-            for key, properties in instances.items():
-                if not isinstance(properties, dict):
-                    raise ValueError(
-                        f"Invalid structure for instance '{key}' in '{class_type}'. Expected a dictionary of properties.")
-
-                instance_id = properties.get("id", key)
-
-                # Process the instance
+            for instance_id, properties in instances.items():
                 GraphHandler._process_instance(graph, data_ns, class_type, instance_id, properties)
-
-                # Ensure instance URI is correctly formed
-                instance_uri = URIRef(f"{data_ns}{instance_id}")
+                instance_uri = data_ns[instance_id]
                 graph.add((specification_uri, LADERR_NS.constructs, instance_uri))
 
         return graph
 
     @staticmethod
-    def _convert_metadata_to_graph(metadata: dict[str, object]) -> tuple[Graph, Namespace]:
+    def _convert_metadata_to_graph(metadata: dict[str, object], spec_data: dict[str, dict[str, object]]) -> tuple[
+        Graph, Namespace]:
         """
-        Converts LaDeRR specification metadata into an RDF laderr_graph.
+        Converts LaDeRR specification metadata into an RDF graph.
 
-        This method extracts metadata attributes and represents them as RDF triples, ensuring proper data types
-        (e.g., `xsd:string`, `xsd:dateTime`). The `baseURI` is used to establish the namespace, and all metadata
-        properties are assigned to the `Specification` instance.
-
-        :param metadata: Dictionary containing metadata attributes such as title, version, and authorship.
-        :type metadata: dict[str, object]
-        :return: A tuple containing the RDFLib laderr_graph representing the specification metadata and the namespace.
-        :rtype: tuple[Graph, Namespace]
-        :raises ValueError: If the provided metadata contains invalid formats or unsupported data types.
+        :param metadata: Dictionary containing metadata attributes.
+        :param spec_data: Specification data containing constructs (used to populate `constructs` field).
+        :return: A tuple containing the RDFLib graph and the namespace.
         """
-        # Define expected datatypes for spec_metadata_dict keys
-        expected_datatypes = {"title": XSD.string, "description": XSD.string, "version": XSD.string,
-                              "createdBy": XSD.string, "createdOn": XSD.dateTime, "modifiedOn": XSD.dateTime,
-                              "baseURI": XSD.anyURI}
+        expected_datatypes = {
+            "baseURI": XSD.anyURI,
+            "createdBy": XSD.string,
+            "createdOn": XSD.dateTime,
+            "modifiedOn": XSD.dateTime,
+            "title": XSD.string,
+            "description": XSD.string,
+            "version": XSD.string,
+        }
 
-        # Validate base URI and bind namespaces
-        base_uri = metadata["baseURI"]  # baseURI has been validated during specification reading
+        base_uri = metadata.get("baseURI", "https://laderr.laderr#")  # Ensure fallback base URI
         data_ns = Namespace(base_uri)
 
-        # Create a new laderr_graph
         graph = Graph()
-        graph.bind("", data_ns)  # Bind the `:` namespace
-        graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
+        graph.bind("", data_ns)  # Default namespace
+        graph.bind("laderr", LADERR_NS)  # LaDeRR namespace
 
-        # Create or identify Specification instance
         specification = data_ns.Specification
         graph.add((specification, RDF.type, LADERR_NS.Specification))
 
-        # Add metadata properties, excluding `scenario`
+        # Add metadata properties with correct RDF types
         for key, value in metadata.items():
-            if key == "scenario":
-                continue  # Skip, will be handled separately
+            if key not in expected_datatypes:
+                continue  # Ignore unknown fields
 
-            property_uri = LADERR_NS[key]  # Schema properties come from laderr namespace
-            datatype = expected_datatypes.get(key, XSD.anyURI)  # Default to xsd:string if not specified
+            datatype = expected_datatypes[key]
+            prop_uri = LADERR_NS[key]
 
-            # Handle lists
             if isinstance(value, list):
                 for item in value:
-                    graph.add((specification, property_uri, Literal(item, datatype=datatype)))
+                    graph.add((specification, prop_uri, Literal(item, datatype=datatype)))
             else:
-                # Add single value with specified datatype
-                graph.add((specification, property_uri, Literal(value, datatype=datatype)))
+                graph.add((specification, prop_uri, Literal(value, datatype=datatype)))
 
-        # Process `scenario` separately as an individual reference
-        scenario_mapping = {"operational": LADERR_NS.operational, "incident": LADERR_NS.incident,
-                            "resilient": LADERR_NS.resilient, "not_resilient": LADERR_NS.not_resilient}
+        # Ensure baseURI is explicitly stored
+        graph.add((specification, LADERR_NS.baseURI, Literal(base_uri, datatype=XSD.anyURI)))
 
-        scenario_value = metadata.get("scenario")
-        if scenario_value in scenario_mapping:
-            graph.add((specification, LADERR_NS.scenario, scenario_mapping[scenario_value]))
-        elif scenario_value is not None:
-            logger.warning(f"Unknown scenario '{scenario_value}', skipping scenario assignment.")
+        # Add only valid constructs (removing high-level categories and properties)
+        excluded_constructs = {"Capability", "Entity", "Vulnerability", "__scenario__", "situation", "status", "label"}
+
+        for scenario_id, scenario_data in spec_data.items():
+            scenario_uri = data_ns[scenario_id]
+            graph.add((specification, LADERR_NS.constructs, scenario_uri))
+
+            for class_type, instances in scenario_data.items():
+                if class_type in excluded_constructs:
+                    continue  # Skip these category entries
+
+                if isinstance(instances, dict):
+                    for instance_id in instances.keys():
+                        if instance_id in excluded_constructs:
+                            continue  # Skip unwanted properties
+                        instance_uri = data_ns[instance_id]
+                        graph.add((specification, LADERR_NS.constructs, instance_uri))
 
         return graph, data_ns
 
@@ -272,7 +244,9 @@ class GraphHandler:
         :rtype: Graph
         """
         spec_metadata, spec_data = SpecificationHandler.read_specification(laderr_file_path)
-        laderr_metadata_graph, base_uri = GraphHandler._convert_metadata_to_graph(spec_metadata)
+        ic(spec_metadata, spec_data)
+        exit()
+        laderr_metadata_graph, base_uri = GraphHandler._convert_metadata_to_graph(spec_metadata, spec_data)
         laderr_data_graph = GraphHandler._convert_data_to_graph(spec_metadata, spec_data)
 
         # Create a new laderr_graph to store the combined information

@@ -245,6 +245,8 @@ class Laderr:
             if verbose:
                 logger.success(f"Pre-processed graph saved to {output_file_base}_pre.ttl")
 
+        exit(1)
+
         if save_visualization_pre:
             GraphCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_pre.png")
             if verbose:
