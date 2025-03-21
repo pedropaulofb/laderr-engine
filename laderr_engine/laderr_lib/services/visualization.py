@@ -7,7 +7,7 @@ LaDeRR RDF models, extracts entities and relationships, applies predefined style
 
 import graphviz
 from loguru import logger
-from rdflib import Graph, RDF, BNode
+from rdflib import Graph, RDF, BNode, URIRef
 
 from laderr_engine.laderr_lib.constants import LADERR_NS
 
@@ -21,33 +21,26 @@ class GraphCreator:
     """
 
     @staticmethod
-    def create_graph_visualization(laderr_graph: Graph, output_file_path: str) -> None:
-        """
-        Generates a Graphviz visualization of the RDF graph and saves it as a PNG, applying scenario-based background color.
+    def create_graph_visualization(laderr_graph: Graph, base_output_path: str) -> None:
+        for scenario in laderr_graph.subjects(RDF.type, LADERR_NS.Scenario):
+            scenario_id = str(scenario).split("#")[-1]
+            scenario_label = laderr_graph.value(scenario, LADERR_NS.label)
+            scenario_status = laderr_graph.value(scenario, LADERR_NS.status)
+            scenario_situation = laderr_graph.value(scenario, LADERR_NS.situation)
 
-        :param laderr_graph: RDFLib graph containing LaDeRR data.
-        :type laderr_graph: Graph
-        :param output_file_path: Path to save the output visualization (must end with '.png').
-        :type output_file_path: str
-        :raises ValueError: If the output file does not have a '.png' extension.
-        """
-        GraphCreator._validate_output_path(output_file_path)
-        bgcolor = GraphCreator._get_scenario_bgcolor(laderr_graph)
+            bgcolor = GraphCreator._get_scenario_bgcolor_for_uri(laderr_graph, scenario)
+            label_text = f"{str(scenario_situation).split('#')[-1].upper()} scenario {scenario_label}: {str(scenario_status).split('#')[-1].upper()}"
+            dot = GraphCreator._initialize_graph(bgcolor, label_text)
 
-        # Get the scenario type explicitly
-        scenario_type = ""
-        for specification in laderr_graph.subjects(RDF.type, LADERR_NS.Specification):
-            scenario = laderr_graph.value(specification, LADERR_NS.scenario)
-            if scenario:
-                scenario_type = str(scenario).split("#")[-1].upper()
-                break
+            added_nodes = GraphCreator._process_nodes(laderr_graph, dot, scenario)
+            GraphCreator._process_edges(laderr_graph, dot, added_nodes)
 
-        dot = GraphCreator._initialize_graph(bgcolor, scenario_type)
-
-        added_nodes = GraphCreator._process_nodes(laderr_graph, dot)
-        GraphCreator._process_edges(laderr_graph, dot, added_nodes)
-        dot.render(output_file_path[:-4], cleanup=True)
-        logger.success(f"Graph saved as {output_file_path}")
+            if added_nodes:
+                output_path = f"{base_output_path}_{scenario_id}"
+                dot.render(output_path, cleanup=True)
+                logger.success(f"Graph saved as {output_path}.png")
+            else:
+                logger.info(f"Scenario {scenario_id} skipped: no nodes to visualize.")
 
     @staticmethod
     def _validate_output_path(output_file_path: str) -> None:
@@ -80,84 +73,21 @@ class GraphCreator:
         return dot
 
     @staticmethod
-    def _get_scenario_bgcolor(laderr_graph: Graph) -> str:
-        """
-        Determines the background color of the visualization based on the Specification scenario.
-
-        :param laderr_graph: RDFLib graph containing LaDeRR data.
-        :type laderr_graph: Graph
-        :return: Hex color code for background.
-        :rtype: str
-        """
+    def _get_scenario_bgcolor_for_uri(laderr_graph: Graph, scenario_uri: URIRef) -> str:
         scenario_colors = {
-            'operational': '#FFFFFF',  # white
-            'incident': '#E6E6E3',  # very light grey
-            'resilient': '#EBFFEB',  # very light green
-            'not_resilient': '#FDE8E8'  # very light red
+            'resilient': '#EBFFEB',
+            'vulnerable': '#FDE8E8'
         }
-
-        for specification in laderr_graph.subjects(RDF.type, LADERR_NS.Specification):
-            scenario = laderr_graph.value(specification, LADERR_NS.scenario)
-            if scenario:
-                scenario_type = str(scenario).split("#")[-1].lower()
-                return scenario_colors.get(scenario_type, "white")
-
-        return "white"  # Default background color
+        status = laderr_graph.value(scenario_uri, LADERR_NS.status)
+        if status:
+            status_value = str(status).split("#")[-1].lower()
+            return scenario_colors.get(status_value, "white")
+        return "white"
 
     @staticmethod
-    def _process_nodes(laderr_graph: Graph, dot: graphviz.Digraph) -> set:
-        """
-        Processes RDF nodes, assigns styles based on their types and states (enabled/disabled), and adds them to the Graphviz Digraph.
-
-        Dispositions (Capabilities and Vulnerabilities) have different colors depending on whether they are enabled or disabled:
-        - Enabled capabilities: light green
-        - Disabled capabilities: dark green
-        - Enabled vulnerabilities: light red (lightcoral)
-        - Disabled vulnerabilities: dark red
-
-        If a disposition is both a Capability and a Vulnerability, it uses a 50%-50% striped color, combining both colors.
-
-        :param laderr_graph: RDFLib graph containing LaDeRR data.
-        :type laderr_graph: Graph
-        :param dot: Graphviz Digraph instance to which nodes will be added.
-        :type dot: graphviz.Digraph
-        :return: A set containing added node IDs to track processed nodes.
-        :rtype: set
-        """
-        added_nodes = set()
-        disabled_state = LADERR_NS.disabled
-
-        for subject in laderr_graph.subjects(predicate=RDF.type):
-            instance_types = [str(obj).split("#")[-1] for obj in
-                              laderr_graph.objects(subject=subject, predicate=RDF.type)]
-            instance_id = str(subject).split("#")[-1]
-
-            if "Specification" in instance_types:
-                continue
-
-            is_disabled = (subject, LADERR_NS.state, disabled_state) in laderr_graph
-
-            if "Resilience" in instance_types:
-                style = {"shape": "ellipse", "color": "black", "style": "filled", "fillcolor": "orange"}
-            elif any(item in instance_types for item in ["Disposition", "Capability", "Vulnerability"]):
-                style = GraphCreator._get_disposition_style(instance_types, is_disabled)
-            elif "Entity" in instance_types:
-                style = GraphCreator._get_entity_style(instance_types)
-            else:
-                style = {"shape": "ellipse", "color": "black", "style": "filled"}
-
-            if instance_id not in added_nodes:
-                if not instance_id:  # Removes namespace declaration and baseURI metadata
-                    continue
-
-                dot.node(instance_id, shape=style["shape"], color=style["color"], style=style["style"],
-                         penwidth=style.get("penwidth", "1"), fillcolor=style.get("fillcolor", "white"),
-                         gradientangle=style.get("gradientangle", ""), fixedsize="true", width="0.6", height="0.6",
-                         fontname="Arial", fontsize="6", label=f"<<B>{instance_id}</B>>", margin="0.05")
-
-                added_nodes.add(instance_id)
-
-        return added_nodes
+    def _get_scenario_type(graph: Graph, scenario: URIRef) -> str:
+        situation = graph.value(scenario, LADERR_NS.situation)
+        return str(situation).split("#")[-1].upper() if situation else ""
 
     @staticmethod
     def _get_disposition_style(instance_types: list, is_disabled: bool) -> dict:
@@ -239,48 +169,61 @@ class GraphCreator:
         return base_style  # Fallback, should not be reached
 
     @staticmethod
-    def _process_edges(laderr_graph: Graph, dot: graphviz.Digraph, added_nodes: set) -> None:
-        """
-        Processes RDF relationships, assigns edge styles, and adds them to the Graphviz Digraph.
+    def _process_nodes(graph: Graph, dot: graphviz.Digraph, scenario: URIRef) -> set:
+        added_nodes = set()
 
-        For edges with predicate in [capabilities, vulnerabilities, resiliences], the arrowhead on the **source end**
-        will be a diamond. Other edges retain their default style (normal arrow on target side).
+        # Only consider nodes that are related to this scenario through constructs
+        for _, _, node in graph.triples((scenario, LADERR_NS.constructs, None)):
+            if (node, RDF.type, LADERR_NS.Scenario) in graph or (node, RDF.type, LADERR_NS.Specification) in graph:
+                continue
+            if (node, LADERR_NS.label, None) not in graph:
+                continue
+            added_nodes.add(node)
 
-        :param laderr_graph: RDFLib graph containing LaDeRR data.
-        :type laderr_graph: Graph
-        :param dot: Graphviz Digraph instance to which edges will be added.
-        :type dot: graphviz.Digraph
-        :param added_nodes: Set of added node IDs to ensure valid edges.
-        :type added_nodes: set
-        """
-        edge_styles = {
-            "protects": "blue",
-            "inhibits": "blue",
-            "threatens": "blue",
-            "preserves": "orange",
-            "preservesAgainst": "orange",
-            "preservesDespite": "orange",
-            "sustains": "orange",
-            "failedToDamage": "green",
-            "succeededToDamage": "red",
-            "disables": "darkred",
-        }
+        for s in added_nodes:
+            instance_types = [str(o).split("#")[-1] for o in graph.objects(s, RDF.type)]
+            instance_id = str(s).split("#")[-1]
+            is_disabled = (s, LADERR_NS.state, LADERR_NS.disabled) in graph
 
-        diamond_source_edges = {"capabilities", "vulnerabilities", "resiliences"}
+            if "Resilience" in instance_types:
+                style = {"shape": "ellipse", "color": "black", "style": "filled", "fillcolor": "orange"}
+            elif any(item in instance_types for item in ["Disposition", "Capability", "Vulnerability"]):
+                style = GraphCreator._get_disposition_style(instance_types, is_disabled)
+            elif "Entity" in instance_types:
+                style = GraphCreator._get_entity_style(instance_types)
+            else:
+                style = {"shape": "ellipse", "color": "black", "style": "filled"}
 
-        for subject, predicate, obj in laderr_graph:
-            subject_id = str(subject).split("#")[-1]
-            obj_id = str(obj).split("#")[-1]
-            predicate_label = predicate.split("#")[-1]
+            dot.node(
+                instance_id,
+                shape=style["shape"],
+                color=style["color"],
+                style=style["style"],
+                penwidth=style.get("penwidth", "1"),
+                fillcolor=style.get("fillcolor", "white"),
+                gradientangle=style.get("gradientangle", ""),
+                fixedsize="true",
+                width="0.6",
+                height="0.6",
+                fontname="Arial",
+                fontsize="6",
+                label=f"<<B>{instance_id}</B>>",
+                margin="0.05"
+            )
 
-            if subject_id in added_nodes and obj_id in added_nodes and subject_id != obj_id:
-                edge_color = edge_styles.get(predicate_label, "black")
+        return added_nodes
 
-                if predicate_label in diamond_source_edges:
-                    # Edge with diamond at source end
-                    dot.edge(subject_id, obj_id, label=predicate_label, fontsize="6",
-                             color=edge_color, fontcolor=edge_color, arrowhead="none", arrowtail="diamond", dir="both")
-                else:
-                    # Normal edge (arrow at target end)
-                    dot.edge(subject_id, obj_id, label=predicate_label, fontsize="6",
-                             color=edge_color, fontcolor=edge_color)
+    @staticmethod
+    def _process_edges(graph: Graph, dot: graphviz.Digraph, added_nodes: set) -> None:
+        for s, p, o in graph:
+            if s not in added_nodes or o not in added_nodes:
+                continue
+            if not isinstance(o, (URIRef, BNode)):
+                continue
+            s_id = str(s).split("#")[-1]
+            o_id = str(o).split("#")[-1]
+            if s_id == o_id:
+                continue
+            pred_label = p.split("#")[-1]
+            edge_color = "black"
+            dot.edge(s_id, o_id, label=pred_label, fontsize="6", color=edge_color)

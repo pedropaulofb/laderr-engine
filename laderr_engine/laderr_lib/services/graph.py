@@ -5,6 +5,7 @@ This module provides functionalities for loading RDF schemas and saving RDF grap
 """
 import os
 
+from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL, DCTERMS
 from rdflib.exceptions import ParserError
@@ -172,11 +173,17 @@ class GraphHandler:
                 class_type = key
                 for instance_id, properties in value.items():
                     if not isinstance(properties, dict):
-                        continue  # Skip malformed instances
+                        continue
 
+                    # Add the instance
                     GraphHandler._process_instance(graph, data_ns, class_type, instance_id, properties)
                     instance_uri = data_ns[instance_id]
+
+                    # Connect to Specification (existing behavior)
                     graph.add((specification_uri, LADERR_NS.constructs, instance_uri))
+
+                    # NEW LINE: Connect to Scenario
+                    graph.add((scenario_uri, LADERR_NS.components, instance_uri))  # <-- This is the fix
 
         return graph
 

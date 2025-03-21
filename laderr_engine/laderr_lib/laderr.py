@@ -245,12 +245,12 @@ class Laderr:
             if verbose:
                 logger.success(f"Pre-processed graph saved to {output_file_base}_pre.ttl")
 
-        exit(1)
-
         if save_visualization_pre:
-            GraphCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_pre.png")
+            GraphCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_pre")
             if verbose:
-                logger.success(f"Pre-processed visualization saved to {output_file_base}_pre.png")
+                logger.success(f"Pre-processed visualization saved to {output_file_base}_pre")
+
+        exit(1)
 
         if validate_pre:
             validation_report_pre = f"{output_file_base}_validation_report_pre.txt" if save_validation_report_pre else None
@@ -269,9 +269,9 @@ class Laderr:
                 logger.success(f"Processed graph saved to {output_file_base}_post.ttl")
 
         if save_visualization_post:
-            GraphCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_post.png")
+            GraphCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_post")
             if verbose:
-                logger.success(f"Processed visualization saved to {output_file_base}_post.png")
+                logger.success(f"Processed visualization saved to {output_file_base}_post")
 
         if save_spec:
             SpecificationHandler.write_specification(laderr_graph, f"{output_file_base}_post.toml")
