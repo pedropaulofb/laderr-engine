@@ -113,12 +113,11 @@ class GraphHandler:
         instance_uri = data_ns[instance_id]
         graph.add((instance_uri, RDF.type, LADERR_NS[class_type]))
 
-        # Properties that should be treated as object references (URIs)
         uri_props = {"disables", "exploits", "exposes", "capabilities", "vulnerabilities"}
 
         for prop, value in properties.items():
-            if prop == "id":
-                continue  # 'id' is already used as the instance URI
+            if prop in {"id", "scenarios"}:
+                continue  # 'id' is already used, 'scenarios' is handled externally
 
             prop_uri = RDFS.label if prop == "label" else LADERR_NS[prop]
 
@@ -157,34 +156,54 @@ class GraphHandler:
             graph.add((specification_uri, LADERR_NS.constructs, scenario_uri))
             graph.add((scenario_uri, RDF.type, LADERR_NS.Scenario))
 
-            for key, value in scenario_content.items():
-                if key in {"label", "situation", "status"}:
-                    if key == "label":
-                        predicate = RDFS.label
-                        graph.add((scenario_uri, predicate, Literal(value)))
-                    else:
-                        predicate = LADERR_NS[key]
-                        object_uri = LADERR_NS[value]
-                        graph.add((scenario_uri, predicate, object_uri))
+            # Add label, situation, and status
+            label = scenario_content.get("label")
+            if label:
+                graph.add((scenario_uri, RDFS.label, Literal(label)))
+            situation = scenario_content.get("situation")
+            if situation:
+                graph.add((scenario_uri, LADERR_NS.situation, LADERR_NS[situation]))
+            status = scenario_content.get("status")
+            if status:
+                graph.add((scenario_uri, LADERR_NS.status, LADERR_NS[status]))
+
+        # Now process constructs in each scenario key: "s1", "s2", ...
+        for scenario_id, scenario_block in spec_data.items():
+            if scenario_id in {"Scenario", "Entity", "Capability", "Vulnerability"}:
+                continue  # Skip global blocks
+
+            scenario_uri = data_ns[scenario_id]
+            if not isinstance(scenario_block, dict):
+                continue
+
+            for class_type, instances in scenario_block.items():
+                if not isinstance(instances, dict):
                     continue
-
-                if not isinstance(value, dict):
-                    continue  # Skip malformed values
-
-                class_type = key
-                for instance_id, properties in value.items():
+                for instance_id, properties in instances.items():
                     if not isinstance(properties, dict):
                         continue
 
-                    # Add the instance
                     GraphHandler._process_instance(graph, data_ns, class_type, instance_id, properties)
+
                     instance_uri = data_ns[instance_id]
-
-                    # Connect to Specification (existing behavior)
                     graph.add((specification_uri, LADERR_NS.constructs, instance_uri))
+                    graph.add((scenario_uri, LADERR_NS.components, instance_uri))
 
-                    # NEW LINE: Connect to Scenario
-                    graph.add((scenario_uri, LADERR_NS.components, instance_uri))  # <-- This is the fix
+        # Process global constructs (those outside scenarios), like Entity definitions
+        for class_type in {"Entity", "Capability", "Vulnerability"}:
+            class_block = spec_data.get(class_type, {})
+            for instance_id, instance_data in class_block.items():
+                if not isinstance(instance_data, dict) or instance_id in {"id", "label"}:
+                    continue
+
+                GraphHandler._process_instance(graph, data_ns, class_type, instance_id, instance_data)
+                instance_uri = data_ns[instance_id]
+                graph.add((specification_uri, LADERR_NS.constructs, instance_uri))
+
+                # Link to scenarios based on instance_data["scenarios"]
+                for scenario_id in instance_data.get("scenarios", []):
+                    scenario_uri = data_ns[scenario_id]
+                    graph.add((scenario_uri, LADERR_NS.components, instance_uri))
 
         return graph
 

@@ -72,7 +72,6 @@ class SpecificationHandler:
 
             logger.success("LaDeRR specification's syntax successfully validated.")
             ic(spec_metadata, spec_data)
-            exit()
             return spec_metadata, spec_data
 
         except FileNotFoundError as e:
@@ -141,7 +140,7 @@ class SpecificationHandler:
                 continue
 
             for instance_id, instance_data in items.items():
-                if not isinstance(instance_data, dict):
+                if instance_id in {"id", "label"} or not isinstance(instance_data, dict):
                     continue
 
                 # Enforce id
@@ -206,6 +205,7 @@ class SpecificationHandler:
                             VERBOSE and logger.info(
                                 f"For {construct_type} '{instance_id}', added default 'state' = 'enabled'."
                             )
+
 
     @staticmethod
     def _inject_default_scenario_if_missing(spec_data: dict[str, dict[str, dict[str, Any]]]) -> None:
