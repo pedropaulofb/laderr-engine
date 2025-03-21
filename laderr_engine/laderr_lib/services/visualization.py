@@ -6,6 +6,7 @@ LaDeRR RDF models, extracts entities and relationships, applies predefined style
 """
 
 import graphviz
+from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF, BNode, URIRef
 
@@ -29,7 +30,15 @@ class GraphCreator:
             scenario_situation = laderr_graph.value(scenario, LADERR_NS.situation)
 
             bgcolor = GraphCreator._get_scenario_bgcolor_for_uri(laderr_graph, scenario)
-            label_text = f"{str(scenario_situation).split('#')[-1].upper()} scenario {scenario_label}: {str(scenario_status).split('#')[-1].upper()}"
+
+            # Clean label text format
+            situation_str = str(scenario_situation).split("#")[-1].upper() if scenario_situation else "UNKNOWN"
+            status_str = str(scenario_status).split("#")[-1].upper() if scenario_status else "UNKNOWN"
+            label_str = str(scenario_label) if scenario_label else scenario_id
+
+            label_text = f"[{situation_str}] Scenario {label_str}: {status_str}"
+
+            # Just pass the full label text (already constructed)
             dot = GraphCreator._initialize_graph(bgcolor, label_text)
 
             added_nodes = GraphCreator._process_nodes(laderr_graph, dot, scenario)
@@ -55,21 +64,22 @@ class GraphCreator:
             raise ValueError(f"Invalid file path: '{output_file_path}'. The output file must have a '.png' extension.")
 
     @staticmethod
-    def _initialize_graph(bgcolor: str = "white", scenario_type: str = "") -> graphviz.Digraph:
+    def _initialize_graph(bgcolor: str = "white", label_text: str = "") -> graphviz.Digraph:
         """
-        Initializes a Graphviz Digraph with predefined attributes, including background color and scenario label.
-
-        :param bgcolor: Background color for the graph visualization.
-        :type bgcolor: str
-        :param scenario_type: Scenario type label to display on the upper-left corner.
-        :type scenario_type: str
-        :return: A Graphviz Digraph instance with configured attributes.
-        :rtype: graphviz.Digraph
+        Initializes a Graphviz Digraph with predefined attributes, including background color and label text.
         """
         dot = graphviz.Digraph(format='png')
-        dot.attr(dpi='300', fontname="Arial", nodesep="0.2", ranksep="0.4",
-                 labelloc="t", bgcolor=bgcolor, labeljust='l', fontsize="10",
-                 label=f"{scenario_type.upper()} scenario" if scenario_type else "")
+        dot.attr(
+            dpi='300',
+            fontname="Arial",
+            nodesep="0.2",
+            ranksep="0.4",
+            labelloc="t",
+            bgcolor=bgcolor,
+            labeljust='l',
+            fontsize="10",
+            label=label_text
+        )
         return dot
 
     @staticmethod
@@ -172,12 +182,11 @@ class GraphCreator:
     def _process_nodes(graph: Graph, dot: graphviz.Digraph, scenario: URIRef) -> set:
         added_nodes = set()
 
-        # Only consider nodes that are related to this scenario through constructs
-        for _, _, node in graph.triples((scenario, LADERR_NS.constructs, None)):
-            if (node, RDF.type, LADERR_NS.Scenario) in graph or (node, RDF.type, LADERR_NS.Specification) in graph:
-                continue
-            if (node, LADERR_NS.label, None) not in graph:
-                continue
+        # Changed from laderr:constructs to laderr:components
+        for _, _, node in graph.triples((scenario, LADERR_NS.components, None)):
+            # Optionally remove the label check, or leave it if you want to enforce it
+            # if (node, LADERR_NS.label, None) not in graph:
+            #     continue
             added_nodes.add(node)
 
         for s in added_nodes:

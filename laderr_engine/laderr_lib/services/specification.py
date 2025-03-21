@@ -50,7 +50,7 @@ class SpecificationHandler:
 
             for scenario_id, scenario_info in scenario_definitions.items():
                 scenario_dict = scenario_info if isinstance(scenario_info, dict) else {}
-                scenario_dict.setdefault("situation", "incident")
+                scenario_dict.setdefault("situation", "operational")
                 scenario_dict.setdefault("status", "vulnerable")
                 scenario_dict["label"] = scenario_id
                 scenario_dict["id"] = scenario_id
