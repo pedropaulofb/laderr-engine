@@ -8,7 +8,7 @@ LaDeRR RDF models, extracts entities and relationships, applies predefined style
 import graphviz
 from icecream import ic
 from loguru import logger
-from rdflib import Graph, RDF, BNode, URIRef
+from rdflib import Graph, RDF, BNode, URIRef, RDFS
 
 from laderr_engine.laderr_lib.constants import LADERR_NS
 
@@ -25,7 +25,7 @@ class GraphCreator:
     def create_graph_visualization(laderr_graph: Graph, base_output_path: str) -> None:
         for scenario in laderr_graph.subjects(RDF.type, LADERR_NS.Scenario):
             scenario_id = str(scenario).split("#")[-1]
-            scenario_label = laderr_graph.value(scenario, LADERR_NS.label)
+            scenario_label = laderr_graph.value(scenario, RDFS.label)
             scenario_status = laderr_graph.value(scenario, LADERR_NS.status)
             scenario_situation = laderr_graph.value(scenario, LADERR_NS.situation)
 

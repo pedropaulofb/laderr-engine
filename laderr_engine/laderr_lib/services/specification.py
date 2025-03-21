@@ -7,7 +7,9 @@ This module provides functionality to:
 - Apply default values where necessary to ensure the specification is complete.
 - Convert a LaDeRR specification (represented as an RDF graph) into TOML and write it to disk.
 """
+import random
 import re
+import string
 import tomllib
 from collections import defaultdict
 from datetime import datetime
@@ -27,14 +29,15 @@ from typing import Any
 class SpecificationHandler:
 
     @staticmethod
-    def read_specification(laderr_file_path: str) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    def read_specification(laderr_file_path: str) -> tuple[dict[str, Any], dict[str, dict[str, dict[str, Any]]]]:
         """
-        Reads a LaDeRR specification from a TOML file using its hierarchical structure.
+        Reads a LaDeRR specification from a TOML file using its flattened structure.
 
         :param laderr_file_path: Path to the TOML file containing the LaDeRR specification.
         :return: A tuple containing:
             - spec_metadata (dict): Top-level metadata.
-            - spec_data (dict): Grouped constructs inside "Scenario".
+            - spec_data (dict): A flat dictionary where each key is a construct type (e.g., "Scenario", "Entity"),
+                                and values are dictionaries keyed by their identifiers.
         """
         try:
             with open(laderr_file_path, "rb") as file:
@@ -43,31 +46,33 @@ class SpecificationHandler:
             # Extract metadata (anything that's not a dictionary)
             spec_metadata = {key: value for key, value in data.items() if not isinstance(value, dict)}
 
-            # Ensure "Scenario" is the top-level category
-            spec_data: dict[str, dict[str, Any]] = {"Scenario": {}}
+            # Initialize the spec_data dictionary
+            spec_data: dict[str, dict[str, dict[str, Any]]] = {}
 
-            scenario_definitions = data.get("Scenario", {})
+            for category, sub_dict in data.items():
+                if not isinstance(sub_dict, dict):
+                    continue  # Skip metadata
 
-            for scenario_id, scenario_info in scenario_definitions.items():
-                scenario_dict = scenario_info if isinstance(scenario_info, dict) else {}
-                scenario_dict.setdefault("situation", "operational")
-                scenario_dict.setdefault("status", "vulnerable")
-                scenario_dict["label"] = scenario_id
-                scenario_dict["id"] = scenario_id
-                spec_data["Scenario"][scenario_id] = scenario_dict
+                for identifier, entry in sub_dict.items():
+                    if not isinstance(entry, dict):
+                        continue  # Malformed entry, skip
 
-            # Populate scenarios with their constructs
-            for scenario_id in scenario_definitions:
-                if scenario_id in data:
-                    # Merge the nested constructs into the scenario's dictionary
-                    for construct_type, constructs in data[scenario_id].items():
-                        spec_data["Scenario"][scenario_id].setdefault(construct_type, {}).update(constructs)
+                    spec_data.setdefault(category, {})
+                    spec_data[category][identifier] = entry.copy()
+
+                    # Assign 'id' always
+                    spec_data[category][identifier].setdefault("id", identifier)
+
+                    if category != "Scenario" and "scenario" not in spec_data[category][identifier]:
+                        logger.warning(f"Construct '{identifier}' in '{category}' missing required 'scenario' key.")
 
             SpecificationHandler._apply_metadata_defaults(spec_metadata)
+            SpecificationHandler._inject_default_scenario_if_missing(spec_data)
             SpecificationHandler._apply_data_defaults(spec_data)
 
             logger.success("LaDeRR specification's syntax successfully validated.")
-
+            ic(spec_metadata, spec_data)
+            exit()
             return spec_metadata, spec_data
 
         except FileNotFoundError as e:
@@ -76,6 +81,9 @@ class SpecificationHandler:
         except tomllib.TOMLDecodeError as e:
             logger.error(f"Error: Syntactical error. Failed to parse LaDeRR/TOML file. {e}")
             raise e
+        except Exception as e:
+            logger.error(f"Error reading LaDeRR specification: {e}")
+            raise
 
     @staticmethod
     def _apply_metadata_defaults(spec_metadata: dict[str, object]) -> None:
@@ -109,77 +117,115 @@ class SpecificationHandler:
     @staticmethod
     def _apply_data_defaults(spec_data: dict[str, dict[str, dict[str, Any]]]) -> None:
         """
-        Applies necessary default values to structured data constructs in the new specification format.
+        Applies default values to constructs in the flattened LaDeRR specification format.
 
-        This includes:
-        - Setting defaults for Scenario attributes: `situation`, `status`, and `label`.
-        - Enforcing `id` and `label` for construct instances.
-        - Setting default `state = "enabled"` for Capabilities and Vulnerabilities.
+        Adds:
+        - For Scenario constructs:
+            - Default 'situation' = "operational"
+            - Default 'status' = "vulnerable"
+            - Default 'label' = <id>
+            - Enforce 'id' = <key>
+        - For all other constructs:
+            - Default 'label' = <id>
+            - Convert 'scenario' to 'scenarios' = [scenario]
+            - Default 'scenarios' = all scenario IDs, if not already set
+            - Default 'state' = "enabled" for Disposition, Capability, Vulnerability
 
-        :param spec_data: Dictionary where top-level keys are construct categories (e.g., "Scenario").
+        :param spec_data: Dictionary with top-level construct types (e.g., "Scenario", "Entity").
         """
-        for construct_category, items in spec_data.items():
-            # Only process the "Scenario" category
-            if construct_category != "Scenario" or not isinstance(items, dict):
+        # Step 1: Collect all scenario IDs
+        scenario_ids = list(spec_data.get("Scenario", {}).keys())
+
+        for construct_type, items in spec_data.items():
+            if not isinstance(items, dict):
                 continue
 
-            for scenario_id, scenario_content in items.items():
-                if not isinstance(scenario_content, dict):
+            for instance_id, instance_data in items.items():
+                if not isinstance(instance_data, dict):
                     continue
 
-                # Process the scenario itself (metadata like situation, label, etc.)
-                if "situation" not in scenario_content:
-                    scenario_content["situation"] = "incident"
+                # Enforce id
+                if "id" in instance_data and instance_data["id"] != instance_id:
+                    logger.warning(
+                        f"Ignoring user-provided 'id' = '{instance_data['id']}' for {construct_type} '{instance_id}', "
+                        f"as 'id' must match the section key."
+                    )
+                instance_data["id"] = instance_id
+
+                # Default label
+                if "label" not in instance_data:
+                    instance_data["label"] = instance_id
                     VERBOSE and logger.info(
-                        f"Scenario '{scenario_id}' missing 'situation', defaulting to 'incident'."
+                        f"For {construct_type} '{instance_id}', added default 'label' = '{instance_id}'."
                     )
 
-                if "status" not in scenario_content:
-                    scenario_content["status"] = "vulnerable"
-                    VERBOSE and logger.info(
-                        f"Scenario '{scenario_id}' missing 'status', defaulting to 'vulnerable'."
-                    )
+                if construct_type == "Scenario":
+                    # Defaults for scenarios
+                    if "situation" not in instance_data:
+                        instance_data["situation"] = "operational"
+                        VERBOSE and logger.info(
+                            f"Scenario '{instance_id}' missing 'situation', defaulting to 'operational'."
+                        )
 
-                if "label" not in scenario_content:
-                    scenario_content["label"] = scenario_id
-                    VERBOSE and logger.info(
-                        f"Scenario '{scenario_id}' missing 'label', defaulting to '{scenario_id}'."
-                    )
-
-                scenario_content["id"] = scenario_id  # Always enforce `id`
-
-                # Now process internal constructs (Entity, Capability, etc.)
-                for class_type, instance_dict in scenario_content.items():
-                    if class_type in {"label", "id", "situation", "status"}:
-                        continue  # Skip scalar scenario fields
-
-                    if not isinstance(instance_dict, dict):
-                        continue  # Skip malformed
-
-                    for instance_id, properties in instance_dict.items():
-                        if not isinstance(properties, dict):
-                            continue
-
-                        if "id" in properties and properties["id"] != instance_id:
+                    if "status" not in instance_data:
+                        instance_data["status"] = "vulnerable"
+                        VERBOSE and logger.info(
+                            f"Scenario '{instance_id}' missing 'status', defaulting to 'vulnerable'."
+                        )
+                else:
+                    # Convert 'scenario' to 'scenarios' if needed
+                    if "scenario" in instance_data:
+                        if "scenarios" not in instance_data:
+                            scenario_value = instance_data["scenario"]
+                            if isinstance(scenario_value, list):
+                                instance_data["scenarios"] = scenario_value
+                            else:
+                                instance_data["scenarios"] = [scenario_value]
+                            VERBOSE and logger.info(
+                                f"{construct_type} '{instance_id}' used 'scenario'; converted to 'scenarios'."
+                            )
+                        else:
                             logger.warning(
-                                f"Ignoring user-provided 'id' = '{properties['id']}' for {class_type} '{instance_id}', "
-                                f"as 'id' must match the section key."
+                                f"{construct_type} '{instance_id}' has both 'scenario' and 'scenarios'. "
+                                f"'scenario' will be ignored."
                             )
-                        properties["id"] = instance_id
+                        del instance_data["scenario"]
 
-                        if "label" not in properties:
-                            properties["label"] = instance_id
+                    # Assign all scenarios if 'scenarios' still not set
+                    if "scenarios" not in instance_data:
+                        instance_data["scenarios"] = scenario_ids.copy()
+                        VERBOSE and logger.info(
+                            f"{construct_type} '{instance_id}' not linked to any scenario. "
+                            f"Defaulting to all scenarios: {scenario_ids}"
+                        )
+
+                    # Defaults for specific types
+                    if construct_type in {"Disposition", "Capability", "Vulnerability"}:
+                        if "state" not in instance_data:
+                            instance_data["state"] = "enabled"
                             VERBOSE and logger.info(
-                                f"For {class_type} '{instance_id}' in scenario '{scenario_id}', "
-                                f"added default 'label' = '{instance_id}'."
+                                f"For {construct_type} '{instance_id}', added default 'state' = 'enabled'."
                             )
 
-                        if class_type in {"Disposition", "Capability", "Vulnerability"} and "state" not in properties:
-                            properties["state"] = "enabled"
-                            VERBOSE and logger.info(
-                                f"For {class_type} '{instance_id}' in scenario '{scenario_id}', "
-                                f"added default 'state' = 'enabled'."
-                            )
+    @staticmethod
+    def _inject_default_scenario_if_missing(spec_data: dict[str, dict[str, dict[str, Any]]]) -> None:
+        """
+        Ensures at least one Scenario exists in the spec_data. If not, creates one with a random ID (format: SXXX).
+
+        The new scenario is added with empty values. Default values like 'situation', 'status', etc. will be filled
+        by `_apply_data_defaults`.
+
+        :param spec_data: The specification data dictionary.
+        """
+        if "Scenario" not in spec_data or not spec_data["Scenario"]:
+            # Generate a random scenario ID in the format SXXX
+            random_suffix = ''.join(random.choices(string.ascii_uppercase, k=3))
+            scenario_id = f"S{random_suffix}"
+
+            spec_data.setdefault("Scenario", {})
+            spec_data["Scenario"][scenario_id] = {}
+
+            logger.warning(f"No scenario declared in the specification. Added default scenario '{scenario_id}'.")
 
     @staticmethod
     def write_specification(laderr_graph: Graph, output_file_path: str) -> None:
