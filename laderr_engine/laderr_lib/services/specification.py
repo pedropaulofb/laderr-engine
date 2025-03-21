@@ -14,54 +14,51 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 import tomli_w  # Used only for writing TOML, not reading
+from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF, Literal, URIRef, RDFS
 
 from laderr_engine.laderr_lib.constants import LADERR_NS, VERBOSE
 
 
-class SpecificationHandler:
-    """
-    Handles reading, writing, and converting LaDeRR specifications between TOML format and RDF graphs.
+import tomllib
+from typing import Any
 
-    Responsibilities:
-    - Parsing LaDeRR specifications from TOML files.
-    - Ensuring all required attributes have default values if they are missing.
-    - Serializing LaDeRR specifications from RDF graphs to TOML files.
-    - Sorting and formatting data for consistent TOML output.
-    """
+class SpecificationHandler:
 
     @staticmethod
-    def read_specification(laderr_file_path: str) -> tuple[dict[str, object], dict[str, object]]:
+    def read_specification(laderr_file_path: str) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
         """
-        Reads a LaDeRR specification from a TOML file and extracts structured metadata and data sections.
-
-        The TOML file is split into:
-        - `spec_metadata`: Top-level attributes (title, version, createdBy, etc.).
-        - `spec_data`: Nested constructs such as entities, capabilities, and vulnerabilities.
-
-        If `createdBy` is a string, it is normalized into a list.
-        If `scenario`, `baseURI`, or other defaults are missing, they are added.
+        Reads a LaDeRR specification from a TOML file using its hierarchical structure.
 
         :param laderr_file_path: Path to the TOML file containing the LaDeRR specification.
-        :type laderr_file_path: str
         :return: A tuple containing:
-            - spec_metadata (dict): Top-level metadata attributes.
-            - spec_data (dict): Structured constructs (entities, capabilities, vulnerabilities).
-        :rtype: tuple[dict[str, object], dict[str, object]]
-        :raises FileNotFoundError: If the file does not exist.
-        :raises tomllib.TOMLDecodeError: If the file is not valid TOML.
+            - spec_metadata (dict): Top-level metadata.
+            - spec_data (dict): Grouped constructs per scenario.
         """
         try:
             with open(laderr_file_path, "rb") as file:
-                data: dict[str, object] = tomllib.load(file)
+                data: dict[str, Any] = tomllib.load(file)
 
             spec_metadata = {key: value for key, value in data.items() if not isinstance(value, dict)}
-            spec_data = {key: value for key, value in data.items() if isinstance(value, dict)}
 
-            SpecificationHandler._apply_defaults(spec_metadata, spec_data)
+            spec_data: dict[str, dict[str, Any]] = {}
+
+            scenario_definitions = data.get("Scenario", {})
+            for scenario_id, scenario_info in scenario_definitions.items():
+                spec_data[scenario_id] = {"__scenario__": scenario_info}
+
+            for scenario_id in spec_data:
+                if scenario_id in data:
+                    # Merge the nested constructs for that scenario
+                    for construct_type, constructs in data[scenario_id].items():
+                        spec_data[scenario_id].setdefault(construct_type, {}).update(constructs)
+
+            SpecificationHandler._apply_metadata_defaults(spec_metadata)
+            SpecificationHandler._apply_data_defaults(spec_data)
 
             logger.success("LaDeRR specification's syntax successfully validated.")
+
             return spec_metadata, spec_data
 
         except FileNotFoundError as e:
@@ -72,15 +69,17 @@ class SpecificationHandler:
             raise e
 
     @staticmethod
-    def _apply_defaults(spec_metadata: dict[str, object], spec_data: dict[str, object]) -> None:
+    def _apply_metadata_defaults(spec_metadata: dict[str, object]) -> None:
         """
-        Applies all necessary default values to the metadata and data parts of the specification,
-        including validating the 'baseURI' field.
+        Applies default values and validation to metadata fields in the specification.
 
-        Each time a default is applied or a correction is made, it is logged to inform the user (if VERBOSE is True).
+        Changes applied:
+        - The 'scenario' field is removed and no longer assigned a default.
+        - 'title', 'version', and 'createdOn' are now optional.
+        - 'baseURI' is validated and defaulted if missing.
+        - 'createdBy' is converted to a list if present.
 
         :param spec_metadata: Dictionary with metadata attributes.
-        :param spec_data: Dictionary representing structured data instances.
         """
 
         # Validate and apply default to baseURI
@@ -92,42 +91,76 @@ class SpecificationHandler:
             logger.warning(f"Invalid base URI '{base_uri}' provided. Using default '{default_base_uri}'.")
             spec_metadata["baseURI"] = default_base_uri
         else:
-            spec_metadata["baseURI"] = base_uri  # Reassign explicitly in case it was missing
+            spec_metadata["baseURI"] = base_uri  # Ensure explicit assignment if missing
 
-        # Metadata defaults
-        if "scenario" not in spec_metadata:
-            spec_metadata["scenario"] = "operational"
-            VERBOSE and logger.info("Added default value 'operational' for metadata field 'scenario'.")
-
+        # Ensure 'createdBy' is always a list if present
         if "createdBy" in spec_metadata and isinstance(spec_metadata["createdBy"], str):
             spec_metadata["createdBy"] = [spec_metadata["createdBy"]]
 
-        # Data defaults
-        for class_type, instances in spec_data.items():
-            if isinstance(instances, dict):
-                for key, properties in instances.items():
-                    if isinstance(properties, dict):
-                        # If user provided `id`, check if it's conflicting
-                        if "id" in properties and properties["id"] != key:
-                            logger.warning(
-                                f"Ignoring user-provided 'id' = '{properties['id']}' for {class_type} '{key}', "
-                                f"as 'id' must match the section key."
-                            )
+    @staticmethod
+    def _apply_data_defaults(spec_data: dict[str, object]) -> None:
+        """
+        Applies necessary default values to structured data constructs.
 
-                        # Force `id` to be derived from section key
-                        properties["id"] = key
+        - Forces 'id' to match the section key, warning if conflicting.
+        - Ensures 'label' exists for all constructs, including Scenarios.
+        - Sets 'state' to 'enabled' for specific construct types.
+        - Sets default values for 'situation' and 'status' in Scenarios.
 
-                        if "label" not in properties:
-                            properties["label"] = properties["id"]
-                            VERBOSE and logger.info(
-                                f"For {class_type} with id '{properties['id']}', added default 'label' = '{properties['label']}'"
-                            )
+        :param spec_data: Dictionary representing structured data instances.
+        """
 
-                        if class_type in {"Disposition", "Capability", "Vulnerability"} and "state" not in properties:
-                            properties["state"] = "enabled"
-                            VERBOSE and logger.info(
-                                f"For {class_type} with id '{properties['id']}', added default 'state' = 'enabled'"
-                            )
+        for scenario_id, constructs in spec_data.items():
+            if isinstance(constructs, dict):
+                # Ensure default values for Scenario attributes
+                if "__scenario__" in constructs:
+                    scenario_instance = constructs["__scenario__"]
+
+                    if "situation" not in scenario_instance:
+                        scenario_instance["situation"] = "operational"
+                        VERBOSE and logger.info(
+                            f"Scenario '{scenario_id}' missing 'situation', defaulting to 'operational'."
+                        )
+
+                    if "status" not in scenario_instance:
+                        scenario_instance["status"] = "vulnerable"
+                        VERBOSE and logger.info(
+                            f"Scenario '{scenario_id}' missing 'status', defaulting to 'vulnerable'."
+                        )
+
+                    # ✅ Ensure Scenario has a label equal to its ID
+                    if "label" not in scenario_instance:
+                        scenario_instance["label"] = scenario_id
+                        VERBOSE and logger.info(
+                            f"Scenario '{scenario_id}' missing 'label', defaulting to '{scenario_id}'."
+                        )
+
+                # Apply defaults to construct instances
+                for class_type, instances in constructs.items():
+                    if isinstance(instances, dict):
+                        for key, properties in instances.items():
+                            if isinstance(properties, dict):
+                                # Force `id` to match section key, but warn if conflicting
+                                if "id" in properties and properties["id"] != key:
+                                    logger.warning(
+                                        f"Ignoring user-provided 'id' = '{properties['id']}' for {class_type} '{key}', "
+                                        f"as 'id' must match the section key."
+                                    )
+
+                                properties["id"] = key  # Ensure id matches key
+
+                                if "label" not in properties:
+                                    properties["label"] = properties["id"]
+                                    VERBOSE and logger.info(
+                                        f"For {class_type} with id '{properties['id']}', added default 'label' = '{properties['label']}'"
+                                    )
+
+                                if class_type in {"Disposition", "Capability",
+                                                  "Vulnerability"} and "state" not in properties:
+                                    properties["state"] = "enabled"
+                                    VERBOSE and logger.info(
+                                        f"For {class_type} with id '{properties['id']}', added default 'state' = 'enabled'"
+                                    )
 
     @staticmethod
     def write_specification(laderr_graph: Graph, output_file_path: str) -> None:
