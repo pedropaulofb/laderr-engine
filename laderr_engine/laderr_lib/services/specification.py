@@ -246,26 +246,18 @@ class SpecificationHandler:
 
         # Extract metadata properties
         metadata = {}
-        metadata_keys = {"title", "description", "version", "createdBy", "createdOn", "modifiedOn", "baseURI",
-                         "scenario"}
+        metadata_keys = {"title", "description", "version", "createdBy", "createdOn", "modifiedOn", "baseURI"}
 
         for p, o in laderr_graph.predicate_objects(specification_uri):
             key = p.split("#")[-1] if str(p).startswith(str(LADERR_NS)) else None
             if key and key in metadata_keys:
-
                 if isinstance(o, Literal):
-                    if o.datatype and o.datatype == RDF.XMLLiteral:
-                        value = o.toPython().toxml()  # Convert XML to a string
-                    else:
-                        value = o.toPython()
+                    value = o.toPython()
                 else:
-                    value = str(o).split("#")[-1]  # Extract entity ID for URIs
+                    value = str(o).split("#")[-1]
 
                 if isinstance(value, datetime):
                     value = value.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-                if key == "scenario":
-                    value = value.split("#")[-1]  # Convert full URI to short form
 
                 if key in metadata:
                     if not isinstance(metadata[key], list):
@@ -274,43 +266,40 @@ class SpecificationHandler:
                 else:
                     metadata[key] = value
 
-        # Ensure lists are properly formatted
         for key in metadata:
             if isinstance(metadata[key], list):
                 values = sorted(metadata[key])
                 metadata[key] = values[0] if len(values) == 1 else values
 
-        # Sort metadata for consistency
         data.update(dict(sorted(metadata.items())))
 
-        # Define specific class mappings
-        specific_classes = {"Asset", "Threat", "Control", "Resilience", "Capability", "Vulnerability"}
+        # Define specific class mappings, now including Scenario
+        specific_classes = {
+            "Asset", "Threat", "Control", "Resilience", "Capability", "Vulnerability", "Scenario"
+        }
 
-        # Extract structured constructs (Entities, Capabilities, Vulnerabilities, etc.)
+        # Collect all constructs
         constructs = defaultdict(lambda: defaultdict(dict))
+        scenario_membership = defaultdict(list)
+
         for s, p, o in laderr_graph.triples((None, RDF.type, None)):
             class_type = str(o).split("#")[-1] if str(o).startswith(str(LADERR_NS)) else None
             if class_type and class_type in specific_classes:
                 instance_id = str(s).split("#")[-1]
                 constructs[class_type][instance_id] = {}
 
-        # Extract properties for each construct
+        # Add properties per instance
         for class_type, instances in constructs.items():
-            for instance_id in instances.keys():
+            for instance_id in instances:
                 instance_uri = URIRef(f"{metadata['baseURI']}{instance_id}")
                 for p, o in laderr_graph.predicate_objects(instance_uri):
                     key = p.split("#")[-1] if str(p).startswith(str(LADERR_NS)) else None
                     if key is None and p == RDFS.label:
-                        key = "label"  # Map rdfs:label to label field
-
-                    if key and key not in {"type"}:  # Ignore rdf:type
-                        if isinstance(o, Literal):
-                            value = o.toPython()
-                        else:
-                            value = str(o).split("#")[-1]  # Extract entity ID for URIs
-
+                        key = "label"
+                    if key and key not in {"type"}:
+                        value = o.toPython() if isinstance(o, Literal) else str(o).split("#")[-1]
                         if isinstance(value, str) and key in {"label", "description"}:
-                            value = value.strip()  # Avoid leading/trailing spaces
+                            value = value.strip()
 
                         if key in instances[instance_id]:
                             if not isinstance(instances[instance_id][key], list):
@@ -319,18 +308,26 @@ class SpecificationHandler:
                         else:
                             instances[instance_id][key] = value
 
-        # Ensure lists are properly formatted
+        # Add scenario membership to constructs
+        for scenario in constructs.get("Scenario", {}):
+            scenario_uri = URIRef(f"{metadata['baseURI']}{scenario}")
+            for comp in laderr_graph.objects(scenario_uri, LADERR_NS.components):
+                comp_id = str(comp).split("#")[-1]
+                for ctype, instances in constructs.items():
+                    if comp_id in instances and ctype != "Scenario":
+                        if "scenarios" not in instances[comp_id]:
+                            instances[comp_id]["scenarios"] = []
+                        if scenario not in instances[comp_id]["scenarios"]:
+                            instances[comp_id]["scenarios"].append(scenario)
+
+        # Clean up and format
         for class_type in constructs:
             for instance_id in constructs[class_type]:
                 for key in constructs[class_type][instance_id]:
                     values = constructs[class_type][instance_id][key]
                     if isinstance(values, list):
-                        values = sorted(set(values))  # Ensure unique sorted values
+                        values = sorted(set(values))
                         constructs[class_type][instance_id][key] = values[0] if len(values) == 1 else values
-
-        # Sort constructs and attributes alphabetically
-        for class_type in constructs:
-            for instance_id in constructs[class_type]:
                 constructs[class_type][instance_id] = dict(sorted(constructs[class_type][instance_id].items()))
 
         data.update(dict(sorted(constructs.items())))
@@ -338,11 +335,8 @@ class SpecificationHandler:
         # Write to TOML file
         with open(output_file_path, "w", encoding="utf-8") as toml_file:
             toml_string = tomli_w.dumps(data)
-
-            # Format lists inline
             toml_string = toml_string.replace("[\n    ", "[").replace(",\n    ", ", ").replace("\n]", "]")
-            toml_string = re.sub(r",(\s*)]", "]", toml_string)  # Remove last comma before closing bracket
-
+            toml_string = re.sub(r",(\s*)]", "]", toml_string)
             toml_file.write(toml_string)
 
         logger.success(f"LaDeRR specification successfully written to {output_file_path}")
