@@ -236,180 +236,243 @@ class InferenceRules:
             VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
-    def execute_rule_succeeded_to_damage(laderr_graph: Graph):
+    def execute_rule_resilience_scenario(laderr_graph: Graph):
         """
-        Applies the 'succeededToDamage' inference rule based on the updated definition.
+        Ensures that for every Resilience instance r, if all the elements related to r via
+        laderr:preserves, laderr:preservesAgainst, and laderr:preservesDespite are found together
+        as components of a Scenario s, then s must also include r as a laderr:components.
 
-        If two entities belong to the same Specification, and:
-        - An incident scenario applies, or
-        - The succeededToDamage relation has not yet been inferred,
+        Implements:
+        ∀ r, c1, c2, v, s (
+            Resilience(r) ∧ preserves(r, c1) ∧ preservesAgainst(r, c2) ∧ preservesDespite(r, v) ∧
+            components(s, c1) ∧ components(s, c2) ∧ components(s, v)
+            → components(s, r)
+        )
+        """
+        from laderr_engine.laderr_lib.constants import LADERR_NS, VERBOSE
 
-        And:
-        - One entity's capability (c2) exploits the other entity's vulnerability (v1),
-        - The vulnerability (v1) exposes a capability (c1),
-        - Both c2 and v1 are in the ENABLED state,
+        for r in laderr_graph.subjects(RDF.type, LADERR_NS.Resilience):
+            c1s = list(laderr_graph.objects(r, LADERR_NS.preserves))
+            c2s = list(laderr_graph.objects(r, LADERR_NS.preservesAgainst))
+            vs = list(laderr_graph.objects(r, LADERR_NS.preservesDespite))
+
+            for c1 in c1s:
+                for c2 in c2s:
+                    for v in vs:
+                        scenarios_with_all = (
+                                set(laderr_graph.subjects(LADERR_NS.components, c1)) &
+                                set(laderr_graph.subjects(LADERR_NS.components, c2)) &
+                                set(laderr_graph.subjects(LADERR_NS.components, v))
+                        )
+
+                        for s in scenarios_with_all:
+                            if (s, LADERR_NS.components, r) not in laderr_graph:
+                                laderr_graph.add((s, LADERR_NS.components, r))
+                                VERBOSE and logger.info(f"Inferred: {s} laderr:components {r}")
+
+    @staticmethod
+    def execute_rule_positive_damage(laderr_graph: Graph):
+        """
+        Applies the 'positiveDamage' inference rule based on the current definition:
+
+        For each Scenario s and Entities o1, o2 that are components of s, if:
+        - o1 has capability c1 and vulnerability v1,
+        - o2 has capability c2,
+        - c2 exploits v1,
+        - v1 exposes c1,
+        - v1 and c2 are enabled,
+        - and positiveDamage(o2, o1) does not already exist,
 
         Then:
-        - The second entity (o2) succeeded to damage the first (o1).
-        - The scenario (ls) is set to NOT_RESILIENT, replacing any previous scenario value.
-
-        :param laderr_graph: RDFLib graph containing LaDeRR data.
-        :type laderr_graph: Graph
+        - Assert positiveDamage(o2, o1),
+        - Set status(s) := VULNERABLE (if not already).
         """
         new_triples = set()
         removed_triples = set()
 
-        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.Specification):
-            entities = set(laderr_graph.objects(ls, LADERR_NS.constructs))
-            scenario_change_needed = False  # Flag to check if scenario must be updated
+        for scenario in laderr_graph.subjects(RDF.type, LADERR_NS.Scenario):
+            scenario_status = laderr_graph.value(scenario, LADERR_NS.status)
 
-            # Check all pairs of distinct entities (o1, o2)
-            for o1 in entities:
-                for o2 in entities:
+            # Get all entities that are components of the scenario
+            scenario_entities = {
+                e for e in laderr_graph.objects(scenario, LADERR_NS.components)
+                if (e, RDF.type, LADERR_NS.Entity) in laderr_graph
+            }
+
+            for o1 in scenario_entities:
+                for o2 in scenario_entities:
                     if o1 == o2:
-                        continue  # Skip self-pairing
+                        continue
 
-                    succeeded_to_damage_exists = (o2, LADERR_NS.succeededToDamage, o1) in laderr_graph
+                    if (o2, LADERR_NS.positiveDamage, o1) in laderr_graph:
+                        continue  # Skip if already inferred
 
                     for c1 in laderr_graph.objects(o1, LADERR_NS.capabilities):
                         for v1 in laderr_graph.objects(o1, LADERR_NS.vulnerabilities):
                             for c2 in laderr_graph.objects(o2, LADERR_NS.capabilities):
+
                                 if not (
                                         (c2, LADERR_NS.exploits, v1) in laderr_graph and
                                         (v1, LADERR_NS.exposes, c1) in laderr_graph and
                                         (v1, LADERR_NS.state, LADERR_NS.enabled) in laderr_graph and
                                         (c2, LADERR_NS.state, LADERR_NS.enabled) in laderr_graph
                                 ):
-                                    continue  # Skip if conditions are not met
+                                    continue
 
-                                # If conditions are met, infer succeededToDamage
-                                if not succeeded_to_damage_exists:
-                                    new_triples.add((o2, LADERR_NS.succeededToDamage, o1))
-                                    VERBOSE and logger.info(f"Inferred: {o2} laderr:succeededToDamage {o1}")
+                                # Inference: positiveDamage(o2, o1)
+                                new_triples.add((o2, LADERR_NS.positiveDamage, o1))
+                                VERBOSE and logger.info(f"Inferred: {o2} laderr:positiveDamage {o1}")
 
-                                # Indicate that the scenario must be updated
-                                scenario_change_needed = True
+                                # Inference: status(scenario) = VULNERABLE (if not already)
+                                if scenario_status != LADERR_NS.vulnerable:
+                                    if scenario_status:
+                                        removed_triples.add((scenario, LADERR_NS.status, scenario_status))
+                                        VERBOSE and logger.info(f"Removed previous status: {scenario_status}")
+                                    new_triples.add((scenario, LADERR_NS.status, LADERR_NS.vulnerable))
+                                    VERBOSE and logger.info(f"Inferred: {scenario} laderr:status laderr:vulnerable")
 
-            # Remove previous scenario only if we are actually updating it
-            if scenario_change_needed:
-                for scenario in laderr_graph.objects(ls, LADERR_NS.scenario):
-                    removed_triples.add((ls, LADERR_NS.scenario, scenario))
-                    VERBOSE and logger.info(f"Removed previous scenario: {scenario}")
-
-                # Set scenario to NOT_RESILIENT
-                new_triples.add((ls, LADERR_NS.scenario, LADERR_NS.not_resilient))
-                VERBOSE and logger.info(f"Updated scenario to: laderr:not_resilient")
-
-        # Apply removals first
+        # Apply all removals first
         for triple in removed_triples:
             laderr_graph.remove(triple)
 
-        # Apply new inferences
+        # Apply all inferences
         for triple in new_triples:
             laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
-    def execute_rule_failed_to_damage(laderr_graph: Graph):
+    def execute_rule_negative_damage(laderr_graph: Graph):
         """
-        Applies the 'failedToDamage' inference rule:
-        If an entity (o2) has a capability that exploits a vulnerability of another entity (o1),
-        and that vulnerability exposes a capability of o1, and the vulnerability is DISABLED,
-        while the exploiting capability is ENABLED, and the failedToDamage relationship does not already exist
-        between them, then o2 failed to damage o1.
+        Applies the 'negativeDamage' inference rule.
+
+        For all pairs of entities o1 and o2, if:
+        - o1 has capability c1 and vulnerability v1,
+        - o2 has capability c2,
+        - c2 exploits v1,
+        - v1 exposes c1,
+        - v1 is DISABLED and c2 is ENABLED,
+        - and negativeDamage(o2, o1) does not already exist,
+
+        Then:
+        - Assert negativeDamage(o2, o1)
 
         :param laderr_graph: RDFLib graph containing LaDeRR data.
         :type laderr_graph: Graph
         """
         new_triples = set()
 
-        enabled = LADERR_NS.enabled
-        disabled = LADERR_NS.disabled
-
-        # Iterate over all entities and their capabilities and vulnerabilities
-        for o1, c1 in laderr_graph.subject_objects(LADERR_NS.capabilities):
-            for o1_vuln, v1 in laderr_graph.subject_objects(LADERR_NS.vulnerabilities):
-                if o1 != o1_vuln:
+        for o1 in laderr_graph.subjects(RDF.type, LADERR_NS.Entity):
+            for o2 in laderr_graph.subjects(RDF.type, LADERR_NS.Entity):
+                if o1 == o2:
                     continue
 
-                for o2, c2 in laderr_graph.subject_objects(LADERR_NS.capabilities):
-                    # Check if capability c2 exploits vulnerability v1
-                    if (c2, LADERR_NS.exploits, v1) not in laderr_graph:
-                        continue
+                # Skip if already inferred
+                if (o2, LADERR_NS.negativeDamage, o1) in laderr_graph:
+                    continue
 
-                    # Check if vulnerability v1 exposes capability c1
-                    if (v1, LADERR_NS.exposes, c1) not in laderr_graph:
-                        continue
+                c1_list = list(laderr_graph.objects(o1, LADERR_NS.capabilities))
+                v1_list = list(laderr_graph.objects(o1, LADERR_NS.vulnerabilities))
+                c2_list = list(laderr_graph.objects(o2, LADERR_NS.capabilities))
 
-                    # Vulnerability must be DISABLED, and the exploiting capability must be ENABLED
-                    if (v1, LADERR_NS.state, disabled) not in laderr_graph or (
-                            c2, LADERR_NS.state, enabled) not in laderr_graph:
-                        continue
+                for c1 in c1_list:
+                    for v1 in v1_list:
+                        for c2 in c2_list:
+                            if not (
+                                    (c2, LADERR_NS.exploits, v1) in laderr_graph and
+                                    (v1, LADERR_NS.exposes, c1) in laderr_graph and
+                                    (v1, LADERR_NS.state, LADERR_NS.disabled) in laderr_graph and
+                                    (c2, LADERR_NS.state, LADERR_NS.enabled) in laderr_graph
+                            ):
+                                continue
 
-                    # Only add failedToDamage if not already present
-                    if (o2, LADERR_NS.failedToDamage, o1) not in laderr_graph:
-                        new_triples.add((o2, LADERR_NS.failedToDamage, o1))
+                            # All conditions satisfied — assert negativeDamage
+                            new_triples.add((o2, LADERR_NS.negativeDamage, o1))
+                            VERBOSE and logger.info(f"Inferred: {o2} laderr:negativeDamage {o1}")
 
+        # Apply inferences
         for triple in new_triples:
             laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
-    def execute_rule_scenario_resilient(laderr_graph: Graph):
+    def execute_rule_scenario_status(laderr_graph: Graph):
         """
-        Applies the 'scenarioResilient' inference rule.
-
-        If a Specification is in an INCIDENT scenario, and all vulnerabilities in its constructs
-        are either DISABLED or have at least one exploiting capability, then the scenario is updated to RESILIENT,
-        replacing any previous scenario value.
-
-        :param laderr_graph: RDFLib graph containing LaDeRR data.
-        :type laderr_graph: Graph
+        A scenario is marked RESILIENT if all its vulnerabilities are either DISABLED or NOT exploited by any capability.
+        If the scenario fails that condition, it is marked VULNERABLE (unless already marked).
         """
-        for ls in laderr_graph.subjects(RDF.type, LADERR_NS.Specification):
-            # Check if scenario(ls) = INCIDENT
-            if (ls, LADERR_NS.scenario, LADERR_NS.incident) not in laderr_graph:
-                continue  # Skip if not an incident
+        for scenario in laderr_graph.subjects(RDF.type, LADERR_NS.Scenario):
+            current_status = laderr_graph.value(scenario, LADERR_NS.status)
 
-            all_vulnerabilities_handled = True  # Assume scenario is resilient unless proven otherwise
-            removed_triples = set()
-            new_triples = set()
+            is_resilient = True
 
-            # Iterate over all entities in this specification
-            for o1 in laderr_graph.objects(ls, LADERR_NS.constructs):
+            for o1 in laderr_graph.objects(scenario, LADERR_NS.components):
                 for v1 in laderr_graph.objects(o1, LADERR_NS.vulnerabilities):
+                    is_enabled = (v1, LADERR_NS.state, LADERR_NS.enabled) in laderr_graph
 
-                    # If the vulnerability is disabled, it's fine
-                    if (v1, LADERR_NS.state, LADERR_NS.disabled) in laderr_graph:
-                        continue
+                    if is_enabled:
+                        is_exploited = any(laderr_graph.subjects(LADERR_NS.exploits, v1))
 
-                    # Check if at least one capability exploits v1
-                    has_exploiting_capability = any(
-                        laderr_graph.subjects(LADERR_NS.exploits, v1)
-                    )
+                        if is_exploited:
+                            is_resilient = False
+                            break
 
-                    if not has_exploiting_capability:
-                        all_vulnerabilities_handled = False
-                        break  # Exit inner loop
+                if not is_resilient:
+                    break
 
-                if not all_vulnerabilities_handled:
-                    break  # Exit outer loop
+            if is_resilient:
+                if current_status != LADERR_NS.resilient:
+                    if current_status:
+                        laderr_graph.remove((scenario, LADERR_NS.status, current_status))
+                        VERBOSE and logger.info(f"Removed previous status: {current_status} from {scenario}")
+                    laderr_graph.add((scenario, LADERR_NS.status, LADERR_NS.resilient))
+                    VERBOSE and logger.info(f"Inferred: {scenario} laderr:status laderr:resilient")
+            else:
+                if current_status != LADERR_NS.vulnerable:
+                    if current_status:
+                        laderr_graph.remove((scenario, LADERR_NS.status, current_status))
+                        VERBOSE and logger.info(f"Removed previous status: {current_status} from {scenario}")
+                    laderr_graph.add((scenario, LADERR_NS.status, LADERR_NS.vulnerable))
+                    VERBOSE and logger.info(f"Inferred: {scenario} laderr:status laderr:vulnerable")
 
-            # If all vulnerabilities are handled, update scenario to RESILIENT
-            if all_vulnerabilities_handled:
-                # Remove previous scenario values before setting the new one
-                for scenario in laderr_graph.objects(ls, LADERR_NS.scenario):
-                    removed_triples.add((ls, LADERR_NS.scenario, scenario))
-                    VERBOSE and logger.info(f"Removed previous scenario: {scenario}")
+    @staticmethod
+    def execute_rule_damage_from_scenario(laderr_graph: Graph):
+        """
+        Applies inference based on the scenario's situation (INCIDENT or OPERATIONAL):
 
-                # Set the new scenario
-                new_triples.add((ls, LADERR_NS.scenario, LADERR_NS.resilient))
-                VERBOSE and logger.info(f"Updated scenario to: laderr:resilient")
+        For each Scenario s:
+        - If situation(s) = INCIDENT:
+            - If positiveDamage(x, y) and not damaged(x, y), then damaged(x, y)
+            - If negativeDamage(x, y) and not notDamaged(x, y), then notDamaged(x, y)
 
-            # Remove old scenario and apply the new scenario value
-            for triple in removed_triples:
-                laderr_graph.remove(triple)
+        - If situation(s) = OPERATIONAL:
+            - If positiveDamage(x, y) and not canDamage(x, y), then canDamage(x, y)
+            - If negativeDamage(x, y) and not cannotDamage(x, y), then cannotDamage(x, y)
+        """
+        new_triples = set()
 
-            for triple in new_triples:
-                laderr_graph.add(triple)
-                VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
+        for scenario in laderr_graph.subjects(RDF.type, LADERR_NS.Scenario):
+            situation = laderr_graph.value(scenario, LADERR_NS.situation)
+
+            if situation == LADERR_NS.incident:
+                # For INCIDENT: infer damaged / notDamaged
+                for x, y in laderr_graph.subject_objects(LADERR_NS.positiveDamage):
+                    if (x, LADERR_NS.damaged, y) not in laderr_graph:
+                        new_triples.add((x, LADERR_NS.damaged, y))
+                        VERBOSE and logger.info(f"Inferred (INCIDENT): {x} laderr:damaged {y}")
+                for x, y in laderr_graph.subject_objects(LADERR_NS.negativeDamage):
+                    if (x, LADERR_NS.notDamaged, y) not in laderr_graph:
+                        new_triples.add((x, LADERR_NS.notDamaged, y))
+                        VERBOSE and logger.info(f"Inferred (INCIDENT): {x} laderr:notDamaged {y}")
+
+            elif situation == LADERR_NS.operational:
+                # For OPERATIONAL: infer canDamage / cannotDamage
+                for x, y in laderr_graph.subject_objects(LADERR_NS.positiveDamage):
+                    if (x, LADERR_NS.canDamage, y) not in laderr_graph:
+                        new_triples.add((x, LADERR_NS.canDamage, y))
+                        VERBOSE and logger.info(f"Inferred (OPERATIONAL): {x} laderr:canDamage {y}")
+                for x, y in laderr_graph.subject_objects(LADERR_NS.negativeDamage):
+                    if (x, LADERR_NS.cannotDamage, y) not in laderr_graph:
+                        new_triples.add((x, LADERR_NS.cannotDamage, y))
+                        VERBOSE and logger.info(f"Inferred (OPERATIONAL): {x} laderr:cannotDamage {y}")
+
+        # Add all inferred triples to the graph
+        for triple in new_triples:
+            laderr_graph.add(triple)

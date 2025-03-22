@@ -53,7 +53,7 @@ def test_scenario_resilient_inferred_when_all_vulnerabilities_disabled(laderr_gr
     g.add((vulnerability1, LADERR.state, LADERR.disabled))
     g.add((vulnerability2, LADERR.state, LADERR.disabled))
 
-    InferenceRules.execute_rule_scenario_resilient(g)
+    InferenceRules.execute_rule_scenario_status(g)
 
     assert (spec, LADERR.scenario, LADERR.resilient) in g, \
         "Scenario should be set to RESILIENT when all vulnerabilities are DISABLED."
@@ -73,7 +73,7 @@ def test_scenario_resilient_inferred_when_all_vulnerabilities_exploited(laderr_g
     g.add((capability1, LADERR.exploits, vulnerability1))
     g.add((capability2, LADERR.exploits, vulnerability2))
 
-    InferenceRules.execute_rule_scenario_resilient(g)
+    InferenceRules.execute_rule_scenario_status(g)
 
     assert (spec, LADERR.scenario, LADERR.resilient) in g, \
         "Scenario should be set to RESILIENT when all vulnerabilities are exploited."
@@ -102,7 +102,7 @@ def test_scenario_resilient_various_cases(laderr_graph_with_incident_scenario, v
         g.add((capability1, LADERR.exploits, vulnerability1))
         g.add((capability2, LADERR.exploits, vulnerability2))
 
-    InferenceRules.execute_rule_scenario_resilient(g)
+    InferenceRules.execute_rule_scenario_status(g)
 
     assert (spec, LADERR.scenario, expected_scenario) in g, \
         f"Scenario should be {expected_scenario} when vulnerability state is '{vulnerability_state}'."
@@ -117,7 +117,7 @@ def test_scenario_resilient_not_inferred_when_already_resilient(laderr_graph_wit
     # Set scenario to RESILIENT before execution
     g.set((spec, LADERR.scenario, LADERR.resilient))
 
-    InferenceRules.execute_rule_scenario_resilient(g)
+    InferenceRules.execute_rule_scenario_status(g)
 
     assert (spec, LADERR.scenario, LADERR.resilient) in g, \
         "Scenario should remain RESILIENT if it was already set as RESILIENT."
@@ -132,7 +132,7 @@ def test_scenario_resilient_not_inferred_if_not_incident(laderr_graph_with_incid
     # Set scenario to something other than INCIDENT
     g.set((spec, LADERR.scenario, LADERR.operational))
 
-    InferenceRules.execute_rule_scenario_resilient(g)
+    InferenceRules.execute_rule_scenario_status(g)
 
     assert (spec, LADERR.scenario, LADERR.operational) in g, \
         "Scenario should remain OPERATIONAL if it was not INCIDENT."
@@ -149,7 +149,7 @@ def test_scenario_remains_incident_when_mixed_vulnerability_states(laderr_graph_
     g.add((vulnerability1, LADERR.state, LADERR.disabled))
     g.add((vulnerability2, LADERR.state, LADERR.enabled))
 
-    InferenceRules.execute_rule_scenario_resilient(g)
+    InferenceRules.execute_rule_scenario_status(g)
 
     assert (spec, LADERR.scenario, LADERR.incident) in g, \
         "Scenario should remain INCIDENT when at least one vulnerability is enabled and not exploited."
@@ -168,7 +168,7 @@ def test_scenario_resilient_ignores_non_entities(laderr_graph_with_incident_scen
     g.add((non_entity_construct, LADERR.vulnerabilities, vulnerability1))
     g.add((vulnerability1, LADERR.state, LADERR.enabled))
 
-    InferenceRules.execute_rule_scenario_resilient(g)
+    InferenceRules.execute_rule_scenario_status(g)
 
     assert (spec, LADERR.scenario, LADERR.incident) in g, \
         "Scenario should not become RESILIENT if a non-entity construct has an enabled vulnerability."

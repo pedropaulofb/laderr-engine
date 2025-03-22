@@ -63,15 +63,11 @@ class SpecificationHandler:
                     # Assign 'id' always
                     spec_data[category][identifier].setdefault("id", identifier)
 
-                    if category != "Scenario" and "scenario" not in spec_data[category][identifier]:
-                        logger.warning(f"Construct '{identifier}' in '{category}' missing required 'scenario' key.")
-
             SpecificationHandler._apply_metadata_defaults(spec_metadata)
             SpecificationHandler._inject_default_scenario_if_missing(spec_data)
             SpecificationHandler._apply_data_defaults(spec_data)
 
             logger.success("LaDeRR specification's syntax successfully validated.")
-            ic(spec_metadata, spec_data)
             return spec_metadata, spec_data
 
         except FileNotFoundError as e:

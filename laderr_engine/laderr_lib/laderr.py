@@ -196,7 +196,7 @@ class Laderr:
             save_visualization_post: bool = True,
             save_spec: bool = True,
             verbose: bool = True
-            # TODO: Check defaults for all bools to ensure'more common' configuration.
+            # TODO: Check defaults for all bools to ensure 'more common' configuration.
     ) -> None:
         """
         Loads, processes, and optionally validates and enriches a LaDeRR specification,
@@ -244,8 +244,6 @@ class Laderr:
             GraphHandler.save_graph(laderr_graph, f"{output_file_base}_pre.ttl")
             if verbose:
                 logger.success(f"Pre-processed graph saved to {output_file_base}_pre.ttl")
-
-        exit(1)
 
         if save_visualization_pre:
             GraphCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_pre")
