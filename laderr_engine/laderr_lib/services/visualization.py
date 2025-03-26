@@ -224,6 +224,21 @@ class GraphCreator:
 
     @staticmethod
     def _process_edges(graph: Graph, dot: graphviz.Digraph, added_nodes: set) -> None:
+        edge_styles = {
+            "protects": "blue",
+            "inhibits": "blue",
+            "threatens": "blue",
+            "preserves": "orange",
+            "preservesAgainst": "orange",
+            "preservesDespite": "orange",
+            "sustains": "orange",
+            "cannotDamage": "green",
+            "notDamaged": "green",
+            "canDamage": "red",
+            "damaged": "red",
+            "disables": "darkred",
+        }
+
         for s, p, o in graph:
             if s not in added_nodes or o not in added_nodes:
                 continue
@@ -233,6 +248,8 @@ class GraphCreator:
             o_id = str(o).split("#")[-1]
             if s_id == o_id:
                 continue
+
             pred_label = p.split("#")[-1]
-            edge_color = "black"
-            dot.edge(s_id, o_id, label=pred_label, fontsize="6", color=edge_color)
+            edge_color = edge_styles.get(pred_label, "black")  # Use colored style if defined
+
+            dot.edge(s_id, o_id, label=pred_label, fontsize="6", color=edge_color, fontcolor=edge_color)

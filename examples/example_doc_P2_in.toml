@@ -1,0 +1,34 @@
+baseURI = "https://supplychain.laderr#"
+createdBy = "Pedro Paulo F. Barcelos"
+createdOn = "2025-03-16T12:00:00Z"
+description = "A resilience model for supply chain logistics disruptions. Inspired by real-world cases such as port shutdowns due to labor disputes and geopolitical events."
+title = "Supply Chain Logistics Resilience Model"
+version = "1.2"
+
+[Entity.warehouse_operator]
+label = "Automated Fulfillment Center"
+capabilities = ["automated_order_fulfillment"]
+vulnerabilities = ["system_integration_fragility"]
+
+[Entity.system_integrator]
+label = "Enterprise System Integration Provider"
+capabilities = ["resilient_systems_integration"]
+
+[Entity.retailer]
+label = "E-commerce Retailer"
+capabilities = ["demand_spike_generation"]
+
+[Capability.resilient_systems_integration]
+label = "Resilient Systems Integration"
+description = "Capability to design and maintain integration between platforms that withstands system load and software updates."
+disables = "system_integration_fragility"
+
+[Capability.demand_spike_generation]
+label = "Demand Spike Generation"
+description = "Capability to trigger sudden increases in orders (e.g., through flash sales or promotional campaigns), potentially stressing supply chain systems."
+exploits = "system_integration_fragility"
+
+[Vulnerability.system_integration_fragility]
+label = "System Integration Fragility"
+description = "Weaknesses in how warehouse software communicates with external order systems, making the process error-prone under sudden load."
+exposes = "automated_order_fulfillment"
