@@ -92,4 +92,3 @@ class ValidationHandler:
             raise ValueError(f"No valid SHACL files found in the directory '{shacl_files_path}'.")
 
         return merged_graph
-

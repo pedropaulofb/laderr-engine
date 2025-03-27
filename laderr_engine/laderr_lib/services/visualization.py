@@ -6,7 +6,6 @@ LaDeRR RDF models, extracts entities and relationships, applies predefined style
 """
 
 import graphviz
-from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF, BNode, URIRef, RDFS
 
@@ -277,4 +276,3 @@ class VisualizationCreator:
                 })
 
             dot.edge(s_id, o_id, **arrow_attributes)
-

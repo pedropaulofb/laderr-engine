@@ -39,12 +39,12 @@ def base_control():
 
 @pytest.mark.parametrize("inhibits_count, protects_count, should_pass", [
     (0, 0, False),  # Neither `inhibits` nor `protects` is present -> should fail
-    (1, 0, True),   # Has `inhibits`, missing `protects` -> should pass
-    (0, 1, True),   # Has `protects`, missing `inhibits` -> should pass
-    (1, 1, True),   # Has both -> should pass
+    (1, 0, True),  # Has `inhibits`, missing `protects` -> should pass
+    (0, 1, True),  # Has `protects`, missing `inhibits` -> should pass
+    (1, 1, True),  # Has both -> should pass
     (3, 0, True),  # Multiple threats and no assets -> should pass
     (0, 3, True),  # Multiple assets and no threats -> should pass
-    (3, 3, True),   # Multiple threats and assets -> should pass
+    (3, 3, True),  # Multiple threats and assets -> should pass
 ])
 def test_control_relationships(shape_graph, base_control, inhibits_count, protects_count, should_pass):
     g, control, _, _ = base_control

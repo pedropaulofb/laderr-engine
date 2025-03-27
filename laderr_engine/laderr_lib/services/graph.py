@@ -5,7 +5,6 @@ This module provides functionalities for loading RDF schemas and saving RDF grap
 """
 import os
 
-from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL, DCTERMS
 from rdflib.exceptions import ParserError
@@ -363,7 +362,6 @@ class GraphHandler:
             graph.remove(triple)
 
         return graph
-
 
     @staticmethod
     def split_graph_by_scenario(graph: Graph) -> dict[str, Graph]:

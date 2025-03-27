@@ -20,6 +20,7 @@ from rdflib import Graph, Namespace
 
 from laderr_engine.laderr_lib.services.graph import GraphHandler
 from laderr_engine.laderr_lib.services.reasoning import ReasoningHandler
+from laderr_engine.laderr_lib.services.report import ReportGenerator
 from laderr_engine.laderr_lib.services.specification import SpecificationHandler
 from laderr_engine.laderr_lib.services.validation import ValidationHandler
 from laderr_engine.laderr_lib.services.visualization import VisualizationCreator
@@ -182,6 +183,24 @@ class Laderr:
             logger.success(f"Visualization successfully saved to {output_file_path}")
 
     @staticmethod
+    def save_report_from_graph(laderr_graph: Graph, output_file_path: str, verbose: bool = False) -> None:
+        """
+        Generates a PDF report from an RDF graph and saves it to a file.
+
+        This will generate one report per Scenario and append the scenario identifier to the filename.
+
+        :param laderr_graph: The RDF graph to analyze and report on.
+        :type laderr_graph: Graph
+        :param output_file_path: Base path where the reports should be saved (without scenario ID or extension).
+        :type output_file_path: str
+        :param verbose: Whether to log success messages.
+        :type verbose: bool
+        """
+        ReportGenerator.generate_pdf_report(laderr_graph, output_file_path)
+        if verbose:
+            logger.success(f"PDF report(s) successfully saved with base name: {output_file_path}")
+
+    @staticmethod
     def process_specification(
             input_spec_path: str,
             output_file_base: Optional[str] = None,
@@ -194,6 +213,8 @@ class Laderr:
             save_graph_post: bool = True,
             save_visualization_pre: bool = True,
             save_visualization_post: bool = True,
+            save_report_pre: bool = True,
+            save_report_post: bool = True,
             save_spec: bool = True,
             verbose: bool = True
             # TODO: Check defaults for all bools to ensure 'more common' configuration.
@@ -225,6 +246,10 @@ class Laderr:
         :type save_visualization_pre: bool
         :param save_visualization_post: Whether to save the visualization after processing.
         :type save_visualization_post: bool
+        :param save_report_pre: Whether to generate a PDF report before reasoning.
+        :type save_report_pre: bool
+        :param save_report_post: Whether to generate a PDF report after reasoning.
+        :type save_report_post: bool
         :param save_spec: Whether to save the final processed specification.
         :type save_spec: bool
         :param verbose: Whether to log messages.
@@ -250,6 +275,11 @@ class Laderr:
             if verbose:
                 logger.success(f"Pre-processed visualization saved to {output_file_base}_pre")
 
+        if save_report_pre:
+            ReportGenerator.generate_pdf_report(laderr_graph, f"{output_file_base}_report_pre")
+            if verbose:
+                logger.success(f"Pre-processed PDF report saved to {output_file_base}_report_pre")
+
         if validate_pre:
             validation_report_pre = f"{output_file_base}_validation_report_pre.txt" if save_validation_report_pre else None
             Laderr.validate_graph(laderr_graph, verbose, stage="pre", report_file=validation_report_pre)
@@ -270,6 +300,11 @@ class Laderr:
             VisualizationCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_post")
             if verbose:
                 logger.success(f"Processed visualization saved to {output_file_base}_post")
+
+        if save_report_post:
+            ReportGenerator.generate_pdf_report(laderr_graph, f"{output_file_base}_report_post")
+            if verbose:
+                logger.success(f"Post-processed PDF report saved to {output_file_base}_report_post")
 
         if save_spec:
             SpecificationHandler.write_specification(laderr_graph, f"{output_file_base}_post.toml")

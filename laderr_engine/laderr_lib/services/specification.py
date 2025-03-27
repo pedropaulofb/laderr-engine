@@ -13,18 +13,15 @@ import string
 import tomllib
 from collections import defaultdict
 from datetime import datetime
+from typing import Any
 from urllib.parse import urlparse
 
 import tomli_w  # Used only for writing TOML, not reading
-from icecream import ic
 from loguru import logger
 from rdflib import Graph, RDF, Literal, URIRef, RDFS
 
 from laderr_engine.laderr_lib.constants import LADERR_NS, VERBOSE
 
-
-import tomllib
-from typing import Any
 
 class SpecificationHandler:
 
@@ -201,7 +198,6 @@ class SpecificationHandler:
                             VERBOSE and logger.info(
                                 f"For {construct_type} '{instance_id}', added default 'state' = 'enabled'."
                             )
-
 
     @staticmethod
     def _inject_default_scenario_if_missing(spec_data: dict[str, dict[str, dict[str, Any]]]) -> None:
