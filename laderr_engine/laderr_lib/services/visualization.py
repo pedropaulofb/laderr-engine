@@ -254,6 +254,27 @@ class VisualizationCreator:
                 continue
 
             pred_label = p.split("#")[-1]
+
+            if pred_label in {"positiveDamage", "negativeDamage"}:
+                continue  # Skip these relations
+
             edge_color = edge_styles.get(pred_label, "black")  # Use colored style if defined
 
-            dot.edge(s_id, o_id, label=pred_label, fontsize="6", color=edge_color, fontcolor=edge_color)
+            has_diamond_tail = pred_label in {"capabilities", "vulnerabilities", "resiliences"}
+
+            arrow_attributes = {
+                "label": pred_label,
+                "fontsize": "6",
+                "color": edge_color,
+                "fontcolor": edge_color,
+            }
+
+            if has_diamond_tail:
+                arrow_attributes.update({
+                    "dir": "both",
+                    "arrowtail": "diamond",
+                    "arrowhead": "none"
+                })
+
+            dot.edge(s_id, o_id, **arrow_attributes)
+
