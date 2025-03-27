@@ -11,6 +11,7 @@ from loguru import logger
 from rdflib import Graph, RDF, BNode, URIRef, RDFS
 
 from laderr_engine.laderr_lib.constants import LADERR_NS
+from laderr_engine.laderr_lib.services.graph import GraphHandler
 
 
 class VisualizationCreator:
@@ -22,14 +23,19 @@ class VisualizationCreator:
     """
 
     @staticmethod
-    def create_graph_visualization(laderr_graph: Graph, base_output_path: str) -> None:
-        for scenario in laderr_graph.subjects(RDF.type, LADERR_NS.Scenario):
-            scenario_id = str(scenario).split("#")[-1]
-            scenario_label = laderr_graph.value(scenario, RDFS.label)
-            scenario_status = laderr_graph.value(scenario, LADERR_NS.status)
-            scenario_situation = laderr_graph.value(scenario, LADERR_NS.situation)
+    def create_graph_visualization(laderr_graph: Graph, base_output_path: str):
+        scenario_graphs = GraphHandler.split_graph_by_scenario(laderr_graph)
 
-            bgcolor = VisualizationCreator._get_scenario_bgcolor_for_uri(laderr_graph, scenario)
+        for scenario_id, subgraph in scenario_graphs.items():
+            scenario_uri = next(subgraph.subjects(RDF.type, LADERR_NS.Scenario), None)
+            if scenario_uri is None:
+                continue
+
+            scenario_label = subgraph.value(scenario_uri, RDFS.label)
+            scenario_status = subgraph.value(scenario_uri, LADERR_NS.status)
+            scenario_situation = subgraph.value(scenario_uri, LADERR_NS.situation)
+
+            bgcolor = VisualizationCreator._get_scenario_bgcolor_for_uri(subgraph, scenario_uri)
 
             # Clean label text format
             situation_str = str(scenario_situation).split("#")[-1].upper() if scenario_situation else "UNKNOWN"
@@ -41,13 +47,14 @@ class VisualizationCreator:
             # Just pass the full label text (already constructed)
             dot = VisualizationCreator._initialize_graph(bgcolor, label_text)
 
-            added_nodes = VisualizationCreator._process_nodes(laderr_graph, dot, scenario)
-            VisualizationCreator._process_edges(laderr_graph, dot, added_nodes)
+            added_nodes = VisualizationCreator._process_nodes(subgraph, dot, scenario_uri)
+            VisualizationCreator._process_edges(subgraph, dot, added_nodes)
 
             if added_nodes:
                 output_path = f"{base_output_path}_{scenario_id}"
-                dot.render(output_path, cleanup=True)
-                logger.success(f"Graph saved as {output_path}.png")
+                rendered_path = dot.render(output_path, cleanup=True)
+                logger.success(f"Graph saved as {rendered_path}")
+                return rendered_path
             else:
                 logger.info(f"Scenario {scenario_id} skipped: no nodes to visualize.")
 
@@ -83,12 +90,12 @@ class VisualizationCreator:
         return dot
 
     @staticmethod
-    def _get_scenario_bgcolor_for_uri(laderr_graph: Graph, scenario_uri: URIRef) -> str:
+    def _get_scenario_bgcolor_for_uri(graph: Graph, scenario_uri: URIRef) -> str:
         scenario_colors = {
             'resilient': '#EBFFEB',
             'vulnerable': '#FDE8E8'
         }
-        status = laderr_graph.value(scenario_uri, LADERR_NS.status)
+        status = graph.value(scenario_uri, LADERR_NS.status)
         if status:
             status_value = str(status).split("#")[-1].lower()
             return scenario_colors.get(status_value, "white")
@@ -126,10 +133,7 @@ class VisualizationCreator:
         is_vulnerability = "Vulnerability" in instance_types
 
         if is_capability and is_vulnerability:
-            if is_disabled:
-                fillcolor = "darkgreen:darkred"
-            else:
-                fillcolor = "lightgreen:lightcoral"
+            fillcolor = "darkgreen:darkred" if is_disabled else "lightgreen:lightcoral"
             style = "wedged"
         elif is_capability:
             fillcolor = "darkgreen" if is_disabled else "lightgreen"

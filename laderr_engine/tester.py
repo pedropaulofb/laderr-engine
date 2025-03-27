@@ -13,7 +13,4 @@ graph = GraphHandler.create_laderr_graph("examples/example_doc_P_in.toml")
 
 graph_dict = GraphHandler.split_graph_by_scenario(graph)
 for key in graph_dict.keys():
-    ic(key)
-    ic(graph_dict[key].serialize())
-
-# ReportGenerator.generate_pdf_report(graph)
+    ReportGenerator.generate_pdf_report(graph_dict[key], "examples/example_doc_P.pdf")
