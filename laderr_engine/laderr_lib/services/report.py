@@ -374,7 +374,7 @@ class ReportGenerator:
             line_x1 = 2 * cm
             line_x2 = line_x1 + 2.5 * cm
             line_y = y + 0.5 * cm
-            arrow_size = 0.25 * cm
+            arrow_size = 0.35 * cm
 
             # Draw the edge line
             c.setStrokeColor(color)
@@ -398,14 +398,46 @@ class ReportGenerator:
             c.drawString(line_x2 + 0.4 * cm, line_y - 0.2 * cm, description)
 
         edge_explanations = [
-            (colors.blue, "Entity-to-entity relations: protects, inhibits, threatens."),
-            (colors.orange, "Resilience relations: preserves, preservesAgainst, preservesDespite, sustains."),
-            (colors.darkred, "A Capability disables a Vulnerability."),
-            (colors.black, "Capability exploits Vulnerability, or Vulnerability exposes Capability."),
+            (colors.blue, "Entity-to-entity links: protects, inhibits, threatens."),
+            (colors.orange, "Resilience links: preserves, preservesAgainst, preservesDespite, sustains."),
+            (colors.darkred, "A capability disables a vulnerability."),
+            (colors.black, "Causal links: capability exploits, vulnerability exposes."),
             (colors.green, "No damage: cannot or did not occur."),
             (colors.red, "Damage: can or has occurred."),
+            ("diamond-left", "Relations from Entities to their Capabilities, Vulnerabilities, or Resiliences."),
         ]
 
-        for color, explanation in edge_explanations:
-            draw_edge_legend(y, color, explanation)
+        for spec, description in edge_explanations:
+            if spec == "diamond-left":
+                # Line start
+                line_x1 = 2 * cm
+                line_x2 = line_x1 + 2.5 * cm
+                line_y = y + 0.5 * cm
+                diamond_size = 0.5 * cm  # Slightly bigger
+
+                # Adjust diamond so its left tip aligns with line start (line_x1)
+                left_tip_x = line_x1
+                diamond = c.beginPath()
+                diamond.moveTo(left_tip_x, line_y)  # left point
+                diamond.lineTo(left_tip_x + diamond_size / 2, line_y + diamond_size / 2)  # top
+                diamond.lineTo(left_tip_x + diamond_size, line_y)  # right point
+                diamond.lineTo(left_tip_x + diamond_size / 2, line_y - diamond_size / 2)  # bottom
+                diamond.close()
+
+                c.setFillColor(colors.black)
+                c.drawPath(diamond, fill=1, stroke=0)
+
+                # Draw the line starting from the right edge of the diamond
+                c.setStrokeColor(colors.black)
+                c.setLineWidth(2)
+                c.line(left_tip_x, line_y, line_x2, line_y)
+
+                # Description
+                c.setFillColor(colors.black)
+                c.setFont("Helvetica", 10)
+                c.drawString(line_x2 + 0.4 * cm, line_y - 0.2 * cm, description)
+
+            else:
+                draw_edge_legend(y, spec, description)
+
             y -= 1.2 * cm
