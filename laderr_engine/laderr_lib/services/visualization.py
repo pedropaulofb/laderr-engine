@@ -6,6 +6,7 @@ LaDeRR RDF models, extracts entities and relationships, applies predefined style
 """
 import contextlib
 import io
+import tempfile
 
 import graphviz
 from loguru import logger
@@ -59,7 +60,6 @@ class VisualizationCreator:
                 with contextlib.redirect_stderr(io.StringIO()):
                     rendered_path = dot.render(output_path, cleanup=True)
 
-                logger.success(f"Graph saved as {rendered_path}")
                 rendered_paths.append(rendered_path)
             else:
                 logger.info(f"Scenario {scenario_id} skipped: no nodes to visualize.")
