@@ -22,7 +22,7 @@ from laderr_engine.laderr_lib.services.graph import GraphHandler
 from laderr_engine.laderr_lib.services.reasoning import ReasoningHandler
 from laderr_engine.laderr_lib.services.specification import SpecificationHandler
 from laderr_engine.laderr_lib.services.validation import ValidationHandler
-from laderr_engine.laderr_lib.services.visualization import GraphCreator
+from laderr_engine.laderr_lib.services.visualization import VisualizationCreator
 
 
 class Laderr:
@@ -177,7 +177,7 @@ class Laderr:
         :param verbose: Whether to log messages.
         :type verbose: bool
         """
-        GraphCreator.create_graph_visualization(laderr_graph, output_file_path)
+        VisualizationCreator.create_graph_visualization(laderr_graph, output_file_path)
         if verbose:
             logger.success(f"Visualization successfully saved to {output_file_path}")
 
@@ -246,7 +246,7 @@ class Laderr:
                 logger.success(f"Pre-processed graph saved to {output_file_base}_pre.ttl")
 
         if save_visualization_pre:
-            GraphCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_pre")
+            VisualizationCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_pre")
             if verbose:
                 logger.success(f"Pre-processed visualization saved to {output_file_base}_pre")
 
@@ -267,7 +267,7 @@ class Laderr:
                 logger.success(f"Processed graph saved to {output_file_base}_post.ttl")
 
         if save_visualization_post:
-            GraphCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_post")
+            VisualizationCreator.create_graph_visualization(laderr_graph, f"{output_file_base}_post")
             if verbose:
                 logger.success(f"Processed visualization saved to {output_file_base}_post")
 

@@ -13,7 +13,7 @@ from rdflib import Graph, RDF, BNode, URIRef, RDFS
 from laderr_engine.laderr_lib.constants import LADERR_NS
 
 
-class GraphCreator:
+class VisualizationCreator:
     """
     Handles visualization of RDF graphs using Graphviz.
 
@@ -29,7 +29,7 @@ class GraphCreator:
             scenario_status = laderr_graph.value(scenario, LADERR_NS.status)
             scenario_situation = laderr_graph.value(scenario, LADERR_NS.situation)
 
-            bgcolor = GraphCreator._get_scenario_bgcolor_for_uri(laderr_graph, scenario)
+            bgcolor = VisualizationCreator._get_scenario_bgcolor_for_uri(laderr_graph, scenario)
 
             # Clean label text format
             situation_str = str(scenario_situation).split("#")[-1].upper() if scenario_situation else "UNKNOWN"
@@ -39,10 +39,10 @@ class GraphCreator:
             label_text = f"[{situation_str}] Scenario {label_str}: {status_str}"
 
             # Just pass the full label text (already constructed)
-            dot = GraphCreator._initialize_graph(bgcolor, label_text)
+            dot = VisualizationCreator._initialize_graph(bgcolor, label_text)
 
-            added_nodes = GraphCreator._process_nodes(laderr_graph, dot, scenario)
-            GraphCreator._process_edges(laderr_graph, dot, added_nodes)
+            added_nodes = VisualizationCreator._process_nodes(laderr_graph, dot, scenario)
+            VisualizationCreator._process_edges(laderr_graph, dot, added_nodes)
 
             if added_nodes:
                 output_path = f"{base_output_path}_{scenario_id}"
@@ -197,9 +197,9 @@ class GraphCreator:
             if "Resilience" in instance_types:
                 style = {"shape": "ellipse", "color": "black", "style": "filled", "fillcolor": "orange"}
             elif any(item in instance_types for item in ["Disposition", "Capability", "Vulnerability"]):
-                style = GraphCreator._get_disposition_style(instance_types, is_disabled)
+                style = VisualizationCreator._get_disposition_style(instance_types, is_disabled)
             elif "Entity" in instance_types:
-                style = GraphCreator._get_entity_style(instance_types)
+                style = VisualizationCreator._get_entity_style(instance_types)
             else:
                 style = {"shape": "ellipse", "color": "black", "style": "filled"}
 

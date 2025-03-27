@@ -363,3 +363,35 @@ class GraphHandler:
             graph.remove(triple)
 
         return graph
+
+
+    @staticmethod
+    def split_graph_by_scenario(graph: Graph) -> dict[str, Graph]:
+        """
+        Splits the input graph into separate subgraphs for each Scenario.
+
+        Returns:
+            A dictionary where keys are scenario identifiers and values are RDFLib Graphs.
+        """
+        from rdflib import RDF
+
+        scenario_graphs = {}
+        for scenario in graph.subjects(RDF.type, LADERR_NS.Scenario):
+            scenario_id = str(scenario).split("#")[-1]
+            subgraph = Graph()
+            subgraph.namespace_manager = graph.namespace_manager  # preserve bindings
+
+            # Include scenario-level triples
+            for triple in graph.triples((scenario, None, None)):
+                subgraph.add(triple)
+
+            # Add all components of the scenario
+            for _, _, component in graph.triples((scenario, LADERR_NS.components, None)):
+                for triple in graph.triples((component, None, None)):
+                    subgraph.add(triple)
+                for triple in graph.triples((None, None, component)):
+                    subgraph.add(triple)
+
+            scenario_graphs[scenario_id] = subgraph
+
+        return scenario_graphs
