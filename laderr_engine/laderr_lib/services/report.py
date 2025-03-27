@@ -1,13 +1,12 @@
-from rdflib import Graph, RDF, Namespace
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.units import cm
-from reportlab.lib import colors
-import matplotlib.pyplot as plt
-import pandas as pd
-import tempfile
 import os
-import matplotlib.ticker as ticker
+import tempfile
+
+import matplotlib.pyplot as plt
+from rdflib import Graph, RDF, Namespace
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from reportlab.pdfgen import canvas
 
 from laderr_engine.laderr_lib.constants import LADERR_NS
 from laderr_engine.laderr_lib.services.graph import GraphHandler
@@ -34,7 +33,6 @@ class ReportGenerator:
                 continue
             class_counts[class_name] = class_counts.get(class_name, 0) + 1
         return dict(sorted(class_counts.items(), key=lambda item: item[1], reverse=True))
-
 
     @staticmethod
     def calculate_resilience_metrics(graph: Graph) -> dict:
@@ -80,11 +78,7 @@ class ReportGenerator:
             elif not is_disabled and has_exploit:
                 exploited_enabled += 1
 
-        resilience_numerator = (
-            count_disabled_no_exploit +
-            count_disabled_with_exploit +
-            count_enabled_no_exploit
-        )
+        resilience_numerator = (count_disabled_no_exploit + count_disabled_with_exploit + count_enabled_no_exploit)
         resilience_index = resilience_numerator / count_total_vul if count_total_vul > 0 else 0.0
         vulnerability_index = 1 - resilience_index
 
@@ -94,25 +88,15 @@ class ReportGenerator:
         subtyped_entities = assets | threats | controls
         unclassified = entities - subtyped_entities
 
-        return {
-            "resilience_index": f"{resilience_index:.2%}",
-            "vulnerability_index": f"{vulnerability_index:.2%}",
-            "total_vulnerabilities": count_total_vul,
-            "enabled_vulnerabilities": enabled_vul,
-            "disabled_vulnerabilities": disabled_vul,
-            "exploited_enabled_vulnerabilities": exploited_enabled,
+        return {"resilience_index": f"{resilience_index:.2%}", "vulnerability_index": f"{vulnerability_index:.2%}",
+            "total_vulnerabilities": count_total_vul, "enabled_vulnerabilities": enabled_vul,
+            "disabled_vulnerabilities": disabled_vul, "exploited_enabled_vulnerabilities": exploited_enabled,
             "exploited_disabled_vulnerabilities": exploited_disabled,
             "not_exploited_enabled_vulnerabilities": not_exploited_enabled,
-            "not_exploited_disabled_vulnerabilities": not_exploited_disabled,
-            "total_capabilities": count_total_cap,
-            "enabled_capabilities": enabled_cap,
-            "disabled_capabilities": disabled_cap,
-            "total_entities": len(entities),
-            "assets": len(assets),
-            "threats": len(threats),
-            "controls": len(controls),
-            "unclassified_entities": len(unclassified),
-        }
+            "not_exploited_disabled_vulnerabilities": not_exploited_disabled, "total_capabilities": count_total_cap,
+            "enabled_capabilities": enabled_cap, "disabled_capabilities": disabled_cap, "total_entities": len(entities),
+            "assets": len(assets), "threats": len(threats), "controls": len(controls),
+            "unclassified_entities": len(unclassified), }
 
     @staticmethod
     def generate_pdf_report(graph: Graph, output_path: str = "laderr_class_report.pdf"):
@@ -155,7 +139,38 @@ class ReportGenerator:
                 scenario_graph, tempfile.mktemp(suffix=f"_{scenario_id}")[:-4]
             )
 
-            y = draw_main_title(c, f"Scenario: {scenario_id}", height - 2 * cm)
+            title_top_y = height - 2 * cm
+            y = draw_main_title(c, f"Report for Scenario {scenario_id}", title_top_y)
+
+            if visualization_path and os.path.exists(visualization_path):
+                title_bottom_y = y
+                max_vis_height = title_bottom_y - 2 * cm  # 2 cm bottom margin
+
+                aspect_ratio = 1.0  # fallback aspect ratio
+                try:
+                    from PIL import Image
+                    with Image.open(visualization_path) as img:
+                        vis_width, vis_height = img.size
+                        aspect_ratio = vis_width / vis_height
+                except Exception:
+                    pass
+
+                vis_display_width = width
+                vis_display_height = vis_display_width / aspect_ratio
+
+                if vis_display_height > max_vis_height:
+                    vis_display_height = max_vis_height
+                    vis_display_width = vis_display_height * aspect_ratio
+
+                x = (width - vis_display_width) / 2
+                y = title_bottom_y - vis_display_height
+                c.drawImage(visualization_path, x, y, vis_display_width, vis_display_height)
+                os.remove(visualization_path)
+
+            # Add legend page
+            ReportGenerator._draw_legend_page(c, width, height)
+
+            c.showPage()
 
             # SECTION: Classes
             chart_data = {
@@ -169,7 +184,7 @@ class ReportGenerator:
                 "Vulnerability": "#eb7575"
             }
             pie_path = tempfile.mktemp(suffix=".png")
-            y, total = draw_section_title(c, "Instances per Class", sum(chart_data.values()), y)
+            y, total = draw_section_title(c, "Instances per Class", sum(chart_data.values()), height - 2 * cm)
             ReportGenerator._create_pie_chart(chart_data, pie_path, colors_map, "")
             c.drawImage(pie_path, 2 * cm, y - (ReportGenerator.PLOT_HEIGHT_CM - 1) * cm,
                         ReportGenerator.PLOT_WIDTH_CM * cm, ReportGenerator.PLOT_HEIGHT_CM * cm)
@@ -247,15 +262,8 @@ class ReportGenerator:
             y -= 0.6 * cm
             c.drawString(2 * cm, y, f"Vulnerability Index: {metrics['vulnerability_index']}")
 
-            # Last Page: Visualization
-            if visualization_path and os.path.exists(visualization_path):
-                c.showPage()
-                c.drawImage(visualization_path, 3 * cm, 4 * cm, width - 6 * cm, 14 * cm, preserveAspectRatio=True)
-                c.setFont("Helvetica-Bold", 12)
-                c.drawCentredString(width / 2, 2.5 * cm, f"Scenario {scenario_id} Representation")
-                os.remove(visualization_path)
-
         c.save()
+
 
 
     @staticmethod
@@ -283,34 +291,121 @@ class ReportGenerator:
         plotted_colors = [colors_map.get(label, 'gray') for label in plotted_labels]
 
         # Create a pie chart with smaller size (2/3) by shrinking radius manually
-        wedges, texts, autotexts = ax.pie(
-            plotted_sizes,
-            labels=None,
-            colors=plotted_colors,
-            autopct=make_autopct(plotted_sizes),
-            startangle=90,
-            counterclock=False,
-            textprops={'fontsize': 12, 'weight': 'bold'},
-            radius=0.67
-        )
+        ax.pie(plotted_sizes, labels=None, colors=plotted_colors,
+            autopct=make_autopct(plotted_sizes), startangle=90, counterclock=False,
+            textprops={'fontsize': 12, 'weight': 'bold'}, radius=0.67)
 
         ax.axis("equal")  # keep pie circular
 
         # Construct legend with all categories (including those with value 0)
         all_labels = [f"{label} ({data[label]})" for label in data.keys()]
         legend_colors = [colors_map.get(label, 'gray') for label in data.keys()]
-        patches = [plt.Line2D([0], [0], marker='o', color='w', label=l,
-                              markerfacecolor=c, markersize=10)
-                   for l, c in zip(all_labels, legend_colors)]
+        patches = [plt.Line2D([0], [0], marker='o', color='w', label=l, markerfacecolor=c, markersize=10) for l, c in
+                   zip(all_labels, legend_colors)]
 
-        ax.legend(
-            handles=patches,
-            loc="lower center",
-            bbox_to_anchor=(0.5, -0.15),
-            ncol=2,
-            fontsize=12,
-            frameon=False
-        )
+        ax.legend(handles=patches, loc="lower center", bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=12, frameon=False)
 
         plt.savefig(output_path, dpi=300)
         plt.close()
+
+    @staticmethod
+    def _draw_legend_page(c: canvas.Canvas, width, height):
+        c.showPage()
+        y = height - 2 * cm
+
+        # Main Title (Blue Header)
+        c.setFillColor(colors.lightblue)
+        c.rect(2 * cm, y, width - 4 * cm, 1.0 * cm, stroke=0, fill=1)
+        c.setFillColor(colors.black)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(2.2 * cm, y + 0.3 * cm, "Legend for Scenario Elements")
+        y -= 2 * cm
+
+        # Second-Level Header (Gray) - Node Types
+        c.setFillColor(colors.whitesmoke)
+        c.rect(2 * cm, y, width - 4 * cm, 0.8 * cm, stroke=0, fill=1)
+        c.setFillColor(colors.black)
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(2.2 * cm, y + 0.25 * cm, "Node Types")
+        y -= 1.2 * cm
+
+        def draw_node_legend(x, y, shape, color, label):
+            size = 1.0 * cm
+            c.setFillColor(color)
+            c.setStrokeColor(colors.black)
+            c.setLineWidth(1)
+            if shape == "circle":
+                c.circle(x + size / 2, y + size / 2, size / 2, fill=1, stroke=1)
+            elif shape == "square":
+                c.rect(x, y, size, size, fill=1, stroke=1)
+            elif shape == "ellipse":
+                c.ellipse(x, y, x + size * 1.6, y + size, fill=1, stroke=1)
+            c.setFillColor(colors.black)
+            c.setFont("Helvetica", 12)
+            c.drawString(x + size + 0.4 * cm, y + 0.2 * cm, label)
+
+        node_items = [
+            ("circle", colors.lightgreen, "Enabled Capability"),
+            ("circle", colors.darkgreen, "Disabled Capability"),
+            ("circle", colors.lightcoral, "Enabled Vulnerability"),
+            ("circle", colors.darkred, "Disabled Vulnerability"),
+            ("circle", colors.orange, "Resilience"),
+            ("square", colors.lightgreen, "Asset"),
+            ("square", colors.lightblue, "Control"),
+            ("square", colors.lightcoral, "Threat"),
+            ("square", colors.gray, "Unclassified Entity"),
+        ]
+
+        x = 2 * cm
+        for shape, color, label in node_items:
+            draw_node_legend(x, y, shape, color, label)
+            y -= 1.2 * cm
+
+        # Second-Level Header (Gray) - Edge Types
+        y -= 0.6 * cm
+        c.setFillColor(colors.whitesmoke)
+        c.rect(2 * cm, y, width - 4 * cm, 0.8 * cm, stroke=0, fill=1)
+        c.setFillColor(colors.black)
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(2.2 * cm, y + 0.25 * cm, "Edge Types")
+        y -= 1.2 * cm
+
+        def draw_edge_legend(y, color, description):
+            line_x1 = 2 * cm
+            line_x2 = line_x1 + 2.5 * cm
+            line_y = y + 0.5 * cm
+            arrow_size = 0.25 * cm
+
+            # Draw the edge line
+            c.setStrokeColor(color)
+            c.setLineWidth(2)
+            c.line(line_x1, line_y, line_x2, line_y)
+
+            # Draw filled triangle arrowhead pointing right
+            arrow = c.beginPath()
+            arrow.moveTo(line_x2, line_y)
+            arrow.lineTo(line_x2 - arrow_size, line_y + arrow_size / 1.5)
+            arrow.lineTo(line_x2 - arrow_size, line_y - arrow_size / 1.5)
+            arrow.close()
+
+            c.setFillColor(color)
+            c.setStrokeColor(color)
+            c.drawPath(arrow, fill=1, stroke=0)
+
+            # Description
+            c.setFont("Helvetica", 10)
+            c.setFillColor(colors.black)
+            c.drawString(line_x2 + 0.4 * cm, line_y - 0.2 * cm, description)
+
+        edge_explanations = [
+            (colors.blue, "Entity-to-entity relations: protects, inhibits, threatens."),
+            (colors.orange, "Resilience relations: preserves, preservesAgainst, preservesDespite, sustains."),
+            (colors.darkred, "A Capability disables a Vulnerability."),
+            (colors.black, "Capability exploits Vulnerability, or Vulnerability exposes Capability."),
+            (colors.green, "No damage: cannot or did not occur."),
+            (colors.red, "Damage: can or has occurred."),
+        ]
+
+        for color, explanation in edge_explanations:
+            draw_edge_legend(y, color, explanation)
+            y -= 1.2 * cm
