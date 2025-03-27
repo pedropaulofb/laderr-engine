@@ -33,132 +33,136 @@ class ReportGenerator:
             c = canvas.Canvas(scenario_output_path, pagesize=A4)
             width, height = A4
 
-            visualization_path = VisualizationCreator.create_graph_visualization(
+            visualization_paths = VisualizationCreator.create_graph_visualization(
                 scenario_graph, tempfile.mktemp(suffix=f"_{scenario_id}")[:-4]
             )
 
             title_top_y = height - 2 * cm
             y = ReportGenerator._draw_main_title(c, f"Report for Scenario {scenario_id}", title_top_y, width)
 
-            if visualization_path and os.path.exists(visualization_path):
-                title_bottom_y = y
-                max_vis_height = title_bottom_y - 2 * cm
+            for visualization_path in visualization_paths:
 
-                aspect_ratio = 1.0
-                try:
-                    from PIL import Image
-                    with Image.open(visualization_path) as img:
-                        vis_width, vis_height = img.size
-                        aspect_ratio = vis_width / vis_height
-                except Exception:
-                    pass
+                if visualization_path and os.path.exists(visualization_path):
+                    title_bottom_y = y
+                    max_vis_height = title_bottom_y - 2 * cm
 
-                vis_display_width = width
-                vis_display_height = vis_display_width / aspect_ratio
+                    aspect_ratio = 1.0
+                    try:
+                        from PIL import Image
+                        with Image.open(visualization_path) as img:
+                            vis_width, vis_height = img.size
+                            aspect_ratio = vis_width / vis_height
+                    except Exception:
+                        pass
 
-                if vis_display_height > max_vis_height:
-                    vis_display_height = max_vis_height
-                    vis_display_width = vis_display_height * aspect_ratio
+                    vis_display_width = width
+                    vis_display_height = vis_display_width / aspect_ratio
 
-                x = (width - vis_display_width) / 2
-                y = title_bottom_y - vis_display_height
-                c.drawImage(visualization_path, x, y, vis_display_width, vis_display_height)
-                os.remove(visualization_path)
+                    if vis_display_height > max_vis_height:
+                        vis_display_height = max_vis_height
+                        vis_display_width = vis_display_height * aspect_ratio
 
-            ReportGenerator._draw_legend_page(c, width, height)
+                    x = (width - vis_display_width) / 2
+                    y = title_bottom_y - vis_display_height
+                    c.drawImage(visualization_path, x, y, vis_display_width, vis_display_height)
+                    os.remove(visualization_path)
 
-            c.showPage()
-            chart_data = {
-                "Entity": metrics["total_entities"],
-                "Capability": metrics["total_capabilities"],
-                "Vulnerability": metrics["total_vulnerabilities"]
-            }
-            colors_map = {
-                "Entity": "lightgreen",
-                "Capability": "lightblue",
-                "Vulnerability": "#eb7575"
-            }
-            pie_path = tempfile.mktemp(suffix=".png")
-            y, total = ReportGenerator._draw_section_title(c, "Instances per Class", sum(chart_data.values()),
-                                                           height - 2 * cm, width)
-            ReportGenerator._create_pie_chart(chart_data, pie_path, colors_map, "")
-            c.drawImage(pie_path, 2 * cm, y - (ReportGenerator.PLOT_HEIGHT_CM - 1) * cm,
-                        ReportGenerator.PLOT_WIDTH_CM * cm, ReportGenerator.PLOT_HEIGHT_CM * cm)
-            c.setFont("Helvetica", 14)
-            c.drawString(2.2 * cm, y, f"Total Instances: {total}")
-            os.remove(pie_path)
+                ReportGenerator._draw_legend_page(c, width, height)
 
-            vuln_chart_data = {
-                "Enabled & Exploited": metrics["exploited_enabled_vulnerabilities"],
-                "Enabled & Not Exploited": metrics["not_exploited_enabled_vulnerabilities"],
-                "Disabled & Exploited": metrics["exploited_disabled_vulnerabilities"],
-                "Disabled & Not Exploited": metrics["not_exploited_disabled_vulnerabilities"]
-            }
-            colors_map_vuln = {
-                "Enabled & Exploited": "orange",
-                "Enabled & Not Exploited": "lightgreen",
-                "Disabled & Exploited": "#eb7575",
-                "Disabled & Not Exploited": "gray"
-            }
-            pie_path = tempfile.mktemp(suffix=".png")
-            y, total = ReportGenerator._draw_subsection_title(c, "Vulnerabilities", metrics["total_vulnerabilities"], y,
-                                                              height, width)
-            ReportGenerator._create_pie_chart(vuln_chart_data, pie_path, colors_map_vuln, "")
-            c.drawImage(pie_path, 2 * cm, y - (ReportGenerator.PLOT_HEIGHT_CM - 1) * cm,
-                        ReportGenerator.PLOT_WIDTH_CM * cm, ReportGenerator.PLOT_HEIGHT_CM * cm)
-            c.setFont("Helvetica", 14)
-            c.drawString(2.2 * cm, y, f"Total Instances: {total}")
-            os.remove(pie_path)
+                c.showPage()
+                chart_data = {
+                    "Entity": metrics["total_entities"],
+                    "Capability": metrics["total_capabilities"],
+                    "Vulnerability": metrics["total_vulnerabilities"],
+                    "Resilience": metrics["total_resiliences"],
+                }
+                colors_map = {
+                    "Entity": "lightgreen",
+                    "Capability": "lightblue",
+                    "Vulnerability": "#eb7575",
+                    "Resilience": "orange",
+                }
+                pie_path = tempfile.mktemp(suffix=".png")
+                y, total = ReportGenerator._draw_section_title(c, "Instances per Class", sum(chart_data.values()),
+                                                               height - 2 * cm, width)
+                ReportGenerator._create_pie_chart(chart_data, pie_path, colors_map, "")
+                c.drawImage(pie_path, 2 * cm, y - (ReportGenerator.PLOT_HEIGHT_CM - 1) * cm,
+                            ReportGenerator.PLOT_WIDTH_CM * cm, ReportGenerator.PLOT_HEIGHT_CM * cm)
+                c.setFont("Helvetica", 14)
+                c.drawString(2.2 * cm, y, f"Total Instances: {total}")
+                os.remove(pie_path)
 
-            cap_data = {
-                "Enabled": metrics["enabled_capabilities"],
-                "Disabled": metrics["disabled_capabilities"]
-            }
-            colors_map_cap = {
-                "Enabled": "lightgreen",
-                "Disabled": "#eb7575"
-            }
-            pie_path = tempfile.mktemp(suffix=".png")
-            y, total = ReportGenerator._draw_subsection_title(c, "Capabilities", metrics["total_capabilities"], y,
-                                                              height, width)
-            ReportGenerator._create_pie_chart(cap_data, pie_path, colors_map_cap, "")
-            c.drawImage(pie_path, 2 * cm, y - (ReportGenerator.PLOT_HEIGHT_CM - 1) * cm,
-                        ReportGenerator.PLOT_WIDTH_CM * cm, ReportGenerator.PLOT_HEIGHT_CM * cm)
-            c.setFont("Helvetica", 14)
-            c.drawString(2.2 * cm, y, f"Total Instances: {total}")
-            os.remove(pie_path)
+                vuln_chart_data = {
+                    "Enabled & Exploited": metrics["exploited_enabled_vulnerabilities"],
+                    "Enabled & Not Exploited": metrics["not_exploited_enabled_vulnerabilities"],
+                    "Disabled & Exploited": metrics["exploited_disabled_vulnerabilities"],
+                    "Disabled & Not Exploited": metrics["not_exploited_disabled_vulnerabilities"]
+                }
+                colors_map_vuln = {
+                    "Enabled & Exploited": "orange",
+                    "Enabled & Not Exploited": "lightgreen",
+                    "Disabled & Exploited": "#eb7575",
+                    "Disabled & Not Exploited": "gray"
+                }
+                pie_path = tempfile.mktemp(suffix=".png")
+                y, total = ReportGenerator._draw_subsection_title(c, "Vulnerabilities", metrics["total_vulnerabilities"], y,
+                                                                  height, width)
+                ReportGenerator._create_pie_chart(vuln_chart_data, pie_path, colors_map_vuln, "")
+                c.drawImage(pie_path, 2 * cm, y - (ReportGenerator.PLOT_HEIGHT_CM - 1) * cm,
+                            ReportGenerator.PLOT_WIDTH_CM * cm, ReportGenerator.PLOT_HEIGHT_CM * cm)
+                c.setFont("Helvetica", 14)
+                c.drawString(2.2 * cm, y, f"Total Instances: {total}")
+                os.remove(pie_path)
 
-            entity_data = {
-                "Assets": metrics["assets"],
-                "Threats": metrics["threats"],
-                "Controls": metrics["controls"],
-                "Unclassified": metrics["unclassified_entities"]
-            }
-            colors_map_entities = {
-                "Assets": "lightgreen",
-                "Threats": "#eb7575",
-                "Controls": "lightblue",
-                "Unclassified": "gray"
-            }
-            pie_path = tempfile.mktemp(suffix=".png")
-            y, total = ReportGenerator._draw_subsection_title(c, "Entities", metrics["total_entities"], y, height,
-                                                              width)
-            ReportGenerator._create_pie_chart(entity_data, pie_path, colors_map_entities, "")
-            c.drawImage(pie_path, 2 * cm, y - (ReportGenerator.PLOT_HEIGHT_CM - 1) * cm,
-                        ReportGenerator.PLOT_WIDTH_CM * cm, ReportGenerator.PLOT_HEIGHT_CM * cm)
-            c.setFont("Helvetica", 14)
-            c.drawString(2.2 * cm, y, f"Total Instances: {total}")
-            os.remove(pie_path)
+                cap_data = {
+                    "Enabled": metrics["enabled_capabilities"],
+                    "Disabled": metrics["disabled_capabilities"]
+                }
+                colors_map_cap = {
+                    "Enabled": "lightgreen",
+                    "Disabled": "#eb7575"
+                }
+                pie_path = tempfile.mktemp(suffix=".png")
+                y, total = ReportGenerator._draw_subsection_title(c, "Capabilities", metrics["total_capabilities"], y,
+                                                                  height, width)
+                ReportGenerator._create_pie_chart(cap_data, pie_path, colors_map_cap, "")
+                c.drawImage(pie_path, 2 * cm, y - (ReportGenerator.PLOT_HEIGHT_CM - 1) * cm,
+                            ReportGenerator.PLOT_WIDTH_CM * cm, ReportGenerator.PLOT_HEIGHT_CM * cm)
+                c.setFont("Helvetica", 14)
+                c.drawString(2.2 * cm, y, f"Total Instances: {total}")
+                os.remove(pie_path)
 
-            c.showPage()
-            y, _ = ReportGenerator._draw_section_title(c, "Resilience & Vulnerability Indexes", None, height - 2 * cm,
-                                                       width)
-            c.setFont("Helvetica", 14)
-            c.drawString(2 * cm, y, f"Resilience Index: {metrics['resilience_index']}")
-            y -= 0.6 * cm
-            c.drawString(2 * cm, y, f"Vulnerability Index: {metrics['vulnerability_index']}")
+                entity_data = {
+                    "Assets": metrics["assets"],
+                    "Threats": metrics["threats"],
+                    "Controls": metrics["controls"],
+                    "Unclassified": metrics["unclassified_entities"]
+                }
+                colors_map_entities = {
+                    "Assets": "lightgreen",
+                    "Threats": "#eb7575",
+                    "Controls": "lightblue",
+                    "Unclassified": "gray"
+                }
+                pie_path = tempfile.mktemp(suffix=".png")
+                y, total = ReportGenerator._draw_subsection_title(c, "Entities", metrics["total_entities"], y, height,
+                                                                  width)
+                ReportGenerator._create_pie_chart(entity_data, pie_path, colors_map_entities, "")
+                c.drawImage(pie_path, 2 * cm, y - (ReportGenerator.PLOT_HEIGHT_CM - 1) * cm,
+                            ReportGenerator.PLOT_WIDTH_CM * cm, ReportGenerator.PLOT_HEIGHT_CM * cm)
+                c.setFont("Helvetica", 14)
+                c.drawString(2.2 * cm, y, f"Total Instances: {total}")
+                os.remove(pie_path)
 
-            c.save()
+                c.showPage()
+                y, _ = ReportGenerator._draw_section_title(c, "Resilience & Vulnerability Indexes", None, height - 2 * cm,
+                                                           width)
+                c.setFont("Helvetica", 14)
+                c.drawString(2 * cm, y, f"Resilience Index: {metrics['resilience_index']}")
+                y -= 0.6 * cm
+                c.drawString(2 * cm, y, f"Vulnerability Index: {metrics['vulnerability_index']}")
+
+                c.save()
 
     @staticmethod
     def _count_laderr_classes(graph: Graph) -> dict:
@@ -177,6 +181,7 @@ class ReportGenerator:
         vulnerabilities = set(graph.subjects(RDF.type, LADERR_NS.Vulnerability))
         capabilities = set(graph.subjects(RDF.type, LADERR_NS.Capability))
         entities = set(graph.subjects(RDF.type, LADERR_NS.Entity))
+        resiliences = set(graph.subjects(RDF.type, LADERR_NS.Resilience))
 
         disabled = LADERR_NS.disabled
         state = LADERR_NS.state
@@ -235,7 +240,8 @@ class ReportGenerator:
                 "enabled_capabilities": enabled_cap, "disabled_capabilities": disabled_cap,
                 "total_entities": len(entities),
                 "assets": len(assets), "threats": len(threats), "controls": len(controls),
-                "unclassified_entities": len(unclassified), }
+                "unclassified_entities": len(unclassified),
+                "total_resiliences": len(resiliences) }
 
     @staticmethod
     def _create_pie_chart(data: dict, output_path: str, colors_map: dict, title: str):

@@ -4,6 +4,8 @@ Graph Visualization Module for LaDeRR RDF Graphs.
 This module provides functionality to generate visual representations of RDF graphs using Graphviz. It processes
 LaDeRR RDF models, extracts entities and relationships, applies predefined styles, and outputs a PNG visualization.
 """
+import contextlib
+import io
 
 import graphviz
 from loguru import logger
@@ -49,13 +51,20 @@ class VisualizationCreator:
             added_nodes = VisualizationCreator._process_nodes(subgraph, dot, scenario_uri)
             VisualizationCreator._process_edges(subgraph, dot, added_nodes)
 
+            rendered_paths = []
             if added_nodes:
                 output_path = f"{base_output_path}_{scenario_id}"
-                rendered_path = dot.render(output_path, cleanup=True)
+
+                # Suppress Graphviz warnings
+                with contextlib.redirect_stderr(io.StringIO()):
+                    rendered_path = dot.render(output_path, cleanup=True)
+
                 logger.success(f"Graph saved as {rendered_path}")
-                return rendered_path
+                rendered_paths.append(rendered_path)
             else:
                 logger.info(f"Scenario {scenario_id} skipped: no nodes to visualize.")
+
+        return rendered_paths
 
     @staticmethod
     def _validate_output_path(output_file_path: str) -> None:
@@ -195,6 +204,7 @@ class VisualizationCreator:
         for s in added_nodes:
             instance_types = [str(o).split("#")[-1] for o in graph.objects(s, RDF.type)]
             instance_id = str(s).split("#")[-1]
+            instance_label = str(graph.value(s, RDFS.label)) or instance_id
             is_disabled = (s, LADERR_NS.state, LADERR_NS.disabled) in graph
 
             if "Resilience" in instance_types:
@@ -219,7 +229,7 @@ class VisualizationCreator:
                 height="0.6",
                 fontname="Arial",
                 fontsize="6",
-                label=f"<<B>{instance_id}</B>>",
+                label=f"<<B>{instance_label}</B>>",
                 margin="0.05"
             )
 

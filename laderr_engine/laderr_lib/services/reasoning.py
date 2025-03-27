@@ -1,5 +1,6 @@
 import hashlib
 
+from loguru import logger
 from owlrl import DeductiveClosure, RDFS_Semantics
 from rdflib import Graph
 
@@ -42,8 +43,6 @@ class ReasoningHandler:
         :return: The enriched RDF graph after reasoning.
         :rtype: Graph
         """
-        hash_before = 1
-        hash_after = 2
 
         base_prefix = GraphHandler.get_base_prefix(graph)
         graph = GraphHandler.create_combined_graph(graph)
@@ -52,8 +51,12 @@ class ReasoningHandler:
         graph.bind("", base_prefix)  # Bind the `laderr:` namespace
         graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
 
-        while hash_before != hash_after:
+        iteration = 0
+        while True:
+            iteration += 1
+            logger.success(f"Starting reasoning iteration {iteration}. Current number of triples is {len(graph)}.")
             hash_before = ReasoningHandler._calculate_hash(graph)
+
             DeductiveClosure(RDFS_Semantics).expand(graph)
             InferenceRules.execute_rule_disabled_state(graph)
             InferenceRules.execute_rule_protects(graph)
@@ -68,4 +71,8 @@ class ReasoningHandler:
 
             hash_after = ReasoningHandler._calculate_hash(graph)
 
+            if hash_before == hash_after:
+                break
+
+        logger.success(f"Reasoning concluded after {iteration} iteration(s). Final number of triples is {len(graph)}.")
         return GraphHandler.clean_graph(graph, base_prefix)

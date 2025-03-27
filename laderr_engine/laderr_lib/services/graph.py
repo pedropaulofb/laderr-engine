@@ -4,6 +4,7 @@ Module for handling RDF laderr_graph operations in the LaDeRR framework.
 This module provides functionalities for loading RDF schemas and saving RDF graphs in various formats.
 """
 import os
+from collections import defaultdict
 
 from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL, DCTERMS
@@ -291,6 +292,9 @@ class GraphHandler:
         # Merge data laderr_graph
         laderr_graph += laderr_data_graph
 
+        # Duplicate elements in multiple scenarios
+        laderr_graph = GraphHandler._replicate_shared_components_per_scenario(laderr_graph)
+
         # Validate base URI and bind namespaces
         laderr_graph.bind("", base_uri)  # Bind the `laderr:` namespace
         laderr_graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
@@ -393,3 +397,95 @@ class GraphHandler:
             scenario_graphs[scenario_id] = subgraph
 
         return scenario_graphs
+
+    @staticmethod
+    def _replicate_shared_components_per_scenario(graph: Graph) -> Graph:
+        """
+        For components included in multiple scenarios, replicate them per scenario
+        by creating unique URIs (e.g., appending '_s1') and removing the original.
+
+        :param graph: The original RDFLib graph.
+        :return: A new graph with scenario-specific replicated components only.
+        """
+        component_scenarios = defaultdict(set)
+
+        # Step 1: Find all components and the scenarios they appear in
+        for scenario in graph.subjects(RDF.type, LADERR_NS.Scenario):
+            for _, _, component in graph.triples((scenario, LADERR_NS.components, None)):
+                component_scenarios[component].add(scenario)
+
+        shared_components = {c for c, scenarios in component_scenarios.items() if len(scenarios) > 1}
+        new_graph = Graph()
+        new_graph.namespace_manager = graph.namespace_manager
+
+        # Step 2: Copy all triples EXCEPT those related to shared components
+        for s, p, o in graph:
+            # Skip if the triple involves a shared component or points to one
+            if (s in shared_components) or (o in shared_components):
+                continue
+            new_graph.add((s, p, o))
+
+        # Step 3: Replicate shared components per scenario
+        for component in shared_components:
+            original_uri_str = str(component)
+
+            for scenario in component_scenarios[component]:
+                scenario_id = str(scenario).split("#")[-1]
+                replicated_uri = URIRef(f"{original_uri_str}_{scenario_id}")
+
+                # Log duplication
+                logger.info(
+                    f"Replicating shared component '{original_uri_str}' as '{replicated_uri}' for scenario '{scenario_id}'."
+                )
+
+                # Add the scenario-specific laderr:components triple
+                new_graph.add((scenario, LADERR_NS.components, replicated_uri))
+
+                # Copy outgoing triples from the original component
+                for p, o in graph.predicate_objects(component):
+                    if o in shared_components and scenario in component_scenarios[o]:
+                        # Nested shared component — redirect that one too
+                        replicated_o = URIRef(f"{str(o)}_{scenario_id}")
+                        new_graph.add((replicated_uri, p, replicated_o))
+                    else:
+                        new_graph.add((replicated_uri, p, o))
+
+                # Copy **only relevant incoming triples** — those not from other scenarios!
+                for s2, p2 in graph.subject_predicates(component):
+                    if p2 == LADERR_NS.components:
+                        continue  # already handled above
+
+                    # Special case: incoming triple from another shared component
+                    if s2 in shared_components:
+                        replicated_s2 = URIRef(f"{str(s2)}_{scenario_id}")
+                        new_graph.add((replicated_s2, p2, replicated_uri))
+                    else:
+                        new_graph.add((s2, p2, replicated_uri))
+
+        # Build reverse index: find out which components belong to which scenario
+        scenario_components = defaultdict(set)
+        for scenario in new_graph.subjects(RDF.type, LADERR_NS.Scenario):
+            for _, _, comp in new_graph.triples((scenario, LADERR_NS.components, None)):
+                scenario_components[scenario].add(comp)
+
+        # For every non-duplicated component, check and fix scenario mismatch in object references
+        for component in set(new_graph.subjects(RDF.type, LADERR_NS.Capability)):
+            if "_s1" in str(component) or "_s2" in str(component):
+                continue  # Skip already duplicated components
+
+            # Identify scenario of this component
+            scenario = next((s for s, comps in scenario_components.items() if component in comps), None)
+            if scenario is None:
+                continue
+
+            scenario_suffix = str(scenario).split("#")[-1]
+
+            # Get and fix all problematic object references in outgoing triples
+            for p, o in list(new_graph.predicate_objects(subject=component)):
+                if isinstance(o, URIRef) and (
+                        o.endswith("_s1") or o.endswith("_s2")
+                ) and not o.endswith(f"_{scenario_suffix}"):
+                    # Remove the wrong link
+                    new_graph.remove((component, p, o))
+
+        return new_graph

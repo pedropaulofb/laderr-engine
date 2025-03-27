@@ -52,15 +52,15 @@ class InferenceRules:
                 if (d2, LADERR_NS.state, disabled) not in laderr_graph:
                     new_triples.add((d2, LADERR_NS.state, disabled))
 
-        # Apply removals first
         for triple in removed_triples:
-            laderr_graph.remove(triple)
-            VERBOSE and logger.info(f"Removed: {triple[0]} laderr:state {triple[2]}")
+            if triple in laderr_graph:
+                laderr_graph.remove(triple)
+                VERBOSE and logger.info(f"Removed: {triple[0]} {triple[1]} {triple[2]}")
 
-        # Apply new inferences
         for triple in new_triples:
-            laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
+            if triple not in laderr_graph:
+                laderr_graph.add(triple)
+                VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
     def execute_rule_protects(laderr_graph: Graph):
@@ -82,8 +82,9 @@ class InferenceRules:
                     new_triples.add((o2, LADERR_NS.protects, o1))
 
         for triple in new_triples:
-            laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
+            if triple not in laderr_graph:
+                laderr_graph.add(triple)
+                VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
     def execute_rule_inhibits(laderr_graph: Graph):
@@ -131,8 +132,9 @@ class InferenceRules:
 
         # Apply the inferred triples
         for triple in new_triples:
-            laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
+            if triple not in laderr_graph:
+                laderr_graph.add(triple)
+                VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
     def execute_rule_threatens(laderr_graph: Graph):
@@ -155,8 +157,9 @@ class InferenceRules:
                     new_triples.add((o2, LADERR_NS.threatens, o1))
 
         for triple in new_triples:
-            laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
+            if triple not in laderr_graph:
+                laderr_graph.add(triple)
+                VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
     def execute_rule_resilience(laderr_graph: Graph):
@@ -231,8 +234,9 @@ class InferenceRules:
 
         # Apply inferred triples
         for triple in new_triples:
-            laderr_graph.add(triple)
-            VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
+            if triple not in laderr_graph:
+                laderr_graph.add(triple)
+                VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
     def execute_rule_resilience_scenario(laderr_graph: Graph):
