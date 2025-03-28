@@ -25,7 +25,7 @@ class VisualizationCreator:
 
     @staticmethod
     def create_graph_visualization(laderr_graph: Graph, base_output_path: str):
-        scenario_graphs = GraphHandler.split_graph_by_scenario(laderr_graph)
+        scenario_graphs = GraphHandler._split_graph_by_scenario(laderr_graph)
 
         for scenario_id, subgraph in scenario_graphs.items():
             scenario_uri = next(subgraph.subjects(RDF.type, LADERR_NS.Scenario), None)

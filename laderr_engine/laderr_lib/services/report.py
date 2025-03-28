@@ -4,7 +4,7 @@ import tempfile
 import textwrap
 
 import matplotlib.pyplot as plt
-from rdflib import Graph, RDF, Namespace
+from rdflib import Graph, RDF, Namespace, RDFS
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
@@ -39,7 +39,7 @@ class ReportGenerator:
 
     @staticmethod
     def generate_pdf_report(graph: Graph, output_path: str = "laderr_report"):
-        scenario_graphs = GraphHandler.split_graph_by_scenario(graph)
+        scenario_graphs = GraphHandler._split_graph_by_scenario(graph)
 
         for scenario_id, scenario_graph in scenario_graphs.items():
             metrics = ReportGenerator._calculate_resilience_metrics(scenario_graph)
@@ -52,7 +52,22 @@ class ReportGenerator:
                 tempfile.mktemp(suffix=f"_{scenario_id}")[:-4])
 
             title_top_y = height - 2 * cm
-            y = ReportGenerator._draw_main_title(c, f"Report for Scenario {scenario_id}", title_top_y, width)
+
+            # Try to get scenario label from the scenario_graph
+            scenario_label = scenario_id  # fallback to ID if no label is found
+
+            # Get the URI of the Scenario individual (there should only be one)
+            scenario_uri = None
+            for s in scenario_graph.subjects(RDF.type, LADERR_NS.Scenario):
+                scenario_uri = s
+                break
+
+            if scenario_uri:
+                label_literal = scenario_graph.value(subject=scenario_uri, predicate=RDFS.label)
+                if label_literal:
+                    scenario_label = str(label_literal)
+
+            y = ReportGenerator._draw_main_title(c, f"Report for Scenario: {scenario_label}", title_top_y, width)
 
             for visualization_path in visualization_paths:
 

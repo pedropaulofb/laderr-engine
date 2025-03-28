@@ -44,8 +44,8 @@ class ReasoningHandler:
         :rtype: Graph
         """
 
-        base_prefix = GraphHandler.get_base_prefix(graph)
-        graph = GraphHandler.create_combined_graph(graph)
+        base_prefix = GraphHandler._get_base_prefix(graph)
+        graph = GraphHandler._create_combined_graph(graph)
 
         # Rebind prefixes after merging
         graph.bind("", base_prefix)  # Bind the `laderr:` namespace
@@ -75,4 +75,4 @@ class ReasoningHandler:
                 break
 
         logger.success(f"Reasoning concluded after {iteration} iteration(s). Final number of triples is {len(graph)}.")
-        return GraphHandler.clean_graph(graph, base_prefix)
+        return GraphHandler._clean_graph(graph, base_prefix)

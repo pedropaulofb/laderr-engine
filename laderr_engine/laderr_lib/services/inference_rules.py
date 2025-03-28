@@ -219,7 +219,7 @@ class InferenceRules:
                         if existing_resilience is None:
                             # Create a unique Resilience instance
                             resilience_id = "R" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=2))
-                            base_uri = GraphHandler.get_base_prefix(laderr_graph)
+                            base_uri = GraphHandler._get_base_prefix(laderr_graph)
                             resilience_uri = URIRef(f"{base_uri}{resilience_id}")
 
                             new_triples.update({

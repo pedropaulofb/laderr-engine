@@ -40,7 +40,7 @@ class ValidationHandler:
         """
         from laderr_engine.laderr_lib.services.graph import GraphHandler
 
-        combined_graph = GraphHandler.create_combined_graph(laderr_graph)
+        combined_graph = GraphHandler._create_combined_graph(laderr_graph)
 
         shacl_graph = ValidationHandler._load_shacl_schemas(SHACL_FILES_PATH)
 
