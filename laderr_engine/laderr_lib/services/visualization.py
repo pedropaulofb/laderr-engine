@@ -6,7 +6,6 @@ LaDeRR RDF models, extracts entities and relationships, applies predefined style
 """
 import contextlib
 import io
-import tempfile
 
 import graphviz
 from loguru import logger

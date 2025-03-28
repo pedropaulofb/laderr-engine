@@ -72,7 +72,6 @@ class GraphHandler:
 
             # Serialize and save the laderr_graph
             graph.serialize(destination=file_path, format=format)
-            logger.success(f"Graph saved successfully to '{file_path}' in format '{format}'.")
         except ValueError as e:
             raise ValueError(f"Serialization format '{format}' is not supported.") from e
         except OSError as e:

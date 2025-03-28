@@ -334,5 +334,3 @@ class SpecificationHandler:
             toml_string = toml_string.replace("[\n    ", "[").replace(",\n    ", ", ").replace("\n]", "]")
             toml_string = re.sub(r",(\s*)]", "]", toml_string)
             toml_file.write(toml_string)
-
-        logger.success(f"LaDeRR specification successfully written to {output_file_path}")
