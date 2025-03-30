@@ -1,0 +1,26 @@
+@prefix laderr: <https://w3id.org/laderr#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+### Shape for Capability
+laderr:Shape_Capability a sh:NodeShape ;
+
+    sh:targetClass laderr:Capability ;
+
+    sh:closed true ;
+    sh:ignoredProperties (  laderr:description laderr:disables laderr:exploits laderr:exposes laderr:preserves laderr:preservesAgainst laderr:preservesDespite laderr:state laderr:sustains laderr:scenarios
+                            owl:sameAs owl:topObjectProperty rdf:type rdfs:label 
+                        ) ;
+
+    # Ensure each Capability is related to exactly one Entity
+    sh:property [
+        sh:path [ sh:inversePath laderr:capabilities ] ;
+        sh:class laderr:Entity ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "Each Capability must be related to exactly one Entity."@en ;
+    ] .

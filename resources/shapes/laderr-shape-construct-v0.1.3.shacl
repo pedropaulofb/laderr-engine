@@ -1,0 +1,49 @@
+@prefix laderr: <https://w3id.org/laderr#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+### Shape for Construct
+laderr:Shape_Construct a sh:NodeShape ;
+
+    sh:targetClass laderr:Construct ;
+
+    sh:closed true ;
+    sh:ignoredProperties (  laderr:canDamage laderr:cannotDamage laderr:capabilities laderr:components laderr:damaged laderr:disables laderr:exploits laderr:exposes laderr:inhibits laderr:scenarios
+                            laderr:negativeDamage laderr:notDamaged laderr:positiveDamage laderr:preserves laderr:preservesAgainst laderr:preservesDespite laderr:protects laderr:resiliences laderr:situation laderr:state laderr:status laderr:sustains laderr:threatens laderr:vulnerabilities 
+                            owl:sameAs owl:topObjectProperty rdf:type 
+                         ) ;
+
+    # description property constraints
+    sh:property [
+        sh:path laderr:description ;
+        sh:datatype xsd:string ;
+        sh:severity sh:Violation ;
+        sh:message "Invalid datatype for 'description'. Expected xsd:string."@en ;
+    ] ;
+    sh:property [
+        sh:path laderr:description ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "Multiple values for 'description' found in Construct instance."@en ;
+    ] ;
+
+    # label property constraints
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:severity sh:Violation ;
+        sh:message "Invalid datatype for 'label'. Expected xsd:string."@en ;
+    ] ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "Exactly one value for 'label' must be provided for Construct."@en ;
+    ] .
+
+
+

@@ -1,0 +1,32 @@
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix laderr: <https://w3id.org/laderr#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+### Shape for Disposition
+laderr:Shape_Disposition a sh:NodeShape ;
+
+    sh:targetClass laderr:Disposition ;
+
+    sh:closed true ;
+    sh:ignoredProperties (  laderr:description laderr:disables laderr:exploits laderr:exposes laderr:sustains laderr:scenarios
+                            rdf:type owl:sameAs rdfs:label owl:topObjectProperty
+                        ) ;
+
+    # State property constraints
+    sh:property [
+        sh:path laderr:state ;
+        sh:in ( laderr:enabled laderr:disabled ) ;
+        sh:severity sh:Violation ;
+        sh:message "Invalid value for property 'state'. Expected one of laderr:enabled or laderr:disabled."@en ;
+    ] ;
+    sh:property [
+        sh:path laderr:state ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "Exactly one value for 'state' must be provided for Disposition."@en ;
+    ] .

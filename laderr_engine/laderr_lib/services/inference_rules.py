@@ -4,7 +4,7 @@ import string
 from loguru import logger
 from rdflib import Graph, URIRef, RDF, RDFS, Literal
 
-from laderr_engine.laderr_lib.constants import LADERR_NS, VERBOSE
+from laderr_engine.laderr_lib.globals import LADERR_NS, VERBOSE
 from laderr_engine.laderr_lib.services.graph import GraphHandler
 
 
@@ -252,7 +252,7 @@ class InferenceRules:
             → components(s, r)
         )
         """
-        from laderr_engine.laderr_lib.constants import LADERR_NS, VERBOSE
+        from laderr_engine.laderr_lib.globals import LADERR_NS, VERBOSE
 
         for r in laderr_graph.subjects(RDF.type, LADERR_NS.Resilience):
             c1s = list(laderr_graph.objects(r, LADERR_NS.preserves))

@@ -20,7 +20,7 @@ import tomli_w  # Used only for writing TOML, not reading
 from loguru import logger
 from rdflib import Graph, RDF, Literal, URIRef, RDFS
 
-from laderr_engine.laderr_lib.constants import LADERR_NS, VERBOSE
+from laderr_engine.laderr_lib.globals import LADERR_NS, VERBOSE
 
 
 class SpecificationHandler:

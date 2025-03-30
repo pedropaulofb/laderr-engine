@@ -217,7 +217,6 @@ class Laderr:
             save_report_post: bool = True,
             save_spec: bool = True,
             verbose: bool = True
-            # TODO: Check defaults for all bools to ensure 'more common' configuration.
     ) -> None:
         """
         Loads, processes, and optionally validates and enriches a LaDeRR specification,

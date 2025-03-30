@@ -10,7 +10,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
 
-from laderr_engine.laderr_lib.constants import LADERR_NS
+from laderr_engine.laderr_lib.globals import LADERR_NS
 from laderr_engine.laderr_lib.services.graph import GraphHandler
 from laderr_engine.laderr_lib.services.visualization import VisualizationCreator
 

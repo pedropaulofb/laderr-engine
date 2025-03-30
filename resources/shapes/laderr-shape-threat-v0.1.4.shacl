@@ -1,0 +1,23 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix laderr: <https://w3id.org/laderr#> .
+
+### Shape for Threat
+laderr:Shape_Threat a sh:NodeShape ;
+
+    sh:targetClass laderr:Threat ;
+
+    sh:closed true ;
+    sh:ignoredProperties (  laderr:canDamage laderr:cannotDamage laderr:capabilities laderr:damaged laderr:description laderr:inhibits laderr:scenarios
+                            laderr:negativeDamage laderr:notDamaged laderr:positiveDamage laderr:protects laderr:resiliences laderr:vulnerabilities
+                            owl:sameAs owl:topObjectProperty rdf:type rdfs:label ) ;        
+
+    sh:property [
+        sh:path laderr:threatens ;
+        sh:minCount 1 ;
+        sh:severity sh:Warning ;
+        sh:message "Each Threat must have a 'threatens' relationship with at least one Asset."@en ;
+    ] .

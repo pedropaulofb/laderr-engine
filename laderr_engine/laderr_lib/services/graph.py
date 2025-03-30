@@ -8,9 +8,8 @@ from collections import defaultdict
 
 from loguru import logger
 from rdflib import Graph, RDF, XSD, Literal, RDFS, Namespace, URIRef, BNode, OWL, DCTERMS
-from rdflib.exceptions import ParserError
 
-from laderr_engine.laderr_lib.constants import LADERR_SCHEMA_PATH, LADERR_NS
+from laderr_engine.laderr_lib.globals import LADERR_NS, SHACL_FILES_PATH, LADERR_VOCABULARY_PATH
 from laderr_engine.laderr_lib.services.specification import SpecificationHandler
 
 
@@ -36,16 +35,16 @@ class GraphHandler:
         :raises FileNotFoundError: If the specified RDF file does not exist.
         :raises ValueError: If the RDF file is malformed or cannot be parsed.
         """
-        # Initialize the laderr_graph
         graph = Graph()
 
+        if not LADERR_VOCABULARY_PATH.exists():
+            raise FileNotFoundError(f"LaDeRR vocabulary file not found at: {LADERR_VOCABULARY_PATH}")
+
         try:
-            # Parse the file into the laderr_graph
-            graph.parse(LADERR_SCHEMA_PATH)
-            logger.info(f"Loaded LaDeRR schema from '{LADERR_SCHEMA_PATH}'.")
-        except (ParserError, ValueError) as e:
-            raise ValueError(
-                f"Failed to parse the RDF file '{LADERR_SCHEMA_PATH}'. Ensure it is a valid RDF file.") from e
+            graph.parse(LADERR_VOCABULARY_PATH)
+            logger.info(f"Loaded LaDeRR vocabulary from '{LADERR_VOCABULARY_PATH}'")
+        except Exception as e:
+            raise ValueError(f"Failed to parse vocabulary file '{LADERR_VOCABULARY_PATH}': {e}") from e
 
         return graph
 
@@ -210,7 +209,8 @@ class GraphHandler:
     def _convert_metadata_to_graph(metadata: dict[str, object], spec_data: dict[str, dict[str, object]]) -> tuple[
         Graph, Namespace]:
         expected_datatypes = {"baseURI": XSD.anyURI, "createdBy": XSD.string, "createdOn": XSD.dateTime,
-            "modifiedOn": XSD.dateTime, "title": XSD.string, "description": XSD.string, "version": XSD.string, }
+                              "modifiedOn": XSD.dateTime, "title": XSD.string, "description": XSD.string,
+                              "version": XSD.string, }
 
         base_uri = metadata.get("baseURI", "https://laderr.laderr#")
         data_ns = Namespace(base_uri)
@@ -284,14 +284,14 @@ class GraphHandler:
         # Merge data laderr_graph
         laderr_graph += laderr_data_graph
 
-        # Validate base URI and bind namespaces
+        # Bind namespaces
         laderr_graph.bind("", base_uri)  # Bind the `laderr:` namespace
         laderr_graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
 
         # Duplicate elements in multiple scenarios
         laderr_graph = GraphHandler._replicate_shared_components(laderr_graph)
 
-        # Validate base URI and bind namespaces
+        # Bind namespaces
         laderr_graph.bind("", base_uri)  # Bind the `laderr:` namespace
         laderr_graph.bind("laderr", LADERR_NS)  # Bind the `laderr:` namespace
 
@@ -431,6 +431,7 @@ class GraphHandler:
 
                 # Use a helper to generate the scenario-specific URI
                 new_component = URIRef(f"{component}_{scenario_id}")
+                new_graph.add((new_component, RDF.type, LADERR_NS.ScenarioComponent))
 
                 # Add type, label, and all Literal or in-scenario URIRef properties
                 for p, o in original_graph.predicate_objects(component):
@@ -472,7 +473,7 @@ class GraphHandler:
                 new_graph.add((scenario, LADERR_NS.components, new_component))
 
         new_graph = GraphHandler._update_specification_constructs(original_graph, new_graph, shared_components,
-            component_scenarios)
+                                                                  component_scenarios)
 
         return new_graph
 

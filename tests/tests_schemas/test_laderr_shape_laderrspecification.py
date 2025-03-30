@@ -2,7 +2,7 @@ import pytest
 from pyshacl import validate
 from rdflib import Graph, Namespace, URIRef, Literal, RDF, XSD
 
-from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH
+from laderr_engine.laderr_lib.globals import SHACL_FILES_PATH
 from tests.utils import find_file_by_partial_name
 
 LADERR = Namespace("https://w3id.org/laderr#")

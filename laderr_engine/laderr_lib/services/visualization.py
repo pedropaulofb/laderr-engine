@@ -11,7 +11,7 @@ import graphviz
 from loguru import logger
 from rdflib import Graph, RDF, BNode, URIRef, RDFS
 
-from laderr_engine.laderr_lib.constants import LADERR_NS
+from laderr_engine.laderr_lib.globals import LADERR_NS
 from laderr_engine.laderr_lib.services.graph import GraphHandler
 
 

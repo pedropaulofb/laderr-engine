@@ -1,8 +1,0 @@
-baseURI = "https://example.org#"
-title = "Flood Risk and Resilience Model"
-description = "A socio-ecological system model for flood risk and resilience."
-version = "1.1"
-createdBy = "Pedro Paulo F. Barcelos"
-createdOn = "2025-02-10T14:30:00Z"
-modifiedOn = "2025-03-01T10:15:00Z"
-scenario = "operational"

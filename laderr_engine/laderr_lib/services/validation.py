@@ -11,7 +11,7 @@ from loguru import logger
 from pyshacl import validate
 from rdflib import Graph
 
-from laderr_engine.laderr_lib.constants import SHACL_FILES_PATH, VERBOSE
+from laderr_engine.laderr_lib.globals import SHACL_FILES_PATH, VERBOSE
 
 
 class ValidationHandler:
