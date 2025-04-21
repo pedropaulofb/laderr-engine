@@ -34,7 +34,7 @@ def test_execute_rule_threatens(laderr_graph_with_exploiting_capability):
     g, entity1, entity2 = laderr_graph_with_exploiting_capability
 
     # Execute the inference rule
-    InferenceRules.execute_rule_threatens(g)
+    InferenceRules.execute_rule_entity_threatens(g)
 
     # Assert that the threatens relationship was inferred
     assert (entity1, LADERR.threatens, entity2) in g, \
@@ -50,7 +50,7 @@ def test_no_exploits_no_threatens_inferred():
     g.add((entity1, LADERR.capabilities, EXAMPLE.capability1))
     g.add((entity2, LADERR.vulnerabilities, EXAMPLE.vulnerability1))
 
-    InferenceRules.execute_rule_threatens(g)
+    InferenceRules.execute_rule_entity_threatens(g)
 
     assert (entity1, LADERR.threatens, entity2) not in g, \
         "No exploits defined, so no threatens should be inferred."
@@ -71,7 +71,7 @@ def test_threatens_already_exists():
     # Manually add the threatens relation
     g.add((entity1, LADERR.threatens, entity2))
 
-    InferenceRules.execute_rule_threatens(g)
+    InferenceRules.execute_rule_entity_threatens(g)
 
     assert len(list(g.triples((entity1, LADERR.threatens, entity2)))) == 1, \
         "threatens relationship should not be duplicated."

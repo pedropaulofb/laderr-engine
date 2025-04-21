@@ -56,7 +56,7 @@ def test_execute_rule_inhibits(laderr_graph_with_inhibiting_capability):
     g, entity1, entity2 = laderr_graph_with_inhibiting_capability
 
     # Execute the inference rule
-    InferenceRules.execute_rule_inhibits(g)
+    InferenceRules.execute_rule_entity_inhibits(g)
 
     # Assert that the inhibits relationship was inferred
     assert (entity1, LADERR.inhibits, entity2) in g, "Expected inhibits relationship was not inferred."
@@ -101,7 +101,7 @@ def test_no_inhibits_inferred_when_conditions_not_met(add_disables, add_exploits
         g.add((capability2, LADERR.exploits, vulnerability1))
 
     # Execute inference rule
-    InferenceRules.execute_rule_inhibits(g)
+    InferenceRules.execute_rule_entity_inhibits(g)
 
     # Assert that no inhibition is inferred
     assert (entity1, LADERR.inhibits,
@@ -138,7 +138,7 @@ def test_inhibits_already_exists():
     # Manually state the inhibits relation
     g.add((entity1, LADERR.inhibits, entity2))
 
-    InferenceRules.execute_rule_inhibits(g)
+    InferenceRules.execute_rule_entity_inhibits(g)
 
     # Ensure there is only ONE inhibits relationship (not duplicated)
     assert len(
@@ -167,6 +167,6 @@ def test_self_inhibition_not_inferred():
     g.add((capability1, LADERR.disables, vulnerability1))
     g.add((capability1, LADERR.exploits, vulnerability1))  # Exploiting the same vulnerability
 
-    InferenceRules.execute_rule_inhibits(g)
+    InferenceRules.execute_rule_entity_inhibits(g)
 
     assert (entity1, LADERR.inhibits, entity1) not in g, "Entities should not inhibit themselves."

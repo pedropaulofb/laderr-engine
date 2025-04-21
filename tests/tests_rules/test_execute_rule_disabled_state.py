@@ -68,7 +68,7 @@ def test_execute_rule_disabled_state_various_states(type1: URIRef, type2: URIRef
     g.add((disposition1, LADERR.disables, disposition2))
 
     DeductiveClosure(RDFS_Semantics).expand(g)
-    InferenceRules.execute_rule_disabled_state(g)
+    InferenceRules.execute_rule_disposition_state(g)
 
     # Ensure the expected state of d1 is present
     assert (disposition1, LADERR.state, LADERR.enabled) in g, \
@@ -101,7 +101,7 @@ def test_execute_rule_with_missing_states():
 
     # No initial states
 
-    InferenceRules.execute_rule_disabled_state(g)
+    InferenceRules.execute_rule_disposition_state(g)
 
     assert (disposition1, LADERR.state, LADERR.enabled) in g, \
         "Disposition1 should be inferred as enabled."
@@ -126,7 +126,7 @@ def test_execute_rule_disabled_state_no_dispositions(empty_laderr_graph):
     """
     initial_triples = set(empty_laderr_graph)  # Capture initial state of the graph
 
-    InferenceRules.execute_rule_disabled_state(empty_laderr_graph)
+    InferenceRules.execute_rule_disposition_state(empty_laderr_graph)
 
     assert set(empty_laderr_graph) == initial_triples, \
         "Graph should remain unchanged when no dispositions exist."

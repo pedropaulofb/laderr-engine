@@ -64,7 +64,7 @@ def test_resilience_inferred(laderr_graph_with_valid_resilience_case):
     """
     g, entity1, capability1, capability2, capability3, vulnerability1 = laderr_graph_with_valid_resilience_case
 
-    InferenceRules.execute_rule_resilience(g)
+    InferenceRules.execute_rule_resilience_participants(g)
 
     resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
     assert len(resilience_instances) == 1, "Expected exactly one inferred Resilience instance."
@@ -96,10 +96,10 @@ def test_resilience_inferred_without_enabled_capability2(laderr_graph_with_valid
     g.add((capability2, LADERR.state, LADERR.disabled))
 
     # First, enforce the disabled state rule, which should re-enable capability2
-    InferenceRules.execute_rule_disabled_state(g)
+    InferenceRules.execute_rule_disposition_state(g)
 
     # Then, check if resilience is inferred as expected
-    InferenceRules.execute_rule_resilience(g)
+    InferenceRules.execute_rule_resilience_participants(g)
 
     resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
     assert len(
@@ -138,7 +138,7 @@ def test_resilience_not_inferred_with_same_entity_capabilities():
 
     g.add((capability2, LADERR.state, LADERR.enabled))
 
-    InferenceRules.execute_rule_resilience(g)
+    InferenceRules.execute_rule_resilience_participants(g)
 
     resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
     assert len(
@@ -167,7 +167,7 @@ def test_resilience_not_inferred_with_missing_relationships(laderr_graph_with_va
     elif missing_relation == "exploits":
         g.remove((capability3, LADERR.exploits, vulnerability1))
 
-    InferenceRules.execute_rule_resilience(g)
+    InferenceRules.execute_rule_resilience_participants(g)
 
     resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
     assert len(resilience_instances) == 0, f"Resilience should NOT be inferred when '{missing_relation}' is missing."
@@ -199,7 +199,7 @@ def test_resilience_not_inferred_with_missing_capabilities(laderr_graph_with_val
     elif missing_capability == "capability3":
         g.remove((capability3, LADERR.exploits, vulnerability1))
 
-    InferenceRules.execute_rule_resilience(g)
+    InferenceRules.execute_rule_resilience_participants(g)
 
     resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
     assert len(resilience_instances) == 0, f"Resilience should NOT be inferred when '{missing_capability}' is missing."
@@ -217,7 +217,7 @@ def test_resilience_inferred_with_multiple_vulnerabilities(laderr_graph_with_val
     g.add((capability2, LADERR.disables, vulnerability2))  # This one is also disabled
     g.add((capability3, LADERR.exploits, vulnerability2))
 
-    InferenceRules.execute_rule_resilience(g)
+    InferenceRules.execute_rule_resilience_participants(g)
 
     resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
     assert len(
@@ -237,7 +237,7 @@ def test_resilience_inferred_with_multiple_disabling_capabilities(laderr_graph_w
     g.add((capability4, LADERR.disables, vulnerability1))
     g.add((capability4, LADERR.state, LADERR.enabled))  # Also enabled
 
-    InferenceRules.execute_rule_resilience(g)
+    InferenceRules.execute_rule_resilience_participants(g)
 
     resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
     assert len(
@@ -256,7 +256,7 @@ def test_resilience_not_inferred_when_other_vulnerability_is_not_disabled(laderr
     g.add((entity1, LADERR.vulnerabilities, vulnerability2))
     g.add((capability3, LADERR.exploits, vulnerability2))  # Exploited but NOT disabled
 
-    InferenceRules.execute_rule_resilience(g)
+    InferenceRules.execute_rule_resilience_participants(g)
 
     resilience_instances = list(g.subjects(RDF.type, LADERR.Resilience))
     assert len(

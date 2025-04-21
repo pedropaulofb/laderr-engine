@@ -48,7 +48,7 @@
 :dry_season a laderr:Construct,
         laderr:Scenario ;
     rdfs:label "Dry Season Survival" ;
-    laderr:components :RHD,
+    laderr:components :RHK,
         :adaptive_ambush_strategy_dry_season,
         :disruptive_hunting_influence_dry_season,
         :efficient_thermoregulation_dry_season,
@@ -69,8 +69,8 @@
 :heatwave_response a laderr:Construct,
         laderr:Scenario ;
     rdfs:label "Heatwave Response" ;
-    laderr:components :RHG,
-        :RXH,
+    laderr:components :R2Q,
+        :RFK,
         :adaptive_ambush_strategy_heatwave_response,
         :disruptive_hunting_influence_heatwave_response,
         :dynamic_heat_refuge,
@@ -119,29 +119,29 @@
     laderr:inhibits :lion_pride_heatwave_response ;
     laderr:protects :zebra_herd_heatwave_response .
 
-:RHD a laderr:Construct,
+:R2Q a laderr:Construct,
         laderr:Resilience,
         laderr:ScenarioComponent ;
-    rdfs:label "RHD" ;
-    laderr:preserves :high_frequency_hunting_dry_season ;
-    laderr:preservesAgainst :disruptive_hunting_influence_dry_season ;
-    laderr:preservesDespite :prey_migration_barriers_dry_season .
-
-:RHG a laderr:Construct,
-        laderr:Resilience,
-        laderr:ScenarioComponent ;
-    rdfs:label "RHG" ;
+    rdfs:label "R2Q" ;
     laderr:preserves :efficient_thermoregulation_heatwave_response ;
     laderr:preservesAgainst :high_frequency_hunting_heatwave_response ;
     laderr:preservesDespite :limited_water_access_heatwave_response .
 
-:RXH a laderr:Construct,
+:RFK a laderr:Construct,
         laderr:Resilience,
         laderr:ScenarioComponent ;
-    rdfs:label "RXH" ;
+    rdfs:label "RFK" ;
     laderr:preserves :high_frequency_hunting_heatwave_response ;
     laderr:preservesAgainst :disruptive_hunting_influence_heatwave_response ;
     laderr:preservesDespite :prey_migration_barriers_heatwave_response .
+
+:RHK a laderr:Construct,
+        laderr:Resilience,
+        laderr:ScenarioComponent ;
+    rdfs:label "RHK" ;
+    laderr:preserves :high_frequency_hunting_dry_season ;
+    laderr:preservesAgainst :disruptive_hunting_influence_dry_season ;
+    laderr:preservesDespite :prey_migration_barriers_dry_season .
 
 :adaptive_ambush_strategy_dry_season a laderr:Capability,
         laderr:Construct,
@@ -169,7 +169,7 @@
     laderr:description "Provides adaptable shaded areas that reduce heat exposure during high-temperature events." ;
     laderr:disables :limited_water_access_heatwave_response ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RHG .
+    laderr:sustains :R2Q .
 
 :poacher_group_dry_season a laderr:Construct,
         laderr:Entity,
@@ -199,7 +199,7 @@
     laderr:description "Warning sounds that alert the group to nearby threats, lowering the chances of surprise attacks." ;
     laderr:disables :prey_migration_barriers_dry_season ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RHD .
+    laderr:sustains :RHK .
 
 :predator_detection_calls_heatwave_response a laderr:Capability,
         laderr:Construct,
@@ -209,7 +209,7 @@
     laderr:description "Warning sounds that alert the group to nearby threats, lowering the chances of surprise attacks." ;
     laderr:disables :prey_migration_barriers_heatwave_response ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RXH .
+    laderr:sustains :RFK .
 
 :rapid_movement_coordination_dry_season a laderr:Capability,
         laderr:Construct,
@@ -366,7 +366,7 @@
         :rapid_movement_coordination_heatwave_response ;
     laderr:inhibits :lion_pride_heatwave_response ;
     laderr:protects :lion_pride_heatwave_response ;
-    laderr:resiliences :RHG ;
+    laderr:resiliences :R2Q ;
     laderr:vulnerabilities :limited_water_access_heatwave_response .
 
 :high_frequency_hunting_heatwave_response a laderr:Capability,
@@ -391,7 +391,7 @@
         :unregulated_territory_roaming_dry_season ;
     laderr:positiveDamage :zebra_herd_dry_season ;
     laderr:protects :lion_pride_dry_season ;
-    laderr:resiliences :RHD ;
+    laderr:resiliences :RHK ;
     laderr:threatens :lion_pride_dry_season,
         :zebra_herd_dry_season ;
     laderr:vulnerabilities :prey_migration_barriers_dry_season,
@@ -410,7 +410,7 @@
         :unregulated_territory_roaming_heatwave_response ;
     laderr:negativeDamage :zebra_herd_heatwave_response ;
     laderr:protects :lion_pride_heatwave_response ;
-    laderr:resiliences :RXH ;
+    laderr:resiliences :RFK ;
     laderr:threatens :lion_pride_heatwave_response,
         :zebra_herd_heatwave_response ;
     laderr:vulnerabilities :prey_migration_barriers_heatwave_response,

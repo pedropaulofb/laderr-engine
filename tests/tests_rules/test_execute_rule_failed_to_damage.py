@@ -47,7 +47,7 @@ def test_failed_to_damage_inferred(laderr_graph_with_valid_failed_to_damage_case
     """
     g, entity1, entity2 = laderr_graph_with_valid_failed_to_damage_case
 
-    InferenceRules.execute_rule_negative_damage(g)
+    InferenceRules.execute_rule_entity_damage_negative(g)
 
     assert (entity2, LADERR.failedToDamage, entity1) in g, \
         "Expected failedToDamage relationship was not inferred."
@@ -66,7 +66,7 @@ def test_failed_to_damage_not_inferred_without_necessary_relation(laderr_graph_w
     elif missing_relation == "exposes":
         g.remove((EXAMPLE.vulnerability1, LADERR.exposes, EXAMPLE.capability1))
 
-    InferenceRules.execute_rule_negative_damage(g)
+    InferenceRules.execute_rule_entity_damage_negative(g)
 
     assert (entity2, LADERR.failedToDamage, entity1) not in g, \
         f"failedToDamage should not be inferred when '{missing_relation}' is missing."
@@ -86,7 +86,7 @@ def test_failed_to_damage_not_inferred_with_invalid_states(laderr_graph_with_val
     elif invalid_state == "capability_disabled":
         g.set((EXAMPLE.capability2, LADERR.state, LADERR.disabled))
 
-    InferenceRules.execute_rule_negative_damage(g)
+    InferenceRules.execute_rule_entity_damage_negative(g)
 
     assert (entity2, LADERR.failedToDamage, entity1) not in g, \
         f"failedToDamage should not be inferred when '{invalid_state}' is incorrect."
@@ -101,7 +101,7 @@ def test_failed_to_damage_not_inferred_if_already_exists(laderr_graph_with_valid
     # Pre-existing failedToDamage relation
     g.add((entity2, LADERR.failedToDamage, entity1))
 
-    InferenceRules.execute_rule_negative_damage(g)
+    InferenceRules.execute_rule_entity_damage_negative(g)
 
     assert len(list(g.triples((entity2, LADERR.failedToDamage, entity1)))) == 1, \
         "failedToDamage should not be duplicated."
@@ -120,7 +120,7 @@ def test_failed_to_damage_not_inferred_with_missing_capabilities(laderr_graph_wi
     elif missing_capability == "capability2":
         g.remove((entity2, LADERR.capabilities, EXAMPLE.capability2))
 
-    InferenceRules.execute_rule_negative_damage(g)
+    InferenceRules.execute_rule_entity_damage_negative(g)
 
     assert (entity2, LADERR.failedToDamage, entity1) not in g, \
         f"failedToDamage should not be inferred when '{missing_capability}' is missing."
@@ -146,7 +146,7 @@ def test_failed_to_damage_not_inferred_with_only_one_entity():
     g.add((vulnerability1, LADERR.state, LADERR.disabled))
     g.add((capability1, LADERR.state, LADERR.enabled))
 
-    InferenceRules.execute_rule_negative_damage(g)
+    InferenceRules.execute_rule_entity_damage_negative(g)
 
     assert len(list(g.subjects(RDF.type, LADERR.failedToDamage))) == 0, \
         "failedToDamage should not be inferred with only one entity."

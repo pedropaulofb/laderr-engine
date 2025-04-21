@@ -14,7 +14,7 @@ class InferenceRules:
     """
 
     @staticmethod
-    def execute_rule_disabled_state(laderr_graph: Graph):
+    def execute_rule_disposition_state(laderr_graph: Graph):
         """
         Enforces the rule: If a disposition (d1) disables another disposition (d2), then:
         - d1 is set to ENABLED.
@@ -63,7 +63,7 @@ class InferenceRules:
                 VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
-    def execute_rule_protects(laderr_graph: Graph):
+    def execute_rule_entity_protects(laderr_graph: Graph):
         """
         Applies the 'protects' inference rule:
         If an entity with a capability disables a vulnerability of another entity,
@@ -87,7 +87,7 @@ class InferenceRules:
                 VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
-    def execute_rule_inhibits(laderr_graph: Graph):
+    def execute_rule_entity_inhibits(laderr_graph: Graph):
         """
         Applies the updated 'inhibits' inference rule:
 
@@ -137,7 +137,7 @@ class InferenceRules:
                 VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
-    def execute_rule_threatens(laderr_graph: Graph):
+    def execute_rule_entity_threatens(laderr_graph: Graph):
         """
         Applies the 'threatens' inference rule:
         If a capability exploits a vulnerability of another entity,
@@ -162,7 +162,7 @@ class InferenceRules:
                 VERBOSE and logger.info(f"Inferred: {triple[0]} {triple[1]} {triple[2]}")
 
     @staticmethod
-    def execute_rule_resilience(laderr_graph: Graph):
+    def execute_rule_resilience_participants(laderr_graph: Graph):
         """
         Infers resilience when the following conditions hold:
 
@@ -241,40 +241,47 @@ class InferenceRules:
     @staticmethod
     def execute_rule_resilience_scenario(laderr_graph: Graph):
         """
-        Ensures that for every Resilience instance r, if all the elements related to r via
-        laderr:preserves, laderr:preservesAgainst, and laderr:preservesDespite are found together
-        as components of a Scenario s, then s must also include r as a laderr:components.
+        Implements the rule:
 
-        Implements:
-        ∀ r, c1, c2, v, s (
-            Resilience(r) ∧ preserves(r, c1) ∧ preservesAgainst(r, c2) ∧ preservesDespite(r, v) ∧
-            components(s, c1) ∧ components(s, c2) ∧ components(s, v)
-            → components(s, r)
+        ∀ r, s (
+          Scenario(s) ∧ Resilience(r) ∧ (
+            (∃ c₁ (preserves(r, c₁) ∧ components(s, c₁))) ∨
+            (∃ c₂ (preservesAgainst(r, c₂) ∧ components(s, c₂))) ∨
+            (∃ v (preservesDespite(r, v) ∧ components(s, v))) ∨
+            (∃ c₃ (sustains(c₃, r) ∧ components(s, c₃)))
+          ) → components(s, r)
         )
         """
-        from laderr_engine.laderr_lib.globals import LADERR_NS, VERBOSE
 
         for r in laderr_graph.subjects(RDF.type, LADERR_NS.Resilience):
-            c1s = list(laderr_graph.objects(r, LADERR_NS.preserves))
-            c2s = list(laderr_graph.objects(r, LADERR_NS.preservesAgainst))
-            vs = list(laderr_graph.objects(r, LADERR_NS.preservesDespite))
+            # Collect related elements
+            preserves_c1 = list(laderr_graph.objects(r, LADERR_NS.preserves))
+            against_c2 = list(laderr_graph.objects(r, LADERR_NS.preservesAgainst))
+            despite_v = list(laderr_graph.objects(r, LADERR_NS.preservesDespite))
+            sustained_by_c3 = list(laderr_graph.subjects(LADERR_NS.sustains, r))
 
-            for c1 in c1s:
-                for c2 in c2s:
-                    for v in vs:
-                        scenarios_with_all = (
-                                set(laderr_graph.subjects(LADERR_NS.components, c1)) &
-                                set(laderr_graph.subjects(LADERR_NS.components, c2)) &
-                                set(laderr_graph.subjects(LADERR_NS.components, v))
-                        )
+            # Gather scenarios where at least one element is a component
+            scenarios = set()
 
-                        for s in scenarios_with_all:
-                            if (s, LADERR_NS.components, r) not in laderr_graph:
-                                laderr_graph.add((s, LADERR_NS.components, r))
-                                VERBOSE and logger.info(f"Inferred: {s} laderr:components {r}")
+            for c1 in preserves_c1:
+                scenarios.update(laderr_graph.subjects(LADERR_NS.components, c1))
+
+            for c2 in against_c2:
+                scenarios.update(laderr_graph.subjects(LADERR_NS.components, c2))
+
+            for v in despite_v:
+                scenarios.update(laderr_graph.subjects(LADERR_NS.components, v))
+
+            for c3 in sustained_by_c3:
+                scenarios.update(laderr_graph.subjects(LADERR_NS.components, c3))
+
+            for s in scenarios:
+                if (s, LADERR_NS.components, r) not in laderr_graph:
+                    laderr_graph.add((s, LADERR_NS.components, r))
+                    VERBOSE and logger.info(f"Inferred: {s} laderr:components {r}")
 
     @staticmethod
-    def execute_rule_positive_damage(laderr_graph: Graph):
+    def execute_rule_entity_damage_positive(laderr_graph: Graph):
         """
         Applies the 'positiveDamage' inference rule based on the current definition:
 
@@ -343,7 +350,7 @@ class InferenceRules:
             laderr_graph.add(triple)
 
     @staticmethod
-    def execute_rule_negative_damage(laderr_graph: Graph):
+    def execute_rule_entity_damage_negative(laderr_graph: Graph):
         """
         Applies the 'negativeDamage' inference rule.
 
@@ -436,7 +443,7 @@ class InferenceRules:
                     VERBOSE and logger.info(f"Inferred: {scenario} laderr:status laderr:vulnerable")
 
     @staticmethod
-    def execute_rule_damage_from_scenario(laderr_graph: Graph):
+    def execute_rule_scenario_damage(laderr_graph: Graph):
         """
         Applies inference based on the scenario's situation (INCIDENT or OPERATIONAL):
 

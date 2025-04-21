@@ -32,7 +32,7 @@ def test_execute_rule_protects(laderr_graph_with_disabling_capability):
     g, entity1, entity2 = laderr_graph_with_disabling_capability
 
     # Execute the inference rule
-    InferenceRules.execute_rule_protects(g)
+    InferenceRules.execute_rule_entity_protects(g)
 
     # Assert that the protects relationship was inferred
     assert (entity1, LADERR.protects, entity2) in g, \
@@ -48,7 +48,7 @@ def test_no_disables_no_protects_inferred():
     g.add((entity1, LADERR.capabilities, EXAMPLE.capability1))
     g.add((entity2, LADERR.vulnerabilities, EXAMPLE.vulnerability1))
 
-    InferenceRules.execute_rule_protects(g)
+    InferenceRules.execute_rule_entity_protects(g)
 
     assert (entity1, LADERR.protects, entity2) not in g, \
         "No disables defined, so no protects should be inferred."
@@ -69,7 +69,7 @@ def test_protects_already_exists():
     # Manually state the protects relation
     g.add((entity1, LADERR.protects, entity2))
 
-    InferenceRules.execute_rule_protects(g)
+    InferenceRules.execute_rule_entity_protects(g)
 
     assert len(list(g.triples((entity1, LADERR.protects, entity2)))) == 1, \
         "protects relationship should not be duplicated."
