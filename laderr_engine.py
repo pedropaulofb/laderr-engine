@@ -9,7 +9,7 @@ RESOURCE_DIR = os.path.join(BASE_DIR, "..", "..", "resources")
 
 def main():
     if len(sys.argv) != 3:
-        print("Usage: python laderr_engine <input_file> <output_path>")
+        print("Usage: python laderr_engine <input_file> <output_base>")
         sys.exit(1)
 
     input_file = sys.argv[1]
