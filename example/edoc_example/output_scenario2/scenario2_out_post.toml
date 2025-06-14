@@ -1,0 +1,73 @@
+baseURI = "https://supplychainresilience.laderr#"
+createdBy = "Pedro Paulo F. Barcelos"
+createdOn = "2025-06-09T12:00:00Z"
+description = "This LaDeRR specification models a resilient supply chain scenario in which a dedicated inventory management capability neutralizes the stockout vulnerability caused by geopolitical instability, preserving production capability and preventing disruption."
+modifiedOn = "2025-06-14T00:00:00Z"
+title = "Resilient Scenario – Mitigation of Geopolitical Threat via Inventory Management"
+version = "1.0"
+
+[Asset.manufacturing_company]
+capabilities = "critical_component_production"
+description = "Company responsible for producing and assembling critical components."
+label = "Manufacturing Company"
+resiliences = "RO8"
+scenarios = "component_disruption"
+vulnerabilities = "component_stockout_risk"
+
+[Capability.disruption_capability]
+description = "Capability of geopolitical threat to exploit vulnerabilities leading to disruptions."
+exploits = "component_stockout_risk"
+label = "Disruption Capability"
+scenarios = "component_disruption"
+state = "enabled"
+
+[Capability.critical_component_production]
+description = "Ability to produce or source critical components efficiently."
+label = "Critical Component Production"
+scenarios = "component_disruption"
+state = "enabled"
+
+[Capability.inventory_management]
+description = "Maintaining buffer stocks to mitigate stockouts."
+disables = "component_stockout_risk"
+label = "Inventory Management"
+scenarios = "component_disruption"
+state = "enabled"
+sustains = "RO8"
+
+[Control.supply_chain_management_team]
+capabilities = "inventory_management"
+description = "Team dedicated to managing inventory and ensuring continuous component availability."
+inhibits = "geopolitical_instability"
+label = "Supply Chain Management Team"
+protects = "manufacturing_company"
+scenarios = "component_disruption"
+
+[Resilience.RO8]
+label = "RO8"
+preserves = "critical_component_production"
+preservesAgainst = "disruption_capability"
+preservesDespite = "component_stockout_risk"
+scenarios = "component_disruption"
+
+[Scenario.component_disruption]
+components = ["RO8", "component_stockout_risk", "critical_component_production", "disruption_capability", "geopolitical_instability", "inventory_management", "manufacturing_company", "supply_chain_management_team"]
+label = "Component Disruption Risk"
+situation = "operational"
+status = "resilient"
+
+[Threat.geopolitical_instability]
+cannotDamage = "manufacturing_company"
+capabilities = "disruption_capability"
+description = "Threat entity representing disruptions caused by trade embargoes or instability in supplier countries."
+label = "Geopolitical Instability"
+negativeDamage = "manufacturing_company"
+scenarios = "component_disruption"
+threatens = "manufacturing_company"
+
+[Vulnerability.component_stockout_risk]
+description = "Vulnerability related to delays or unavailability of critical components."
+exposes = "critical_component_production"
+label = "Component Stockout Risk"
+scenarios = "component_disruption"
+state = "disabled"

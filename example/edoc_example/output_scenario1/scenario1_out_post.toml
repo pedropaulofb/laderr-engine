@@ -1,0 +1,49 @@
+baseURI = "https://supplychainresilience.laderr#"
+createdBy = "Pedro Paulo F. Barcelos"
+createdOn = "2025-06-09T12:00:00Z"
+description = "This LaDeRR specification models a vulnerable supply chain scenario in which geopolitical instability threatens the availability of critical components, exposing production capabilities due to an active vulnerability that is not mitigated."
+modifiedOn = "2025-06-14T00:00:00Z"
+title = "Vulnerable Scenario – Supply Chain Disruption Due to Geopolitical Threat"
+version = "1.0"
+
+[Asset.manufacturing_company]
+capabilities = "critical_component_production"
+description = "Company responsible for producing and assembling critical components."
+label = "Manufacturing Company"
+scenarios = "component_disruption"
+vulnerabilities = "component_stockout_risk"
+
+[Capability.critical_component_production]
+description = "Ability to produce or source critical components efficiently."
+label = "Critical Component Production"
+scenarios = "component_disruption"
+state = "enabled"
+
+[Capability.disruption_capability]
+description = "Capability of geopolitical threat to exploit vulnerabilities leading to disruptions."
+exploits = "component_stockout_risk"
+label = "Disruption Capability"
+scenarios = "component_disruption"
+state = "enabled"
+
+[Scenario.component_disruption]
+components = ["component_stockout_risk", "critical_component_production", "disruption_capability", "geopolitical_instability", "manufacturing_company"]
+label = "Component Disruption Risk"
+situation = "operational"
+status = "vulnerable"
+
+[Threat.geopolitical_instability]
+canDamage = "manufacturing_company"
+capabilities = "disruption_capability"
+description = "Threat entity representing disruptions caused by trade embargoes or instability in supplier countries."
+label = "Geopolitical Instability"
+positiveDamage = "manufacturing_company"
+scenarios = "component_disruption"
+threatens = "manufacturing_company"
+
+[Vulnerability.component_stockout_risk]
+description = "Vulnerability related to delays or unavailability of critical components."
+exposes = "critical_component_production"
+label = "Component Stockout Risk"
+scenarios = "component_disruption"
+state = "enabled"

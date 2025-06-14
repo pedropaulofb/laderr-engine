@@ -1,0 +1,36 @@
+baseURI = "https://supplychainresilience.laderr#"
+createdBy = ["Pedro Paulo F. Barcelos"]
+createdOn = "2025-06-09T12:00:00Z"
+modifiedOn = "2025-06-14T00:00:00Z"
+title = "Vulnerable Scenario – Supply Chain Disruption Due to Geopolitical Threat"
+version = "1.0"
+description = "This LaDeRR specification models a vulnerable supply chain scenario in which geopolitical instability threatens the availability of critical components, exposing production capabilities due to an active vulnerability that is not mitigated."
+
+[Scenario.component_disruption]
+label = "Component Disruption Risk"
+description = "Scenario involving disruptions to critical components caused by geopolitical instability, resulting in production vulnerability."
+
+[Entity.manufacturing_company]
+label = "Manufacturing Company"
+description = "Company responsible for producing and assembling critical components."
+capabilities = ["critical_component_production"]
+vulnerabilities = ["component_stockout_risk"]
+
+[Entity.geopolitical_instability]
+label = "Geopolitical Instability"
+description = "Threat entity representing disruptions caused by trade embargoes or instability in supplier countries."
+capabilities = ["disruption_capability"]
+
+[Capability.disruption_capability]
+label = "Disruption Capability"
+description = "Capability of geopolitical threat to exploit vulnerabilities leading to disruptions."
+exploits = ["component_stockout_risk"]
+
+[Capability.critical_component_production]
+label = "Critical Component Production"
+description = "Ability to produce or source critical components efficiently."
+
+[Vulnerability.component_stockout_risk]
+label = "Component Stockout Risk"
+description = "Vulnerability related to delays or unavailability of critical components."
+exposes = ["critical_component_production"]

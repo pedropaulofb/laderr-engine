@@ -1,0 +1,81 @@
+@prefix : <https://supplychainresilience.laderr#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix laderr: <https://w3id.org/laderr#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:Specification a laderr:Specification ;
+    dcterms:conformsTo <https://w3id.org/laderr> ;
+    laderr:baseURI "https://supplychainresilience.laderr#"^^xsd:anyURI ;
+    laderr:constructs :component_disruption,
+        :component_stockout_risk,
+        :critical_component_production,
+        :disruption_capability,
+        :geopolitical_instability,
+        :manufacturing_company ;
+    laderr:createdBy "Pedro Paulo F. Barcelos"^^xsd:string ;
+    laderr:createdOn "2025-06-09T12:00:00+00:00"^^xsd:dateTime ;
+    laderr:description "This LaDeRR specification models a vulnerable supply chain scenario in which geopolitical instability threatens the availability of critical components, exposing production capabilities due to an active vulnerability that is not mitigated."^^xsd:string ;
+    laderr:modifiedOn "2025-06-14T00:00:00+00:00"^^xsd:dateTime ;
+    laderr:title "Vulnerable Scenario – Supply Chain Disruption Due to Geopolitical Threat"^^xsd:string ;
+    laderr:version "1.0"^^xsd:string .
+
+:component_disruption a laderr:Construct,
+        laderr:Scenario ;
+    rdfs:label "Component Disruption Risk" ;
+    laderr:components :component_stockout_risk,
+        :critical_component_production,
+        :disruption_capability,
+        :geopolitical_instability,
+        :manufacturing_company ;
+    laderr:situation laderr:operational ;
+    laderr:status laderr:vulnerable .
+
+"https://supplychainresilience.laderr#"^^xsd:anyURI a xsd:anyURI .
+
+:geopolitical_instability a laderr:Construct,
+        laderr:Entity,
+        laderr:ScenarioComponent,
+        laderr:Threat ;
+    rdfs:label "Geopolitical Instability" ;
+    laderr:canDamage :manufacturing_company ;
+    laderr:capabilities :disruption_capability ;
+    laderr:description "Threat entity representing disruptions caused by trade embargoes or instability in supplier countries." ;
+    laderr:positiveDamage :manufacturing_company ;
+    laderr:threatens :manufacturing_company .
+
+:disruption_capability a laderr:Capability,
+        laderr:Construct,
+        laderr:Disposition,
+        laderr:ScenarioComponent ;
+    rdfs:label "Disruption Capability" ;
+    laderr:description "Capability of geopolitical threat to exploit vulnerabilities leading to disruptions." ;
+    laderr:exploits :component_stockout_risk ;
+    laderr:state laderr:enabled .
+
+:component_stockout_risk a laderr:Construct,
+        laderr:Disposition,
+        laderr:ScenarioComponent,
+        laderr:Vulnerability ;
+    rdfs:label "Component Stockout Risk" ;
+    laderr:description "Vulnerability related to delays or unavailability of critical components." ;
+    laderr:exposes :critical_component_production ;
+    laderr:state laderr:enabled .
+
+:critical_component_production a laderr:Capability,
+        laderr:Construct,
+        laderr:Disposition,
+        laderr:ScenarioComponent ;
+    rdfs:label "Critical Component Production" ;
+    laderr:description "Ability to produce or source critical components efficiently." ;
+    laderr:state laderr:enabled .
+
+:manufacturing_company a laderr:Asset,
+        laderr:Construct,
+        laderr:Entity,
+        laderr:ScenarioComponent ;
+    rdfs:label "Manufacturing Company" ;
+    laderr:capabilities :critical_component_production ;
+    laderr:description "Company responsible for producing and assembling critical components." ;
+    laderr:vulnerabilities :component_stockout_risk .
+
