@@ -25,7 +25,7 @@
 :component_disruption a laderr:Construct,
         laderr:Scenario ;
     rdfs:label "Component Disruption Risk" ;
-    laderr:components :RO8,
+    laderr:components :RW7,
         :component_stockout_risk,
         :critical_component_production,
         :disruption_capability,
@@ -48,10 +48,10 @@
     laderr:inhibits :geopolitical_instability ;
     laderr:protects :manufacturing_company .
 
-:RO8 a laderr:Construct,
+:RW7 a laderr:Construct,
         laderr:Resilience,
         laderr:ScenarioComponent ;
-    rdfs:label "RO8" ;
+    rdfs:label "RW7" ;
     laderr:preserves :critical_component_production ;
     laderr:preservesAgainst :disruption_capability ;
     laderr:preservesDespite :component_stockout_risk .
@@ -75,7 +75,7 @@
     laderr:description "Maintaining buffer stocks to mitigate stockouts." ;
     laderr:disables :component_stockout_risk ;
     laderr:state laderr:enabled ;
-    laderr:sustains :RO8 .
+    laderr:sustains :RW7 .
 
 :disruption_capability a laderr:Capability,
         laderr:Construct,
@@ -110,6 +110,6 @@
     rdfs:label "Manufacturing Company" ;
     laderr:capabilities :critical_component_production ;
     laderr:description "Company responsible for producing and assembling critical components." ;
-    laderr:resiliences :RO8 ;
+    laderr:resiliences :RW7 ;
     laderr:vulnerabilities :component_stockout_risk .
 
